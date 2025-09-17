@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCPS Aplikacija z vsemi funkcijami</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: white;
+        }
+        .phone-frame {
+            background-color: #1a1a1a;
+        }
+        .app-screen {
+            background-color: #2b0b45; /* A slightly brighter purple shade */
+        }
+        .menu-button {
+            background-color: #3f1167; /* A brighter purple shade for buttons */
+            transition: transform 0.2s;
+        }
+        .menu-button:hover {
+            transform: scale(1.05);
+        }
+        .bcps-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.1;
+            z-index: 0;
+            width: 80%;
+            height: auto;
+        }
+        /* Adjusted view-content for centering */
+        .view-content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .back-home-buttons {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            z-index: 20;
+        }
+        /* Modal is now positioned inside the phone with absolute positioning */
+        .modal {
+            position: absolute;
+            z-index: 30;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #2b0b45;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+        /* Responsive grid for mobile devices */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            place-items: center;
+            align-items: center; /* Center items vertically */
+            justify-items: center; /* Center items horizontally */
+        }
+        @media (min-width: 640px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .transactions-button {
+            background-color: #3f1167;
+            transition: transform 0.2s;
+        }
+        .transactions-button:hover {
+            transform: scale(1.03);
+        }
+
+        /* Smaller icons inside buttons to prevent overlap */
+        .nav-icon {
+            width: 2rem; /* Reduced size to prevent overlap */
+            height: 2rem; /* Reduced size to prevent overlap */
+        }
+
+        /* Style for the new icon */
+        .transactions-icon {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .transactions-icon:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Adjusted menu button sizes to fix overlap */
+        .menu-button-small {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #3f1167;
+            transition: transform 0.2s;
+        }
+        
+        .menu-button-small:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Adjusted icon size for main menu */
+        .main-menu-icon {
+            width: 3rem; 
+            height: 3rem; 
+        }
+
+        /* Bigger buttons for all menus except 'wallet' */
+        .menu-button-big {
+            width: 140px;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #3f1167;
+            transition: transform 0.2s;
+        }
+
+        .menu-button-big:hover {
+            transform: scale(1.05);
+        }
+
+        /* Custom scrollbar styling */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 8px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #210d32;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background-color: #5a1c97;
+            border-radius: 10px;
+            border: 2px solid #210d32;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background-color: #7e22ce;
+        }
+
+    </style>
+</head>
+<body class="bg-[#121212] flex items-center justify-center min-h-screen">
+
+    <div class="phone-frame relative w-80 h-[640px] rounded-[40px] shadow-2xl p-2 overflow-hidden">
+        <div class="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-gray-800 rounded-b-xl z-20"></div>
+        
+        <div class="app-screen relative w-full h-full rounded-[30px] flex flex-col items-center justify-center p-4">
+
+            <svg class="bcps-logo" viewBox="0 0 100 100">
+                <path d="M 50,10 L 10,90 H 90 Z" fill="white" stroke="white" stroke-width="2" />
+                <path d="M 50,10 C 20,40 20,60 50,90 C 80,60 80,40 50,10 Z" fill="none" stroke="white" stroke-width="2" />
+                <circle cx="50" cy="50" r="10" fill="white" />
+                <line x1="10" y1="90" x2="90" y2="90" stroke="white" stroke-width="2" />
+            </svg>
+
+            <div id="menu-container" class="view-content w-full h-full flex flex-col justify-center items-center"></div>
+
+            <div id="nav-buttons" class="back-home-buttons hidden">
+                <button onclick="goBack()" class="menu-button p-3 rounded-full shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </button>
+                <button onclick="goHome()" class="menu-button p-3 rounded-full shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 12l8.954-8.955a.75.75 0 011.06 0l8.955 8.955a.75.75 0 01-.53 1.28H19.5v5.25a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75V13.28a.75.75 0 01-.53-1.28z" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="modal-container"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Data for menus and views
+        const views = {
+            'login': {
+                title: 'Prijava',
+                content: `
+                    <div class="w-full text-center">
+                        <img src="Logo_9-transparent.png" alt="BCPS Logo" class="w-32 h-auto mx-auto mb-6">
+                        <h2 class="text-2xl font-bold mb-6">Dobrodošli</h2>
+                        <input type="text" id="username" placeholder="Uporabniško ime" class="w-full p-3 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4">
+                        <input type="password" id="password" placeholder="Geslo" class="w-full p-3 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                        <button onclick="handleLogin()" class="w-full p-3 mt-6 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Prijava</button>
+                        <p id="loginError" class="mt-4 text-center text-red-400"></p>
+                    </div>
+                `
+            },
+            'main': {
+                title: 'Glavni Menu',
+                menu: [
+                    { name: 'Denarnica', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25-2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />', nextView: 'wallet' },
+                    { name: 'Profil', icon: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a4 4 0 110 8 4 4 0 010-8zm0 14a8 8 0 01-7-3.9 6 6 0 0113.9 0A8 8 0 0112 20z" />', nextView: 'profile' },
+                    { name: 'Plačaj', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />', nextView: 'pay' },
+                    { name: 'Odjava', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />', nextView: 'profile-logout' }
+                ]
+            },
+            'wallet': {
+                title: 'Denarnica',
+                menu: [
+                    { name: 'Naloži', icon: '<path d="M19 14l-7 7m0 0l-7-7m7 7V3" />', nextView: 'wallet-load' },
+                    { name: 'Dvigni', icon: '<path d="M5 10l7-7m0 0l7 7m-7-7v18" />', nextView: 'wallet-withdraw' },
+                    { name: 'Plačaj', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />', nextView: 'pay' },
+                    { name: 'Napredne funkcije', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.008 1.11-1.212.55-.203 1.18-.203 1.73 0 .55.204 1.02.67 1.11 1.212l.094.486c.204.04.407.087.61.14.202.053.398.114.586.182.188.068.37.142.546.224l.41-.18c.51-.227 1.08-.203 1.54.06.46.262.77.738.77 1.272l0 .028c-.03.542-.32.992-.72 1.29l-.38.272c.03.18.05.36.07.534.02.176.03.354.03.534s-.01.358-.03.534a7.44 7.44 0 01-.07.534l.38.272c.4.3.69.75.72 1.29l0 .028c0 .534-.31.992-.77 1.272-.46.263-1.03.287-1.54.06l-.41-.18a7.44 7.44 0 01-.546.224c-.188.068-.384.128-.586.182-.203.053-.406.1-.61.14l-.094.486c-.09.542-.56 1.008-1.11 1.212-.55.203-1.18.203-1.73 0-.55-.204-1.02-.67-1.11-1.212l-.094-.486a7.44 7.44 0 01-.61-.14c-.202-.053-.398-.114-.586-.182-.188-.068-.37-.142-.546-.224l-.41.18c-.51.227-1.08.203-1.54-.06-.46-.262-.77-.738-.77-1.272l0-.028c.03-.542.32-.992.72-1.29l.38-.272a7.44 7.44 0 01.07-.534c.02-.176.03-.354.03-.534s-.01-.358-.03-.534a7.44 7.44 0 01-.07-.534l-.38-.272c-.4-.3-.69-.75-.72-1.29l0-.028c0-.534.31-.992.77-1.272.46-.263 1.03-.287 1.54-.06l.41.18a7.44 7.44 0 01.546-.224c.188-.068.384-.128.586-.182.203-.053.406-.1.61-.14l.094-.486zM12 15a3 3 0 100-6 3 3 0 000 6z" />', nextView: 'wallet-advanced' }
+                ]
+            },
+            'send': {
+                title: 'Pošlji',
+                menu: [
+                    { name: 'Pošlji BCPS', icon: '<path d="M14 5l7 7m0 0l-7 7m7-7H3" />', nextView: 'send-bcps' },
+                    { name: 'Pošlji Kripto', icon: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-8h2v-2h-2V9h-2v2h-2v2zm0 0v2h-2v-2z" />', nextView: 'send-crypto' }
+                ]
+            },
+            'pay': {
+                title: 'Plačaj',
+                menu: [
+                    { name: 'BCPS', icon: '<path d="M17 9H7a4 4 0 00-4 4v2a4 4 0 004 4h10a4 4 0 004-4V13a4 4 0 00-4-4zM7 11h10a2 2 0 012 2v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2a2 2 0 012-2zM9 5a2 2 0 110 4 2 2 0 010-4zM15 5a2 2 0 110 4 2 2 0 010-4z" />', nextView: 'pay-bcps-form' },
+                    { name: 'NFC', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15A2.25 2.25 0 002.25 6.75v10.5A2.25 2.25 0 004.5 21z" />', nextView: 'pay-nfc' },
+                    { name: 'Bančni transfer', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />', nextView: 'pay-bank-transfer-form' },
+                    { name: 'Zgodovina plačil', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />', nextView: 'pay-history' }
+                ]
+            },
+            'profile': {
+                title: 'Profil',
+                menu: [
+                    { name: 'Uredi profil', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />', nextView: 'profile-edit' },
+                    { name: 'Nastavitve', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />', nextView: 'profile-settings' },
+                    { name: 'Odjava', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />', nextView: 'profile-logout' },
+                    { name: 'Pomoč', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />', nextView: 'profile-help' }
+                ]
+            },
+            
+            'wallet-load': {
+                title: 'Naloži',
+                menu: [
+                    { name: 'Bančno nakazilo', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />', nextView: 'load-bank-transfer' },
+                    { name: 'Kripto sredstva', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10m16-10v10M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m-16 10c0 2.21 3.582 4 8 4s8-1.79 8-4m-16-5c0 2.21 3.582 4 8 4s8-1.79 8-4m-1.5-3v6h2a1.5 1.5 0 000-3 1.5 1.5 0 000-3h-2z" />', nextView: 'load-crypto' },
+                    { name: 'Zgodovina pologov', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />', nextView: 'load-history' }
+                ]
+            },
+            'wallet-withdraw': {
+                title: 'Dvigni',
+                menu: [
+                    { name: 'Bančno nakazilo', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />', nextView: 'withdraw-bank-transfer' },
+                    { name: 'Hladna denarnica', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10a1 1 0 011 1v12l-5 4-5-4V5a1 1 0 011-1z" />', nextView: 'withdraw-cold-wallet' },
+                    { name: 'Zgodovina dvigov', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />', nextView: 'withdraw-history' }
+                ]
+            },
+            'wallet-advanced': {
+                title: 'Napredne funkcije',
+                menu: [
+                    { name: 'Razdeli račun', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.186 2.25 2.25 0 00-3.933 2.186z" />', nextView: 'advanced-split-bill' },
+                    { name: 'Hladna denarnica', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10a1 1 0 011 1v12l-5 4-5-4V5a1 1 0 011-1z" />', nextView: 'advanced-cold-wallet' },
+                    { name: 'Bančni akreditiv', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286z" />', nextView: 'advanced-bank-accreditive' },
+                    { name: 'Investiraj', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.875L5.999 12Zm10.5-3.75h.008v.008h-.008V8.25Zm0 7.5h.008v.008h-.008v-.008Z" />', nextView: 'advanced-invest' }
+                ]
+            },
+
+            'wallet-transactions': {
+                title: 'Zgodovina transakcij',
+                content: `
+                    <div class="w-full">
+                        <h2 class="text-xl font-bold mb-4">Zadnje transakcije</h2>
+                        <ul class="w-full text-left space-y-4">
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Nakup v trgovini</p>
+                                    <p class="text-xs text-gray-400">12. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-55.00 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Naloženo iz banke</p>
+                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-green-400">+100.00 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Plačilo računa</p>
+                                    <p class="text-xs text-gray-400">09. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-20.50 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Prejem od Uporabnika A</p>
+                                    <p class="text-xs text-gray-400">08. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-green-400">+15.00 BCPS</span>
+                            </li>
+                        </ul>
+                    </div>
+                `
+            },
+
+            'send-bcps': { 
+                title: 'Pošlji BCPS', 
+                content: '<h2 class="text-xl font-bold mb-4">Pošiljanje BCPS</h2><p>Vnesite uporabnika in znesek, ki ga želite poslati.</p><input type="text" id="recipientId" placeholder="Uporabniško ime ali ID" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><input type="number" id="amountId" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2"><button onclick="simulateSendBcps()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Pošlji</button><p id="sendResult" class="mt-4 text-center"></p>' 
+            },
+            'send-crypto': { 
+                title: 'Pošlji Kripto', 
+                content: '<h2 class="text-xl font-bold mb-4">Pošiljanje Kripto</h2><p>Vnesite naslov denarnice in znesek, ki ga želite poslati.</p><input type="text" id="walletAddress" placeholder="Naslov denarnice" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><input type="number" id="cryptoAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2"><button onclick="simulateSendCrypto()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Pošlji</button><p id="sendResult" class="mt-4 text-center"></p>' 
+            },
+            'profile-edit': { 
+                title: 'Uredi profil', 
+                content: '<h2 class="text-xl font-bold mb-4">Uredi profil</h2><p>Spremenite svoje osebne podatke.</p><input type="text" placeholder="Ime in priimek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><input type="email" placeholder="E-pošta" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2"><button onclick="simulateProfileEdit()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Shrani spremembe</button><p id="editResult" class="mt-4 text-center"></p>' 
+            },
+            'profile-settings': { 
+                title: 'Nastavitve', 
+                content: '<h2 class="text-xl font-bold mb-4">Nastavitve</h2><p>Prilagodite nastavitve aplikacije.</p><div class="flex items-center justify-between mt-4"><p>Temna tema</p><input type="checkbox" checked class="form-checkbox h-5 w-5 text-purple-600 rounded-full border-gray-300"></div><button onclick="simulateSettingsSave()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Shrani nastavitve</button><p id="settingsResult" class="mt-4 text-center"></p>' 
+            },
+            'profile-logout': { 
+                title: 'Odjava', 
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Ali se res želite odjaviti?</h2>
+                    <div class="flex gap-4 mt-4 w-full">
+                        <button onclick="handleLogout()" class="w-full p-3 text-center rounded-lg bg-red-600 hover:bg-red-700">Potrdi odjavo</button>
+                        <button onclick="goBack()" class="w-full p-3 text-center rounded-lg bg-gray-600 hover:bg-gray-700">Prekliči</button>
+                    </div>
+                `
+            },
+            'profile-help': {
+                title: 'Pomoč',
+                content: `
+                    <div class="w-full text-left h-full overflow-y-auto pb-16 pr-2">
+                        <h2 class="text-xl font-bold mb-4 text-center">Pomoč in podpora</h2>
+                        
+                        <h3 class="text-lg font-semibold mt-6 mb-2">Pogosta vprašanja</h3>
+                        <div class="space-y-4">
+                            <div class="bg-[#210d32] p-3 rounded-lg">
+                                <p class="font-semibold">Kako naložim denar na račun?</p>
+                                <p class="text-sm text-gray-300 mt-1">Denar lahko naložite preko bančnega nakazila, kripto nakazila ali s skeniranjem QR kode v meniju 'Denarnica' -> 'Naloži'.</p>
+                            </div>
+                            <div class="bg-[#210d32] p-3 rounded-lg">
+                                <p class="font-semibold">Ali je uporaba aplikacije varna?</p>
+                                <p class="text-sm text-gray-300 mt-1">Da, uporabljamo najnovejše varnostne standarde za zaščito vaših sredstev in podatkov.</p>
+                            </div>
+                            <div class="bg-[#210d32] p-3 rounded-lg">
+                                <p class="font-semibold">Kaj storim, če pozabim geslo?</p>
+                                <p class="text-sm text-gray-300 mt-1">Na prijavnem zaslonu kliknite na 'Pozabljeno geslo' in sledite navodilom za ponastavitev.</p>
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-semibold mt-8 mb-2">Kontakt za podporo</h3>
+                        <div class="bg-[#210d32] p-3 rounded-lg">
+                            <p>Če potrebujete dodatno pomoč, nas lahko kontaktirate:</p>
+                            <p class="mt-2"><strong>E-pošta:</strong> podpora@bcps.si</p>
+                            <p><strong>Telefon:</strong> +386 1 234 567</p>
+                            <p class="text-sm text-gray-400">(Delovni čas: Pon-Pet, 9:00 - 17:00)</p>
+                        </div>
+                    </div>
+                `
+            },
+
+            'load-bank-transfer': { 
+                title: 'Bančno nakazilo',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Bančno nakazilo</h2>
+                    <p>Prosimo, nakažite sredstva na spodnje podatke:<br><strong>BIC/SWIFT:</strong> ABCDEF123<br><strong>IBAN:</strong> SI12 3456 7890 1234 567<br><strong>Namen:</strong> Vaše uporabniško ime</p>
+                    <div class="my-4 text-gray-400">ali</div>
+                    <button onclick="simulateQrScan('load')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
+                        Skeniraj QR kodo
+                    </button>
+                `
+            },
+            'load-crypto': { 
+                title: 'Kripto sredstva',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Kripto sredstva</h2>
+                    <p>Prosimo, pošljite kripto sredstva na spodnjo denarnico:<br><strong>Naslov:</strong> 1A2b3C4d5E6f7G8h9I0j<br><strong>Opomba:</strong> Podprti so BTC, ETH, USDT</p>
+                    <div class="my-4 text-gray-400">ali</div>
+                    <button onclick="simulateQrScan('load')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
+                        Skeniraj QR kodo
+                    </button>
+                `
+            },
+             'load-history': {
+                title: 'Zgodovina pologov',
+                content: `
+                    <div class="w-full">
+                        <h2 class="text-xl font-bold mb-4">Zgodovina pologov</h2>
+                        <ul class="w-full text-left space-y-4">
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Bančno nakazilo</p>
+                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-green-400">+100.00 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Kripto polog (BTC)</p>
+                                    <p class="text-xs text-gray-400">05. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-green-400">+250.50 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">QR polog</p>
+                                    <p class="text-xs text-gray-400">01. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-green-400">+50.00 BCPS</span>
+                            </li>
+                        </ul>
+                    </div>
+                `
+            },
+
+            'withdraw-bank-transfer': { 
+                title: 'Bančno nakazilo',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Bančno nakazilo</h2>
+                    <p>Izberite bančni račun za dvig.</p>
+                    <select class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><option>SI12 3456...</option><option>SI98 7654...</option></select>
+                    <input type="number" id="withdrawAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                    <button onclick="simulateWithdraw()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Dvigni</button>
+                    <div class="my-4 text-gray-400">ali</div>
+                    <button onclick="simulateQrScan('withdraw')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
+                        Skeniraj QR kodo
+                    </button>
+                    <p id="withdrawResult" class="mt-4 text-center"></p>
+                `
+            },
+            'withdraw-cold-wallet': { 
+                title: 'Hladna denarnica',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Hladna denarnica</h2>
+                    <p>Izberite denarnico za dvig.</p>
+                    <select class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><option>0xAbC...</option><option>0xDeF...</option></select>
+                    <input type="number" id="withdrawAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                    <button onclick="simulateWithdraw()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Dvigni</button>
+                    <div class="my-4 text-gray-400">ali</div>
+                    <button onclick="simulateQrScan('withdraw')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
+                        Skeniraj QR kodo
+                    </button>
+                    <p id="withdrawResult" class="mt-4 text-center"></p>
+                `
+            },
+            'withdraw-history': {
+                title: 'Zgodovina dvigov',
+                content: `
+                    <div class="w-full h-full overflow-y-auto pb-16 pr-2">
+                        <h2 class="text-xl font-bold mb-4 text-center">Zgodovina dvigov</h2>
+                        <ul class="w-full text-left space-y-4">
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Bančni dvig</p>
+                                    <p class="text-xs text-gray-400">11. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-50.00 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Dvig na Hladno denarnico</p>
+                                    <p class="text-xs text-gray-400">07. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-150.00 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">QR dvig na bankomatu</p>
+                                    <p class="text-xs text-gray-400">02. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-20.00 BCPS</span>
+                            </li>
+                        </ul>
+                    </div>
+                `
+            },
+
+            'pay-bcps-form': { 
+                title: 'Plačilo z BCPS',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Plačilo z BCPS</h2>
+                    <p>Vnesite podatke člana BCPS, da mu plačate račun.</p>
+                    <input type="text" placeholder="Uporabniško ime ali ID" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4">
+                    <input type="number" id="payAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                    <button onclick="simulatePayment()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Plačaj</button>
+                    <div class="my-4 text-gray-400">ali</div>
+                    <button onclick="simulateQrScan('pay')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
+                        Skeniraj QR kodo
+                    </button>
+                    <p id="paymentResult" class="mt-4 text-center"></p>`
+            },
+            'pay-nfc': {
+                title: 'NFC plačilo',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">NFC Plačilo</h2>
+                    <p>Prislonite telefon k plačilnemu terminalu.</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32 mx-auto mt-6 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8.667 15.333H5.333a2 2 0 01-2-2V5.333a2 2 0 012-2h13.334a2 2 0 012 2v8a2 2 0 01-2 2h-3.334M12 19.333v-4M10 17.333h4" />
+                    </svg>
+                `
+            },
+            'pay-bank-transfer-form': { 
+                title: 'Bančni transfer',
+                content: `
+                    <h2 class="text-xl font-bold mb-4">Bančni transfer</h2>
+                    <p>Vnesite podatke za plačilo na bančni račun.</p>
+                    <input type="text" placeholder="IBAN" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4">
+                    <input type="number" id="payAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                    <button onclick="simulatePayment()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#210d32] hover:bg-[#5a1c97]">Plačaj</button>
+                    <div class="my-4 text-gray-400">ali</div>
+                    <button onclick="simulateQrScan('pay')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
+                        Skeniraj QR kodo
+                    </button>
+                    <p id="paymentResult" class="mt-4 text-center"></p>`
+            },
+            'pay-history': {
+                title: 'Zgodovina plačil',
+                content: `
+                    <div class="w-full">
+                        <h2 class="text-xl font-bold mb-4">Zgodovina plačil</h2>
+                        <ul class="w-full text-left space-y-4">
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Nakup v trgovini</p>
+                                    <p class="text-xs text-gray-400">12. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-55.00 BCPS</span>
+                            </li>
+                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">Plačilo položnice</p>
+                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                </div>
+                                <span class="text-lg text-red-400">-30.00 BCPS</span>
+                            </li>
+                        </ul>
+                    </div>
+                `
+            },
+            
+            'advanced-split-bill': { 
+                title: 'Razdeli račun',
+                content: `
+                    <div class="w-full text-left">
+                        <h2 class="text-xl font-bold mb-4 text-center">Razdeli račun</h2>
+                        <p class="mb-4 text-center">Izberite plačilo iz zgodovine, ki ga želite razdeliti.</p>
+                        <div id="payment-history-for-split" class="space-y-2 mb-4">
+                            <div onclick="selectPaymentToSplit(55.00, 'Nakup v trgovini')" class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-[#3f1167]">
+                                <div>
+                                    <p class="font-semibold">Nakup v trgovini</p>
+                                    <p class="text-xs text-gray-400">12. 09. 2025</p>
+                                </div>
+                                <span class="text-lg font-semibold">-55.00 BCPS</span>
+                            </div>
+                            <div onclick="selectPaymentToSplit(30.00, 'Plačilo položnice')" class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-[#3f1167]">
+                                <div>
+                                    <p class="font-semibold">Plačilo položnice</p>
+                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                </div>
+                                <span class="text-lg font-semibold">-30.00 BCPS</span>
+                            </div>
+                        </div>
+                        <div id="split-details-section" class="hidden">
+                            <p id="selectedPaymentText" class="mb-2 text-center"></p>
+                            <input type="text" id="splitUsers" placeholder="Uporabniki (ID-ji, ločeni z vejico)" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                            <button onclick="simulateSplitBill()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Razdeli</button>
+                            <p id="splitResult" class="mt-4 text-center"></p>
+                        </div>
+                    </div>
+                ` 
+            },
+            'advanced-cold-wallet': { 
+                title: 'Cold walleti',
+                content: '<h2 class="text-xl font-bold mb-4">Cold walleti</h2><p>Upravljajte svoje cold wallete.</p><ul class="list-disc list-inside space-y-2 mt-4"><li>Prednastavljeni wallet: 0xAbC...</li></ul><button class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Dodaj nov cold wallet</button>' 
+            },
+            'advanced-bank-accreditive': { 
+                title: 'Bančni akreditiv',
+                content: `
+                    <div class="w-full text-left">
+                        <h2 class="text-xl font-bold mb-4 text-center">Bančni akreditiv</h2>
+                        <p class="mb-4 text-center text-sm">Ustvarite bančni akreditiv za varno plačilo po izpolnitvi določenih pogojev.</p>
+                        
+                        <input type="text" id="accreditiveRecipient" placeholder="Prejemnik (ID)" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                        <input type="number" id="accreditiveAmount" placeholder="Znesek v BCPS" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                        <input type="date" id="accreditiveExpiry" placeholder="Datum poteka" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
+                        <textarea id="accreditiveConditions" placeholder="Pogoji za izplačilo" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2 h-24"></textarea>
+
+                        <button onclick="simulateBankAccreditive()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Ustvari akreditiv</button>
+                        <p id="accreditiveResult" class="mt-4 text-center"></p>
+                    </div>
+                `
+            },
+            'advanced-invest': {
+                title: 'Investiraj',
+                content: `
+                    <div class="w-full text-left h-full overflow-y-auto pb-16">
+                        <h2 class="text-xl font-bold mb-4 text-center">Priložnosti za investiraje</h2>
+                        <p class="mb-6 text-center text-sm">Izberite sklad za investicijo vaših BCPS sredstev.</p>
+
+                        <div class="space-y-4">
+                            <div class="bg-[#210d32] p-4 rounded-lg">
+                                <div class="flex justify-between items-start gap-2">
+                                    <h3 class="font-semibold text-lg flex-1">BCPS Uravnoteženi Sklad</h3>
+                                    <span class="text-sm bg-yellow-500 text-black px-2 py-1 rounded-full whitespace-nowrap">Srednje tveganje</span>
+                                </div>
+                                <p class="text-sm text-gray-300 mt-2">Diverzificiran portfelj delnic in obveznic za stabilno rast.</p>
+                                <p class="mt-2 font-bold text-green-400">Donos (1L): +8.5%</p>
+                                <div class="mt-4 flex items-center gap-2">
+                                    <input type="number" id="invest-amount-1" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#2b0b45] border border-[#3f1167] text-white">
+                                    <button onclick="simulateInvestment('BCPS Uravnoteženi Sklad', 1)" class="p-2 px-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] whitespace-nowrap">Investiraj</button>
+                                </div>
+                            </div>
+
+                            <div class="bg-[#210d32] p-4 rounded-lg">
+                                <div class="flex justify-between items-start gap-2">
+                                    <h3 class="font-semibold text-lg flex-1">BCPS Tehnološki Sklad</h3>
+                                    <span class="text-sm bg-red-500 text-white px-2 py-1 rounded-full whitespace-nowrap">Visoko tveganje</span>
+                                </div>
+                                <p class="text-sm text-gray-300 mt-2">Naložbe v vodilna tehnološka podjetja z visokim potencialom rasti.</p>
+                                <p class="mt-2 font-bold text-green-400">Donos (1L): +15.2%</p>
+                                <div class="mt-4 flex items-center gap-2">
+                                    <input type="number" id="invest-amount-2" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#2b0b45] border border-[#3f1167] text-white">
+                                    <button onclick="simulateInvestment('BCPS Tehnološki Sklad', 2)" class="p-2 px-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] whitespace-nowrap">Investiraj</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-[#210d32] p-4 rounded-lg">
+                                <div class="flex justify-between items-start gap-2">
+                                    <h3 class="font-semibold text-lg flex-1">BCPS Varni Pristan</h3>
+                                    <span class="text-sm bg-green-500 text-black px-2 py-1 rounded-full whitespace-nowrap">Nizko tveganje</span>
+                                </div>
+                                <p class="text-sm text-gray-300 mt-2">Konzervativne naložbe v državne obveznice za ohranjanje vrednosti.</p>
+                                <p class="mt-2 font-bold text-green-400">Donos (1L): +3.1%</p>
+                                <div class="mt-4 flex items-center gap-2">
+                                    <input type="number" id="invest-amount-3" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#2b0b45] border border-[#3f1167] text-white">
+                                    <button onclick="simulateInvestment('BCPS Varni Pristan', 3)" class="p-2 px-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] whitespace-nowrap">Investiraj</button>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <p id="investmentResult" class="mt-4 text-center"></p>
+                    </div>
+                `
+            },
+        };
+
+        let history = ['login'];
+        let isLoggedIn = false;
+        let balanceBCPS = 100.00;
+        let isBalanceVisible = true;
+        let selectedSplitPayment = null;
+
+        function renderView(viewName) {
+            const menuContainer = document.getElementById('menu-container');
+            const navButtons = document.getElementById('nav-buttons');
+            const viewData = views[viewName];
+
+            if (!viewData) {
+                console.error('View not found:', viewName);
+                return;
+            }
+            
+            if (!isLoggedIn && viewName !== 'login') {
+                history = ['login'];
+                renderView('login');
+                return;
+            }
+
+            // Centralize content inside the menu container
+            menuContainer.className = 'view-content w-full h-full flex flex-col items-center justify-center p-4';
+            let finalHtml = '';
+
+            const showBalance = isLoggedIn && (viewName === 'main' || viewName === 'wallet' || viewName.startsWith('wallet-') || viewName === 'pay');
+
+            if (showBalance) {
+                const balanceEUR = (balanceBCPS / 1.1).toFixed(2);
+                let transactionIconHtml = '';
+                if (viewName !== 'main' && viewName !== 'pay') {
+                    transactionIconHtml = `
+                        <div class="transactions-icon" onclick="navigateTo('wallet-transactions')" title="Zgodovina transakcij">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    `;
+                }
+                
+                const balanceTitle = viewName === 'main' ? 'Stanje na računu' : 'Stanje denarnice';
+
+                const balanceContent = `
+                    <div class="bg-[#3f1167] p-4 rounded-xl shadow-lg mb-6 w-full text-center relative">
+                        <h2 class="text-xl font-bold">${balanceTitle}</h2>
+                        <div id="balance-display" class="mt-2">
+                            <p class="text-4xl font-bold" id="bcps-balance">${balanceBCPS.toFixed(2)} BCPS</p>
+                            <p class="text-sm text-gray-400 mt-1" id="eur-balance">(${balanceEUR} EUR)</p>
+                        </div>
+                        ${transactionIconHtml}
+                    </div>
+                `;
+                finalHtml += balanceContent;
+            }
+
+            if (viewData.menu) {
+                let menuHtml = `<div class="w-full text-center mb-6"> <h1 class="text-2xl font-bold">${viewData.title}</h1></div><div class="w-full flex flex-col items-center h-full">`;
+                
+                menuHtml += `<div class="grid-container mb-6">`;
+                viewData.menu.forEach(item => {
+                    const iconClass = (viewName === 'main') ? 'main-menu-icon' : 'w-8 h-8';
+                    const buttonClass = (viewName.startsWith('wallet-') || viewName === 'pay' || viewName === 'wallet' ) ? 'menu-button-small' : 'menu-button-big';
+                    
+                    menuHtml += `<button onclick="navigateTo('${item.nextView}')" class="${buttonClass} flex flex-col items-center justify-center rounded-xl shadow-lg p-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="${iconClass} text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        ${item.icon || '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16z" />'}
+                                    </svg>
+                                    <span class="mt-2 text-white text-xs text-center">${item.name}</span>
+                                </button>`;
+                });
+                menuHtml += `</div></div>`;
+                finalHtml += menuHtml;
+                
+            } else if (viewData.content) {
+                if (viewName === 'advanced-invest') {
+                    // For the investment view, remove horizontal padding and align content to the top
+                    finalHtml += `<div class="w-full h-full flex flex-col items-center justify-start">${viewData.content}</div>`;
+                } else {
+                    finalHtml += `<div class="p-6 text-center view-content w-full h-full flex flex-col items-center justify-center">${viewData.content}</div>`;
+                }
+            }
+
+            menuContainer.innerHTML = finalHtml;
+
+            if (showBalance) {
+                updateBalanceDisplay();
+            }
+
+            if (viewName === 'main' || viewName === 'login') {
+                navButtons.classList.add('hidden');
+            } else {
+                navButtons.classList.remove('hidden');
+            }
+        }
+        
+        function updateBalanceDisplay() {
+            const bcpsBalanceElement = document.getElementById('bcps-balance');
+            const eurBalanceElement = document.getElementById('eur-balance');
+            
+            if (!bcpsBalanceElement) return;
+
+            if (isBalanceVisible) {
+                bcpsBalanceElement.innerText = `${balanceBCPS.toFixed(2)} BCPS`;
+                eurBalanceElement.innerText = `(${(balanceBCPS / 1.1).toFixed(2)} EUR)`;
+            } else {
+                bcpsBalanceElement.innerText = `***.** BCPS`;
+                eurBalanceElement.innerText = `(***.** EUR)`;
+            }
+        }
+        
+        function toggleBalance() {
+            isBalanceVisible = !isBalanceVisible;
+            updateBalanceDisplay();
+        }
+
+        function navigateTo(viewName) {
+            if (history[history.length - 1] !== viewName) {
+                history.push(viewName);
+            }
+            renderView(viewName);
+        }
+
+        function goBack() {
+            if (history.length > 1) {
+                const currentView = history.pop();
+                // If going back from logout confirmation, go to profile, not main
+                if (currentView === 'profile-logout' && history[history.length-1] === 'main') {
+                    history.push('profile');
+                }
+                renderView(history[history.length - 1]);
+            }
+        }
+
+        function goHome() {
+            history = ['main'];
+            renderView('main');
+        }
+        
+        function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('loginError');
+
+            if (username && password) {
+                isLoggedIn = true;
+                errorElement.innerText = '';
+                navigateTo('main');
+            } else {
+                errorElement.innerText = 'Prosimo, vnesite uporabniško ime in geslo.';
+            }
+        }
+        
+        function handleLogout() {
+            isLoggedIn = false;
+            history = ['login'];
+            renderView('login');
+        }
+
+        function showSuccessModal(amount, newBalance, transactionType) {
+            const modalContainer = document.getElementById('modal-container');
+            
+            let typeText = 'Transakcija';
+            if (transactionType === 'pay') {
+                typeText = 'Plačilo';
+            } else if (transactionType === 'withdraw') {
+                typeText = 'Dvig';
+            } else if (transactionType === 'load') {
+                typeText = 'Polog';
+            }
+
+            const modalHtml = `
+                <div class="modal">
+                    <div class="modal-content">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <h3 class="text-2xl font-bold mb-2">Uspešno!</h3>
+                        <p class="mb-4">${typeText} zneska **${amount.toFixed(2)} BCPS** je bil uspešno izveden.</p>
+                        <p class="mb-6">Novo stanje: **${newBalance.toFixed(2)} BCPS**</p>
+                        <button onclick="closeModal()" class="w-full p-3 rounded-lg bg-green-600 hover:bg-green-700 font-bold">Zapri</button>
+                    </div>
+                </div>
+            `;
+            modalContainer.innerHTML = modalHtml;
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').innerHTML = '';
+            goHome();
+        }
+
+        function simulateQrScan(transactionType) {
+            let amount, description, details;
+            
+            if (transactionType === 'pay') {
+                amount = (Math.random() * 50 + 10);
+                description = "Plačilo računa v trgovini";
+                details = `<p>Znesek: <span class="text-2xl font-bold">${amount.toFixed(2)} BCPS</span></p><p>Opis: ${description}</p>`;
+            } else if (transactionType === 'withdraw') {
+                amount = (Math.random() * 20 + 5);
+                description = "Dvig sredstev na bankomat";
+                details = `<p>Znesek: <span class="text-2xl font-bold">${amount.toFixed(2)} BCPS</span></p><p>Opis: ${description}</p>`;
+            } else if (transactionType === 'load') {
+                amount = (Math.random() * 100 + 20);
+                description = "Nalaganje sredstev preko QR";
+                details = `<p>Znesek: <span class="text-2xl font-bold">${amount.toFixed(2)} BCPS</span></p><p>Opis: ${description}</p>`;
+            }
+
+            const confirmContent = `
+                <h2 class="text-xl font-bold mb-4">Potrditev transakcije</h2>
+                <p class="mb-4">Prosimo, potrdite podrobnosti transakcije:</p>
+                <div class="bg-[#210d32] p-4 rounded-lg text-left w-full space-y-2">
+                    ${details}
+                </div>
+                <div class="mt-6 flex flex-col space-y-4 w-full">
+                    <button onclick="confirmQrTransaction(${amount}, '${transactionType}')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Potrdi</button>
+                    <button onclick="goBack()" class="w-full p-3 text-center rounded-lg bg-gray-600 hover:bg-gray-700">Prekliči</button>
+                </div>
+            `;
+            
+            const menuContainer = document.getElementById('menu-container');
+            menuContainer.innerHTML = `<div class="p-6 text-center view-content w-full h-full flex flex-col items-center justify-center">${confirmContent}</div>`;
+        }
+        
+        function confirmQrTransaction(amount, transactionType) {
+            if (transactionType === 'load') {
+                balanceBCPS += amount;
+                showSuccessModal(amount, balanceBCPS, transactionType);
+                return;
+            }
+
+            if (amount > 0 && balanceBCPS >= amount) {
+                balanceBCPS -= amount;
+                showSuccessModal(amount, balanceBCPS, transactionType);
+            } else {
+                const errorMessage = `
+                    <h2 class="text-xl font-bold mb-4">Transakcija neuspešna</h2>
+                    <p>Premalo sredstev! Potrebujete ${amount.toFixed(2)} BCPS, imate pa samo ${balanceBCPS.toFixed(2)} BCPS.</p>
+                    <button onclick="goBack()" class="w-full p-3 mt-4 text-center rounded-lg bg-gray-600 hover:bg-gray-700">Nazaj</button>
+                `;
+                document.getElementById('menu-container').innerHTML = `<div class="p-6 text-center view-content w-full h-full flex flex-col items-center justify-center">${errorMessage}</div>`;
+            }
+        }
+        
+        function simulateSendBcps() {
+            const recipient = document.getElementById('recipientId').value;
+            const amount = parseFloat(document.getElementById('amountId').value);
+            const resultElement = document.getElementById('sendResult');
+
+            if (recipient && amount > 0 && balanceBCPS >= amount) {
+                balanceBCPS -= amount;
+                showSuccessModal(amount, balanceBCPS, 'pay');
+            } else if (!recipient || !amount) {
+                resultElement.innerText = 'Prosimo, vnesite vse podatke.';
+            } else {
+                resultElement.innerText = 'Transakcija neuspesna: Premalo sredstev!';
+            }
+        }
+
+        function simulateSendCrypto() {
+            const address = document.getElementById('walletAddress').value;
+            const amount = parseFloat(document.getElementById('cryptoAmount').value);
+            const resultElement = document.getElementById('sendResult');
+
+            if (address && amount > 0) {
+                resultElement.innerText = `Simulacija: Poslali ste ${amount.toFixed(2)} kriptovalut na naslov ${address}.`;
+            } else {
+                resultElement.innerText = 'Prosimo, vnesite vse podatke.';
+            }
+        }
+
+        function simulateProfileEdit() {
+            const resultElement = document.getElementById('editResult');
+            resultElement.innerText = 'Simulacija: Profil uspesno posodobljen!';
+        }
+
+        function simulateSettingsSave() {
+            const resultElement = document.getElementById('settingsResult');
+            resultElement.innerText = 'Simulacija: Nastavitve uspesno shranjene!';
+        }
+
+        function simulateWithdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            const resultElement = document.getElementById('withdrawResult');
+
+            if (amount > 0 && balanceBCPS >= amount) {
+                balanceBCPS -= amount;
+                showSuccessModal(amount, balanceBCPS, 'withdraw');
+            } else if (!amount) {
+                 resultElement.innerText = 'Prosimo, vnesite znesek.';
+            } else {
+                resultElement.innerText = 'Transakcija neuspesna: Premalo sredstev!';
+            }
+        }
+
+        function simulatePayment() {
+            const amount = parseFloat(document.getElementById('payAmount').value);
+            const resultElement = document.getElementById('paymentResult');
+
+            if (amount > 0 && balanceBCPS >= amount) {
+                balanceBCPS -= amount;
+                showSuccessModal(amount, balanceBCPS, 'pay');
+            } else if (!amount) {
+                 resultElement.innerText = 'Prosimo, vnesite znesek.';
+            } else {
+                resultElement.innerText = 'Transakcija neuspesna: Premalo sredstev!';
+            }
+        }
+
+        function simulateSplitBill() {
+            const users = document.getElementById('splitUsers').value;
+            const resultElement = document.getElementById('splitResult');
+
+            if (selectedSplitPayment && users) {
+                const userList = users.split(',').map(u => u.trim());
+                const splitAmount = (selectedSplitPayment.amount / (userList.length + 1)).toFixed(2);
+                
+                resultElement.innerText = `Zahtevki za plačilo v višini ${splitAmount} BCPS so bili poslani uporabnikom: ${userList.join(', ')}.`;
+                
+                // Reset after splitting
+                selectedSplitPayment = null;
+                setTimeout(() => {
+                    document.getElementById('split-details-section').classList.add('hidden');
+                    document.getElementById('payment-history-for-split').classList.remove('hidden');
+                    document.getElementById('splitUsers').value = '';
+                    resultElement.innerText = '';
+                }, 3000);
+
+
+            } else if (!users) {
+                resultElement.innerText = 'Prosimo, vnesite uporabnike za delitev.';
+            } else {
+                resultElement.innerText = 'Napaka: Najprej izberite plačilo.';
+            }
+        }
+        
+        function selectPaymentToSplit(amount, description) {
+            selectedSplitPayment = { amount, description };
+            document.getElementById('payment-history-for-split').classList.add('hidden');
+            const splitDetailsSection = document.getElementById('split-details-section');
+            const selectedPaymentText = document.getElementById('selectedPaymentText');
+            
+            selectedPaymentText.innerText = `Izbrano plačilo: ${description} (${amount.toFixed(2)} BCPS)`;
+            splitDetailsSection.classList.remove('hidden');
+        }
+
+        function simulateBankAccreditive() {
+            const recipient = document.getElementById('accreditiveRecipient').value;
+            const amount = parseFloat(document.getElementById('accreditiveAmount').value);
+            const expiry = document.getElementById('accreditiveExpiry').value;
+            const conditions = document.getElementById('accreditiveConditions').value;
+            const resultElement = document.getElementById('accreditiveResult');
+
+            if (recipient && amount > 0 && expiry && conditions && balanceBCPS >= amount) {
+                balanceBCPS -= amount;
+                resultElement.innerText = `Akreditiv v višini ${amount.toFixed(2)} BCPS za prejemnika ${recipient} je bil uspešno ustvarjen. Sredstva so rezervirana.`;
+                updateBalanceDisplay(); // Update balance display in header if visible
+            } else if (balanceBCPS < amount) {
+                resultElement.innerText = 'Napaka: Premalo sredstev na računu.';
+            } else {
+                resultElement.innerText = 'Napaka: Prosimo, izpolnite vsa polja.';
+            }
+        }
+
+        function simulateInvestment(fundName, fundId) {
+            const amount = parseFloat(document.getElementById(`invest-amount-${fundId}`).value);
+            const resultElement = document.getElementById('investmentResult');
+
+            if (amount > 0 && balanceBCPS >= amount) {
+                balanceBCPS -= amount;
+                resultElement.innerText = `Uspešno ste investirali ${amount.toFixed(2)} BCPS v sklad "${fundName}".`;
+                resultElement.classList.remove('text-red-400');
+                resultElement.classList.add('text-green-400');
+                updateBalanceDisplay(); // This will only work if the balance is visible on the current screen
+                document.getElementById(`invest-amount-${fundId}`).value = '';
+
+                // Also update balance in the header if it's currently displayed there
+                const headerBalance = document.getElementById('bcps-balance');
+                if(headerBalance) updateBalanceDisplay();
+
+            } else if (balanceBCPS < amount) {
+                resultElement.innerText = 'Napaka: Premalo sredstev na računu.';
+                resultElement.classList.add('text-red-400');
+                resultElement.classList.remove('text-green-400');
+            } else {
+                resultElement.innerText = 'Napaka: Prosimo, vnesite veljaven znesek.';
+                resultElement.classList.add('text-red-400');
+                resultElement.classList.remove('text-green-400');
+            }
+        }
+
+        // Initial render on page load
+        renderView('login');
+    </script>
+</body>
+</html>
