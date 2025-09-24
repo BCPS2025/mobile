@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="sl">
 <head>
@@ -15,10 +16,10 @@
             background-color: #111111; /* Darker grey for frame */
         }
         .app-screen {
-            background-color: #010079; /* Navy */
+            background-color: #000030; /* Navy */
         }
         .menu-button, .transactions-button, .menu-button-small, .menu-button-big {
-            background-color: #1E1E1E; /* Charcoal Grey */
+            background-color: #000040; /* Navy */
             border: 1px solid #40E0D0; /* Aqua border */
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -719,7 +720,7 @@
                 const balanceTitle = viewName === 'main' ? 'Stanje na računu' : 'Stanje denarnice';
 
                 const balanceContent = `
-                    <div class="bg-[#1E1E1E] border border-[#40E0D0] p-4 rounded-xl shadow-lg mb-6 w-full text-center relative">
+                    <div class="bg-[#000040] border border-[#40E0D0] p-4 rounded-xl shadow-lg mb-6 w-full text-center relative">
                         <h2 class="text-xl font-bold">${balanceTitle}</h2>
                         <div id="balance-display" class="mt-2">
                             <p class="text-4xl font-bold" id="bcps-balance">${balanceBCPS.toFixed(2)} BCPS</p>
