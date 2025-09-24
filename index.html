@@ -8,28 +8,30 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #121212;
+            background-color: #1E1E1E; /* Charcoal Grey */
             color: white;
         }
         .phone-frame {
-            background-color: #1a1a1a;
+            background-color: #111111; /* Darker grey for frame */
         }
         .app-screen {
-            background-color: #2b0b45; /* A slightly brighter purple shade */
+            background-color: #010079; /* Navy */
         }
-        .menu-button {
-            background-color: #3f1167; /* A brighter purple shade for buttons */
-            transition: transform 0.2s;
+        .menu-button, .transactions-button, .menu-button-small, .menu-button-big {
+            background-color: #1E1E1E; /* Charcoal Grey */
+            border: 1px solid #40E0D0; /* Aqua border */
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .menu-button:hover {
+        .menu-button:hover, .transactions-button:hover, .menu-button-small:hover, .menu-button-big:hover {
             transform: scale(1.05);
+            box-shadow: 0 0 10px #40E0D0; /* Aqua glow on hover */
         }
         .bcps-logo {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            opacity: 0.1;
+            opacity: 0.05;
             z-index: 0;
             width: 80%;
             height: auto;
@@ -68,7 +70,8 @@
             align-items: center;
         }
         .modal-content {
-            background-color: #2b0b45;
+            background-color: #1E1E1E; /* Charcoal Grey */
+            border: 1px solid #40E0D0;
             padding: 24px;
             border-radius: 12px;
             text-align: center;
@@ -89,13 +92,6 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
-        .transactions-button {
-            background-color: #3f1167;
-            transition: transform 0.2s;
-        }
-        .transactions-button:hover {
-            transform: scale(1.03);
-        }
 
         /* Smaller icons inside buttons to prevent overlap */
         .nav-icon {
@@ -114,12 +110,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(64, 224, 208, 0.1);
             border-radius: 50%;
             transition: background-color 0.2s;
         }
         .transactions-icon:hover {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(64, 224, 208, 0.2);
         }
 
         /* Adjusted menu button sizes to fix overlap */
@@ -132,12 +128,6 @@
             justify-content: center;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            background-color: #3f1167;
-            transition: transform 0.2s;
-        }
-        
-        .menu-button-small:hover {
-            transform: scale(1.05);
         }
         
         /* Adjusted icon size for main menu */
@@ -156,12 +146,6 @@
             justify-content: center;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            background-color: #3f1167;
-            transition: transform 0.2s;
-        }
-
-        .menu-button-big:hover {
-            transform: scale(1.05);
         }
 
         /* Custom scrollbar styling */
@@ -169,21 +153,21 @@
             width: 8px;
         }
         .overflow-y-auto::-webkit-scrollbar-track {
-            background: #210d32;
+            background: #010050; /* Darker Navy */
             border-radius: 10px;
         }
         .overflow-y-auto::-webkit-scrollbar-thumb {
-            background-color: #5a1c97;
+            background-color: #00CED1; /* Turquoise */
             border-radius: 10px;
-            border: 2px solid #210d32;
+            border: 2px solid #010050;
         }
         .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-            background-color: #7e22ce;
+            background-color: #40E0D0; /* Aqua */
         }
 
     </style>
 </head>
-<body class="bg-[#121212] flex items-center justify-center min-h-screen">
+<body class="bg-[#1E1E1E] flex items-center justify-center min-h-screen">
 
     <div class="phone-frame relative w-80 h-[640px] rounded-[40px] shadow-2xl p-2 overflow-hidden">
         <div class="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-gray-800 rounded-b-xl z-20"></div>
@@ -225,10 +209,10 @@
                     <div class="w-full text-center">
                         <img src="Logo_9-transparent.png" alt="BCPS Logo" class="w-32 h-auto mx-auto mb-6">
                         <h2 class="text-2xl font-bold mb-6">Dobrodošli</h2>
-                        <input type="text" id="username" placeholder="Uporabniško ime" class="w-full p-3 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4">
-                        <input type="password" id="password" placeholder="Geslo" class="w-full p-3 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                        <button onclick="handleLogin()" class="w-full p-3 mt-6 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Prijava</button>
-                        <p id="loginError" class="mt-4 text-center text-red-400"></p>
+                        <input type="text" id="username" placeholder="Uporabniško ime" class="w-full p-3 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4">
+                        <input type="password" id="password" placeholder="Geslo" class="w-full p-3 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                        <button onclick="handleLogin()" class="w-full p-3 mt-6 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Prijava</button>
+                        <p id="loginError" class="mt-4 text-center text-[#FF8C00]"></p>
                     </div>
                 `
             },
@@ -247,7 +231,7 @@
                     { name: 'Naloži', icon: '<path d="M19 14l-7 7m0 0l-7-7m7 7V3" />', nextView: 'wallet-load' },
                     { name: 'Dvigni', icon: '<path d="M5 10l7-7m0 0l7 7m-7-7v18" />', nextView: 'wallet-withdraw' },
                     { name: 'Plačaj', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />', nextView: 'pay' },
-                    { name: 'Napredne funkcije', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.008 1.11-1.212.55-.203 1.18-.203 1.73 0 .55.204 1.02.67 1.11 1.212l.094.486c.204.04.407.087.61.14.202.053.398.114.586.182.188.068.37.142.546.224l.41-.18c.51-.227 1.08-.203 1.54.06.46.262.77.738.77 1.272l0 .028c-.03.542-.32.992-.72 1.29l-.38.272c.03.18.05.36.07.534.02.176.03.354.03.534s-.01.358-.03.534a7.44 7.44 0 01-.07.534l.38.272c.4.3.69.75.72 1.29l0 .028c0 .534-.31.992-.77 1.272-.46.263-1.03.287-1.54.06l-.41-.18a7.44 7.44 0 01-.546.224c-.188.068-.384.128-.586.182-.203.053-.406.1-.61.14l-.094.486c-.09.542-.56 1.008-1.11 1.212-.55.203-1.18.203-1.73 0-.55-.204-1.02-.67-1.11-1.212l-.094-.486a7.44 7.44 0 01-.61-.14c-.202-.053-.398-.114-.586-.182-.188-.068-.37-.142-.546-.224l-.41.18c-.51.227-1.08.203-1.54-.06-.46-.262-.77-.738-.77-1.272l0-.028c.03-.542.32-.992.72-1.29l.38-.272a7.44 7.44 0 01.07-.534c.02-.176.03-.354.03-.534s-.01-.358-.03-.534a7.44 7.44 0 01-.07-.534l-.38-.272c-.4-.3-.69-.75-.72-1.29l0-.028c0-.534.31-.992.77-1.272.46-.263 1.03-.287 1.54-.06l.41.18a7.44 7.44 0 01.546-.224c.188-.068.384-.128.586-.182.203-.053.406-.1.61-.14l.094-.486zM12 15a3 3 0 100-6 3 3 0 000 6z" />', nextView: 'wallet-advanced' }
+                    { name: 'Napredne funkcije', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.008 1.11-1.212.55-.203 1.18-.203 1.73 0 .55.204 1.02.67 1.11 1.212l.094.486c.204.04.407.087.61.14.202.053.398.114.586.182.188.068.37.142.546.224l.41-.18c.51-.227 1.08-.203 1.54.06.46.262.77.738.77 1.272l0 .028c-.03.542-.32.992-.72 1.29l-.38.272c.03.18.05.36.07.534.02.176.03.354.03.534s-.01.358-.03.534a7.44 7.44 0 01-.07.534l.38.272c.4.3.69.75.72 1.29l0 .028c0 .534-.31.992-.77 1.272-.46.263-1.03.287-1.54.06l-.41-.18a7.44 7.44 0 01-.546.224c-.188.068-.384.128-.586.182-.203.053-.406.1-.61.14l-.094.486c-.09.542-.56 1.008-1.11 1.212-.55.203-1.18.203-1.73 0-.55-.204-1.02-.67-1.11-1.212l-.094-.486a7.44 7.44 0 01-.61-.14c-.202-.053-.398-.114-.586-.182-.188-.068-.37-.142-.546-.224l-.41.18c-.51.227-1.08.203-1.54-.06-.46-.262-.77-.738-.77-1.272l0-.028c.03-.542.32-.992.72-1.29l.38-.272a7.44 7.44 0 01.07-.534c.02-.176.03-.354.03-.534s-.01-.358-.03-.534a7.44 7.44 0 01-.07-.534l-.38-.272c-.4-.3-.69-.75-.72-1.29l0-.028c0-.534.31.992.77-1.272.46-.263 1.03-.287 1.54-.06l.41.18a7.44 7.44 0 01.546-.224c.188-.068.384-.128.586-.182.203-.053.406-.1.61-.14l.094-.486zM12 15a3 3 0 100-6 3 3 0 000 6z" />', nextView: 'wallet-advanced' }
                 ]
             },
             'send': {
@@ -308,33 +292,33 @@
                     <div class="w-full">
                         <h2 class="text-xl font-bold mb-4">Zadnje transakcije</h2>
                         <ul class="w-full text-left space-y-4">
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Nakup v trgovini</p>
-                                    <p class="text-xs text-gray-400">12. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">12. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-55.00 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-55.00 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Naloženo iz banke</p>
-                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">10. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-green-400">+100.00 BCPS</span>
+                                <span class="text-lg text-[#00CED1]">+100.00 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Plačilo računa</p>
-                                    <p class="text-xs text-gray-400">09. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">09. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-20.50 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-20.50 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Prejem od Uporabnika A</p>
-                                    <p class="text-xs text-gray-400">08. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">08. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-green-400">+15.00 BCPS</span>
+                                <span class="text-lg text-[#00CED1]">+15.00 BCPS</span>
                             </li>
                         </ul>
                     </div>
@@ -343,26 +327,26 @@
 
             'send-bcps': { 
                 title: 'Pošlji BCPS', 
-                content: '<h2 class="text-xl font-bold mb-4">Pošiljanje BCPS</h2><p>Vnesite uporabnika in znesek, ki ga želite poslati.</p><input type="text" id="recipientId" placeholder="Uporabniško ime ali ID" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><input type="number" id="amountId" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2"><button onclick="simulateSendBcps()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Pošlji</button><p id="sendResult" class="mt-4 text-center"></p>' 
+                content: '<h2 class="text-xl font-bold mb-4">Pošiljanje BCPS</h2><p>Vnesite uporabnika in znesek, ki ga želite poslati.</p><input type="text" id="recipientId" placeholder="Uporabniško ime ali ID" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4"><input type="number" id="amountId" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2"><button onclick="simulateSendBcps()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Pošlji</button><p id="sendResult" class="mt-4 text-center"></p>' 
             },
             'send-crypto': { 
                 title: 'Pošlji Kripto', 
-                content: '<h2 class="text-xl font-bold mb-4">Pošiljanje Kripto</h2><p>Vnesite naslov denarnice in znesek, ki ga želite poslati.</p><input type="text" id="walletAddress" placeholder="Naslov denarnice" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><input type="number" id="cryptoAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2"><button onclick="simulateSendCrypto()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Pošlji</button><p id="sendResult" class="mt-4 text-center"></p>' 
+                content: '<h2 class="text-xl font-bold mb-4">Pošiljanje Kripto</h2><p>Vnesite naslov denarnice in znesek, ki ga želite poslati.</p><input type="text" id="walletAddress" placeholder="Naslov denarnice" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4"><input type="number" id="cryptoAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2"><button onclick="simulateSendCrypto()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Pošlji</button><p id="sendResult" class="mt-4 text-center"></p>' 
             },
             'profile-edit': { 
                 title: 'Uredi profil', 
-                content: '<h2 class="text-xl font-bold mb-4">Uredi profil</h2><p>Spremenite svoje osebne podatke.</p><input type="text" placeholder="Ime in priimek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><input type="email" placeholder="E-pošta" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2"><button onclick="simulateProfileEdit()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Shrani spremembe</button><p id="editResult" class="mt-4 text-center"></p>' 
+                content: '<h2 class="text-xl font-bold mb-4">Uredi profil</h2><p>Spremenite svoje osebne podatke.</p><input type="text" placeholder="Ime in priimek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4"><input type="email" placeholder="E-pošta" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2"><button onclick="simulateProfileEdit()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Shrani spremembe</button><p id="editResult" class="mt-4 text-center"></p>' 
             },
             'profile-settings': { 
                 title: 'Nastavitve', 
-                content: '<h2 class="text-xl font-bold mb-4">Nastavitve</h2><p>Prilagodite nastavitve aplikacije.</p><div class="flex items-center justify-between mt-4"><p>Temna tema</p><input type="checkbox" checked class="form-checkbox h-5 w-5 text-purple-600 rounded-full border-gray-300"></div><button onclick="simulateSettingsSave()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Shrani nastavitve</button><p id="settingsResult" class="mt-4 text-center"></p>' 
+                content: '<h2 class="text-xl font-bold mb-4">Nastavitve</h2><p>Prilagodite nastavitve aplikacije.</p><div class="flex items-center justify-between mt-4"><p>Temna tema</p><input type="checkbox" checked class="form-checkbox h-5 w-5 text-purple-600 rounded-full border-gray-300"></div><button onclick="simulateSettingsSave()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Shrani nastavitve</button><p id="settingsResult" class="mt-4 text-center"></p>' 
             },
             'profile-logout': { 
                 title: 'Odjava', 
                 content: `
                     <h2 class="text-xl font-bold mb-4">Ali se res želite odjaviti?</h2>
                     <div class="flex gap-4 mt-4 w-full">
-                        <button onclick="handleLogout()" class="w-full p-3 text-center rounded-lg bg-red-600 hover:bg-red-700">Potrdi odjavo</button>
+                        <button onclick="handleLogout()" class="w-full p-3 text-center rounded-lg bg-[#FF8C00] hover:bg-[#e67e00] text-white font-bold">Potrdi odjavo</button>
                         <button onclick="goBack()" class="w-full p-3 text-center rounded-lg bg-gray-600 hover:bg-gray-700">Prekliči</button>
                     </div>
                 `
@@ -375,26 +359,26 @@
                         
                         <h3 class="text-lg font-semibold mt-6 mb-2">Pogosta vprašanja</h3>
                         <div class="space-y-4">
-                            <div class="bg-[#210d32] p-3 rounded-lg">
+                            <div class="bg-[#1E1E1E] p-3 rounded-lg">
                                 <p class="font-semibold">Kako naložim denar na račun?</p>
-                                <p class="text-sm text-gray-300 mt-1">Denar lahko naložite preko bančnega nakazila, kripto nakazila ali s skeniranjem QR kode v meniju 'Denarnica' -> 'Naloži'.</p>
+                                <p class="text-sm text-[#DCDCDC] mt-1">Denar lahko naložite preko bančnega nakazila, kripto nakazila ali s skeniranjem QR kode v meniju 'Denarnica' -> 'Naloži'.</p>
                             </div>
-                            <div class="bg-[#210d32] p-3 rounded-lg">
+                            <div class="bg-[#1E1E1E] p-3 rounded-lg">
                                 <p class="font-semibold">Ali je uporaba aplikacije varna?</p>
-                                <p class="text-sm text-gray-300 mt-1">Da, uporabljamo najnovejše varnostne standarde za zaščito vaših sredstev in podatkov.</p>
+                                <p class="text-sm text-[#DCDCDC] mt-1">Da, uporabljamo najnovejše varnostne standarde za zaščito vaših sredstev in podatkov.</p>
                             </div>
-                            <div class="bg-[#210d32] p-3 rounded-lg">
+                            <div class="bg-[#1E1E1E] p-3 rounded-lg">
                                 <p class="font-semibold">Kaj storim, če pozabim geslo?</p>
-                                <p class="text-sm text-gray-300 mt-1">Na prijavnem zaslonu kliknite na 'Pozabljeno geslo' in sledite navodilom za ponastavitev.</p>
+                                <p class="text-sm text-[#DCDCDC] mt-1">Na prijavnem zaslonu kliknite na 'Pozabljeno geslo' in sledite navodilom za ponastavitev.</p>
                             </div>
                         </div>
 
                         <h3 class="text-lg font-semibold mt-8 mb-2">Kontakt za podporo</h3>
-                        <div class="bg-[#210d32] p-3 rounded-lg">
+                        <div class="bg-[#1E1E1E] p-3 rounded-lg">
                             <p>Če potrebujete dodatno pomoč, nas lahko kontaktirate:</p>
                             <p class="mt-2"><strong>E-pošta:</strong> podpora@bcps.si</p>
                             <p><strong>Telefon:</strong> +386 1 234 567</p>
-                            <p class="text-sm text-gray-400">(Delovni čas: Pon-Pet, 9:00 - 17:00)</p>
+                            <p class="text-sm text-[#DCDCDC]">(Delovni čas: Pon-Pet, 9:00 - 17:00)</p>
                         </div>
                     </div>
                 `
@@ -405,8 +389,8 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">Bančno nakazilo</h2>
                     <p>Prosimo, nakažite sredstva na spodnje podatke:<br><strong>BIC/SWIFT:</strong> ABCDEF123<br><strong>IBAN:</strong> SI12 3456 7890 1234 567<br><strong>Namen:</strong> Vaše uporabniško ime</p>
-                    <div class="my-4 text-gray-400">ali</div>
-                    <button onclick="simulateQrScan('load')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                    <div class="my-4 text-[#DCDCDC]">ali</div>
+                    <button onclick="simulateQrScan('load')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
                         Skeniraj QR kodo
                     </button>
@@ -417,8 +401,8 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">Kripto sredstva</h2>
                     <p>Prosimo, pošljite kripto sredstva na spodnjo denarnico:<br><strong>Naslov:</strong> 1A2b3C4d5E6f7G8h9I0j<br><strong>Opomba:</strong> Podprti so BTC, ETH, USDT</p>
-                    <div class="my-4 text-gray-400">ali</div>
-                    <button onclick="simulateQrScan('load')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                    <div class="my-4 text-[#DCDCDC]">ali</div>
+                    <button onclick="simulateQrScan('load')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
                         Skeniraj QR kodo
                     </button>
@@ -430,26 +414,26 @@
                     <div class="w-full">
                         <h2 class="text-xl font-bold mb-4">Zgodovina pologov</h2>
                         <ul class="w-full text-left space-y-4">
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Bančno nakazilo</p>
-                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">10. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-green-400">+100.00 BCPS</span>
+                                <span class="text-lg text-[#00CED1]">+100.00 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Kripto polog (BTC)</p>
-                                    <p class="text-xs text-gray-400">05. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">05. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-green-400">+250.50 BCPS</span>
+                                <span class="text-lg text-[#00CED1]">+250.50 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">QR polog</p>
-                                    <p class="text-xs text-gray-400">01. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">01. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-green-400">+50.00 BCPS</span>
+                                <span class="text-lg text-[#00CED1]">+50.00 BCPS</span>
                             </li>
                         </ul>
                     </div>
@@ -461,11 +445,11 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">Bančno nakazilo</h2>
                     <p>Izberite bančni račun za dvig.</p>
-                    <select class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><option>SI12 3456...</option><option>SI98 7654...</option></select>
-                    <input type="number" id="withdrawAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                    <button onclick="simulateWithdraw()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Dvigni</button>
-                    <div class="my-4 text-gray-400">ali</div>
-                    <button onclick="simulateQrScan('withdraw')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                    <select class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4"><option>SI12 3456...</option><option>SI98 7654...</option></select>
+                    <input type="number" id="withdrawAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                    <button onclick="simulateWithdraw()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Dvigni</button>
+                    <div class="my-4 text-[#DCDCDC]">ali</div>
+                    <button onclick="simulateQrScan('withdraw')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
                         Skeniraj QR kodo
                     </button>
@@ -477,11 +461,11 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">Hladna denarnica</h2>
                     <p>Izberite denarnico za dvig.</p>
-                    <select class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4"><option>0xAbC...</option><option>0xDeF...</option></select>
-                    <input type="number" id="withdrawAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                    <button onclick="simulateWithdraw()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Dvigni</button>
-                    <div class="my-4 text-gray-400">ali</div>
-                    <button onclick="simulateQrScan('withdraw')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                    <select class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4"><option>0xAbC...</option><option>0xDeF...</option></select>
+                    <input type="number" id="withdrawAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                    <button onclick="simulateWithdraw()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Dvigni</button>
+                    <div class="my-4 text-[#DCDCDC]">ali</div>
+                    <button onclick="simulateQrScan('withdraw')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
                         Skeniraj QR kodo
                     </button>
@@ -494,26 +478,26 @@
                     <div class="w-full h-full overflow-y-auto pb-16 pr-2">
                         <h2 class="text-xl font-bold mb-4 text-center">Zgodovina dvigov</h2>
                         <ul class="w-full text-left space-y-4">
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Bančni dvig</p>
-                                    <p class="text-xs text-gray-400">11. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">11. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-50.00 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-50.00 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Dvig na Hladno denarnico</p>
-                                    <p class="text-xs text-gray-400">07. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">07. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-150.00 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-150.00 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">QR dvig na bankomatu</p>
-                                    <p class="text-xs text-gray-400">02. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">02. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-20.00 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-20.00 BCPS</span>
                             </li>
                         </ul>
                     </div>
@@ -525,11 +509,11 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">Plačilo z BCPS</h2>
                     <p>Vnesite podatke člana BCPS, da mu plačate račun.</p>
-                    <input type="text" placeholder="Uporabniško ime ali ID" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4">
-                    <input type="number" id="payAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                    <button onclick="simulatePayment()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Plačaj</button>
-                    <div class="my-4 text-gray-400">ali</div>
-                    <button onclick="simulateQrScan('pay')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                    <input type="text" placeholder="Uporabniško ime ali ID" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4">
+                    <input type="number" id="payAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                    <button onclick="simulatePayment()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Plačaj</button>
+                    <div class="my-4 text-[#DCDCDC]">ali</div>
+                    <button onclick="simulateQrScan('pay')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
                         Skeniraj QR kodo
                     </button>
@@ -540,7 +524,7 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">NFC Plačilo</h2>
                     <p>Prislonite telefon k plačilnemu terminalu.</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32 mx-auto mt-6 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32 mx-auto mt-6 text-[#40E0D0] animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8.667 15.333H5.333a2 2 0 01-2-2V5.333a2 2 0 012-2h13.334a2 2 0 012 2v8a2 2 0 01-2 2h-3.334M12 19.333v-4M10 17.333h4" />
                     </svg>
                 `
@@ -550,11 +534,11 @@
                 content: `
                     <h2 class="text-xl font-bold mb-4">Bančni transfer</h2>
                     <p>Vnesite podatke za plačilo na bančni račun.</p>
-                    <input type="text" placeholder="IBAN" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-4">
-                    <input type="number" id="payAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                    <button onclick="simulatePayment()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#210d32] hover:bg-[#5a1c97]">Plačaj</button>
-                    <div class="my-4 text-gray-400">ali</div>
-                    <button onclick="simulateQrScan('pay')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] flex items-center justify-center gap-2">
+                    <input type="text" placeholder="IBAN" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-4">
+                    <input type="number" id="payAmount" placeholder="Znesek" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                    <button onclick="simulatePayment()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Plačaj</button>
+                    <div class="my-4 text-[#DCDCDC]">ali</div>
+                    <button onclick="simulateQrScan('pay')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z"></path></svg>
                         Skeniraj QR kodo
                     </button>
@@ -566,19 +550,19 @@
                     <div class="w-full">
                         <h2 class="text-xl font-bold mb-4">Zgodovina plačil</h2>
                         <ul class="w-full text-left space-y-4">
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Nakup v trgovini</p>
-                                    <p class="text-xs text-gray-400">12. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">12. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-55.00 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-55.00 BCPS</span>
                             </li>
-                            <li class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center">
+                            <li class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">Plačilo položnice</p>
-                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">10. 09. 2025</p>
                                 </div>
-                                <span class="text-lg text-red-400">-30.00 BCPS</span>
+                                <span class="text-lg text-[#FF8C00]">-30.00 BCPS</span>
                             </li>
                         </ul>
                     </div>
@@ -592,25 +576,25 @@
                         <h2 class="text-xl font-bold mb-4 text-center">Razdeli račun</h2>
                         <p class="mb-4 text-center">Izberite plačilo iz zgodovine, ki ga želite razdeliti.</p>
                         <div id="payment-history-for-split" class="space-y-2 mb-4">
-                            <div onclick="selectPaymentToSplit(55.00, 'Nakup v trgovini')" class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-[#3f1167]">
+                            <div onclick="selectPaymentToSplit(55.00, 'Nakup v trgovini')" class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-[#111111]">
                                 <div>
                                     <p class="font-semibold">Nakup v trgovini</p>
-                                    <p class="text-xs text-gray-400">12. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">12. 09. 2025</p>
                                 </div>
                                 <span class="text-lg font-semibold">-55.00 BCPS</span>
                             </div>
-                            <div onclick="selectPaymentToSplit(30.00, 'Plačilo položnice')" class="bg-[#210d32] p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-[#3f1167]">
+                            <div onclick="selectPaymentToSplit(30.00, 'Plačilo položnice')" class="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-[#111111]">
                                 <div>
                                     <p class="font-semibold">Plačilo položnice</p>
-                                    <p class="text-xs text-gray-400">10. 09. 2025</p>
+                                    <p class="text-xs text-[#DCDCDC]">10. 09. 2025</p>
                                 </div>
                                 <span class="text-lg font-semibold">-30.00 BCPS</span>
                             </div>
                         </div>
                         <div id="split-details-section" class="hidden">
                             <p id="selectedPaymentText" class="mb-2 text-center"></p>
-                            <input type="text" id="splitUsers" placeholder="Uporabniki (ID-ji, ločeni z vejico)" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                            <button onclick="simulateSplitBill()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Razdeli</button>
+                            <input type="text" id="splitUsers" placeholder="Uporabniki (ID-ji, ločeni z vejico)" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                            <button onclick="simulateSplitBill()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Razdeli</button>
                             <p id="splitResult" class="mt-4 text-center"></p>
                         </div>
                     </div>
@@ -618,7 +602,7 @@
             },
             'advanced-cold-wallet': { 
                 title: 'Cold walleti',
-                content: '<h2 class="text-xl font-bold mb-4">Cold walleti</h2><p>Upravljajte svoje cold wallete.</p><ul class="list-disc list-inside space-y-2 mt-4"><li>Prednastavljeni wallet: 0xAbC...</li></ul><button class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Dodaj nov cold wallet</button>' 
+                content: '<h2 class="text-xl font-bold mb-4">Cold walleti</h2><p>Upravljajte svoje cold wallete.</p><ul class="list-disc list-inside space-y-2 mt-4"><li>Prednastavljeni wallet: 0xAbC...</li></ul><button class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Dodaj nov cold wallet</button>' 
             },
             'advanced-bank-accreditive': { 
                 title: 'Bančni akreditiv',
@@ -627,12 +611,12 @@
                         <h2 class="text-xl font-bold mb-4 text-center">Bančni akreditiv</h2>
                         <p class="mb-4 text-center text-sm">Ustvarite bančni akreditiv za varno plačilo po izpolnitvi določenih pogojev.</p>
                         
-                        <input type="text" id="accreditiveRecipient" placeholder="Prejemnik (ID)" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                        <input type="number" id="accreditiveAmount" placeholder="Znesek v BCPS" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                        <input type="date" id="accreditiveExpiry" placeholder="Datum poteka" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2">
-                        <textarea id="accreditiveConditions" placeholder="Pogoji za izplačilo" class="w-full p-2 rounded-md bg-[#210d32] border border-[#3f1167] text-white mt-2 h-24"></textarea>
+                        <input type="text" id="accreditiveRecipient" placeholder="Prejemnik (ID)" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                        <input type="number" id="accreditiveAmount" placeholder="Znesek v BCPS" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                        <input type="date" id="accreditiveExpiry" placeholder="Datum poteka" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2">
+                        <textarea id="accreditiveConditions" placeholder="Pogoji za izplačilo" class="w-full p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white mt-2 h-24"></textarea>
 
-                        <button onclick="simulateBankAccreditive()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Ustvari akreditiv</button>
+                        <button onclick="simulateBankAccreditive()" class="w-full p-3 mt-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Ustvari akreditiv</button>
                         <p id="accreditiveResult" class="mt-4 text-center"></p>
                     </div>
                 `
@@ -645,42 +629,42 @@
                         <p class="mb-6 text-center text-sm">Izberite sklad za investicijo vaših BCPS sredstev.</p>
 
                         <div class="space-y-4">
-                            <div class="bg-[#210d32] p-4 rounded-lg">
+                            <div class="bg-[#1E1E1E] p-4 rounded-lg">
                                 <div class="flex justify-between items-start gap-2">
                                     <h3 class="font-semibold text-lg flex-1">BCPS Uravnoteženi Sklad</h3>
-                                    <span class="text-sm bg-yellow-500 text-black px-2 py-1 rounded-full whitespace-nowrap">Srednje tveganje</span>
+                                    <span class="text-sm bg-[#EBBF04] text-black px-2 py-1 rounded-full whitespace-nowrap">Srednje tveganje</span>
                                 </div>
-                                <p class="text-sm text-gray-300 mt-2">Diverzificiran portfelj delnic in obveznic za stabilno rast.</p>
-                                <p class="mt-2 font-bold text-green-400">Donos (1L): +8.5%</p>
+                                <p class="text-sm text-[#DCDCDC] mt-2">Diverzificiran portfelj delnic in obveznic za stabilno rast.</p>
+                                <p class="mt-2 font-bold text-[#00CED1]">Donos (1L): +8.5%</p>
                                 <div class="mt-4 flex items-center gap-2">
-                                    <input type="number" id="invest-amount-1" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#2b0b45] border border-[#3f1167] text-white">
-                                    <button onclick="simulateInvestment('BCPS Uravnoteženi Sklad', 1)" class="p-2 px-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] whitespace-nowrap">Investiraj</button>
+                                    <input type="number" id="invest-amount-1" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white">
+                                    <button onclick="simulateInvestment('BCPS Uravnoteženi Sklad', 1)" class="p-2 px-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] whitespace-nowrap">Investiraj</button>
                                 </div>
                             </div>
 
-                            <div class="bg-[#210d32] p-4 rounded-lg">
+                            <div class="bg-[#1E1E1E] p-4 rounded-lg">
                                 <div class="flex justify-between items-start gap-2">
                                     <h3 class="font-semibold text-lg flex-1">BCPS Tehnološki Sklad</h3>
-                                    <span class="text-sm bg-red-500 text-white px-2 py-1 rounded-full whitespace-nowrap">Visoko tveganje</span>
+                                    <span class="text-sm bg-[#FF8C00] text-white px-2 py-1 rounded-full whitespace-nowrap">Visoko tveganje</span>
                                 </div>
-                                <p class="text-sm text-gray-300 mt-2">Naložbe v vodilna tehnološka podjetja z visokim potencialom rasti.</p>
-                                <p class="mt-2 font-bold text-green-400">Donos (1L): +15.2%</p>
+                                <p class="text-sm text-[#DCDCDC] mt-2">Naložbe v vodilna tehnološka podjetja z visokim potencialom rasti.</p>
+                                <p class="mt-2 font-bold text-[#00CED1]">Donos (1L): +15.2%</p>
                                 <div class="mt-4 flex items-center gap-2">
-                                    <input type="number" id="invest-amount-2" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#2b0b45] border border-[#3f1167] text-white">
-                                    <button onclick="simulateInvestment('BCPS Tehnološki Sklad', 2)" class="p-2 px-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] whitespace-nowrap">Investiraj</button>
+                                    <input type="number" id="invest-amount-2" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white">
+                                    <button onclick="simulateInvestment('BCPS Tehnološki Sklad', 2)" class="p-2 px-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] whitespace-nowrap">Investiraj</button>
                                 </div>
                             </div>
                             
-                            <div class="bg-[#210d32] p-4 rounded-lg">
+                            <div class="bg-[#1E1E1E] p-4 rounded-lg">
                                 <div class="flex justify-between items-start gap-2">
                                     <h3 class="font-semibold text-lg flex-1">BCPS Varni Pristan</h3>
-                                    <span class="text-sm bg-green-500 text-black px-2 py-1 rounded-full whitespace-nowrap">Nizko tveganje</span>
+                                    <span class="text-sm bg-[#00CED1] text-black px-2 py-1 rounded-full whitespace-nowrap">Nizko tveganje</span>
                                 </div>
-                                <p class="text-sm text-gray-300 mt-2">Konzervativne naložbe v državne obveznice za ohranjanje vrednosti.</p>
-                                <p class="mt-2 font-bold text-green-400">Donos (1L): +3.1%</p>
+                                <p class="text-sm text-[#DCDCDC] mt-2">Konzervativne naložbe v državne obveznice za ohranjanje vrednosti.</p>
+                                <p class="mt-2 font-bold text-[#00CED1]">Donos (1L): +3.1%</p>
                                 <div class="mt-4 flex items-center gap-2">
-                                    <input type="number" id="invest-amount-3" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#2b0b45] border border-[#3f1167] text-white">
-                                    <button onclick="simulateInvestment('BCPS Varni Pristan', 3)" class="p-2 px-4 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97] whitespace-nowrap">Investiraj</button>
+                                    <input type="number" id="invest-amount-3" placeholder="Znesek BCPS" class="flex-1 min-w-0 p-2 rounded-md bg-[#1E1E1E] border border-[#40E0D0] text-white">
+                                    <button onclick="simulateInvestment('BCPS Varni Pristan', 3)" class="p-2 px-4 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02] whitespace-nowrap">Investiraj</button>
                                 </div>
                             </div>
                             
@@ -735,11 +719,11 @@
                 const balanceTitle = viewName === 'main' ? 'Stanje na računu' : 'Stanje denarnice';
 
                 const balanceContent = `
-                    <div class="bg-[#3f1167] p-4 rounded-xl shadow-lg mb-6 w-full text-center relative">
+                    <div class="bg-[#1E1E1E] border border-[#40E0D0] p-4 rounded-xl shadow-lg mb-6 w-full text-center relative">
                         <h2 class="text-xl font-bold">${balanceTitle}</h2>
                         <div id="balance-display" class="mt-2">
                             <p class="text-4xl font-bold" id="bcps-balance">${balanceBCPS.toFixed(2)} BCPS</p>
-                            <p class="text-sm text-gray-400 mt-1" id="eur-balance">(${balanceEUR} EUR)</p>
+                            <p class="text-sm text-[#DCDCDC] mt-1" id="eur-balance">(${balanceEUR} EUR)</p>
                         </div>
                         ${transactionIconHtml}
                     </div>
@@ -865,13 +849,13 @@
             const modalHtml = `
                 <div class="modal">
                     <div class="modal-content">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-[#00CED1]" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
                         <h3 class="text-2xl font-bold mb-2">Uspešno!</h3>
                         <p class="mb-4">${typeText} zneska **${amount.toFixed(2)} BCPS** je bil uspešno izveden.</p>
                         <p class="mb-6">Novo stanje: **${newBalance.toFixed(2)} BCPS**</p>
-                        <button onclick="closeModal()" class="w-full p-3 rounded-lg bg-green-600 hover:bg-green-700 font-bold">Zapri</button>
+                        <button onclick="closeModal()" class="w-full p-3 rounded-lg bg-[#00CED1] hover:bg-[#00b8ba] text-black font-bold">Zapri</button>
                     </div>
                 </div>
             `;
@@ -903,11 +887,11 @@
             const confirmContent = `
                 <h2 class="text-xl font-bold mb-4">Potrditev transakcije</h2>
                 <p class="mb-4">Prosimo, potrdite podrobnosti transakcije:</p>
-                <div class="bg-[#210d32] p-4 rounded-lg text-left w-full space-y-2">
+                <div class="bg-[#1E1E1E] p-4 rounded-lg text-left w-full space-y-2">
                     ${details}
                 </div>
                 <div class="mt-6 flex flex-col space-y-4 w-full">
-                    <button onclick="confirmQrTransaction(${amount}, '${transactionType}')" class="w-full p-3 text-center rounded-lg bg-[#3f1167] hover:bg-[#5a1c97]">Potrdi</button>
+                    <button onclick="confirmQrTransaction(${amount}, '${transactionType}')" class="w-full p-3 text-center rounded-lg bg-[#EBBF04] text-black font-bold hover:bg-[#d4ac02]">Potrdi</button>
                     <button onclick="goBack()" class="w-full p-3 text-center rounded-lg bg-gray-600 hover:bg-gray-700">Prekliči</button>
                 </div>
             `;
@@ -929,7 +913,7 @@
             } else {
                 const errorMessage = `
                     <h2 class="text-xl font-bold mb-4">Transakcija neuspešna</h2>
-                    <p>Premalo sredstev! Potrebujete ${amount.toFixed(2)} BCPS, imate pa samo ${balanceBCPS.toFixed(2)} BCPS.</p>
+                    <p class="text-[#FF8C00]">Premalo sredstev! Potrebujete ${amount.toFixed(2)} BCPS, imate pa samo ${balanceBCPS.toFixed(2)} BCPS.</p>
                     <button onclick="goBack()" class="w-full p-3 mt-4 text-center rounded-lg bg-gray-600 hover:bg-gray-700">Nazaj</button>
                 `;
                 document.getElementById('menu-container').innerHTML = `<div class="p-6 text-center view-content w-full h-full flex flex-col items-center justify-center">${errorMessage}</div>`;
@@ -946,8 +930,10 @@
                 showSuccessModal(amount, balanceBCPS, 'pay');
             } else if (!recipient || !amount) {
                 resultElement.innerText = 'Prosimo, vnesite vse podatke.';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             } else {
                 resultElement.innerText = 'Transakcija neuspesna: Premalo sredstev!';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
 
@@ -958,19 +944,23 @@
 
             if (address && amount > 0) {
                 resultElement.innerText = `Simulacija: Poslali ste ${amount.toFixed(2)} kriptovalut na naslov ${address}.`;
+                resultElement.className = 'mt-4 text-center text-[#00CED1]';
             } else {
                 resultElement.innerText = 'Prosimo, vnesite vse podatke.';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
 
         function simulateProfileEdit() {
             const resultElement = document.getElementById('editResult');
             resultElement.innerText = 'Simulacija: Profil uspesno posodobljen!';
+            resultElement.className = 'mt-4 text-center text-[#00CED1]';
         }
 
         function simulateSettingsSave() {
             const resultElement = document.getElementById('settingsResult');
             resultElement.innerText = 'Simulacija: Nastavitve uspesno shranjene!';
+            resultElement.className = 'mt-4 text-center text-[#00CED1]';
         }
 
         function simulateWithdraw() {
@@ -982,8 +972,10 @@
                 showSuccessModal(amount, balanceBCPS, 'withdraw');
             } else if (!amount) {
                  resultElement.innerText = 'Prosimo, vnesite znesek.';
+                 resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             } else {
                 resultElement.innerText = 'Transakcija neuspesna: Premalo sredstev!';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
 
@@ -996,8 +988,10 @@
                 showSuccessModal(amount, balanceBCPS, 'pay');
             } else if (!amount) {
                  resultElement.innerText = 'Prosimo, vnesite znesek.';
+                 resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             } else {
                 resultElement.innerText = 'Transakcija neuspesna: Premalo sredstev!';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
 
@@ -1010,6 +1004,7 @@
                 const splitAmount = (selectedSplitPayment.amount / (userList.length + 1)).toFixed(2);
                 
                 resultElement.innerText = `Zahtevki za plačilo v višini ${splitAmount} BCPS so bili poslani uporabnikom: ${userList.join(', ')}.`;
+                resultElement.className = 'mt-4 text-center text-[#00CED1]';
                 
                 // Reset after splitting
                 selectedSplitPayment = null;
@@ -1020,11 +1015,12 @@
                     resultElement.innerText = '';
                 }, 3000);
 
-
             } else if (!users) {
                 resultElement.innerText = 'Prosimo, vnesite uporabnike za delitev.';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             } else {
                 resultElement.innerText = 'Napaka: Najprej izberite plačilo.';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
         
@@ -1048,11 +1044,14 @@
             if (recipient && amount > 0 && expiry && conditions && balanceBCPS >= amount) {
                 balanceBCPS -= amount;
                 resultElement.innerText = `Akreditiv v višini ${amount.toFixed(2)} BCPS za prejemnika ${recipient} je bil uspešno ustvarjen. Sredstva so rezervirana.`;
-                updateBalanceDisplay(); // Update balance display in header if visible
+                resultElement.className = 'mt-4 text-center text-[#00CED1]';
+                updateBalanceDisplay();
             } else if (balanceBCPS < amount) {
                 resultElement.innerText = 'Napaka: Premalo sredstev na računu.';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             } else {
                 resultElement.innerText = 'Napaka: Prosimo, izpolnite vsa polja.';
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
 
@@ -1063,23 +1062,19 @@
             if (amount > 0 && balanceBCPS >= amount) {
                 balanceBCPS -= amount;
                 resultElement.innerText = `Uspešno ste investirali ${amount.toFixed(2)} BCPS v sklad "${fundName}".`;
-                resultElement.classList.remove('text-red-400');
-                resultElement.classList.add('text-green-400');
-                updateBalanceDisplay(); // This will only work if the balance is visible on the current screen
+                resultElement.className = 'mt-4 text-center text-[#00CED1]';
+                updateBalanceDisplay();
                 document.getElementById(`invest-amount-${fundId}`).value = '';
-
-                // Also update balance in the header if it's currently displayed there
+                
                 const headerBalance = document.getElementById('bcps-balance');
                 if(headerBalance) updateBalanceDisplay();
 
             } else if (balanceBCPS < amount) {
                 resultElement.innerText = 'Napaka: Premalo sredstev na računu.';
-                resultElement.classList.add('text-red-400');
-                resultElement.classList.remove('text-green-400');
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             } else {
                 resultElement.innerText = 'Napaka: Prosimo, vnesite veljaven znesek.';
-                resultElement.classList.add('text-red-400');
-                resultElement.classList.remove('text-green-400');
+                resultElement.className = 'mt-4 text-center text-[#FF8C00]';
             }
         }
 
