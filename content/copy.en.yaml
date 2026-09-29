@@ -39,8 +39,19 @@ txDetail:
   final: Final · no chargebacks
 
 errors:
-  insufficientFunds: You have {have}. Top up {short} to pay.
+  insufficientFunds: You have {have} BCPS. Top up {short} BCPS to pay.
   unknownRecipient: No BCPS user '{handle}'. Check the spelling.
+  selfPayment: You can't pay yourself.
+  invalidAmount: Enter an amount above zero.
+  maxAmount: The maximum is {max} BCPS.
+  invalidState: This was already {status}.
+  notAllowed: Only {name} can do this.
+  quoteChanged: The amount changed. Check it and try again.
+  expired: This code has expired
+  cancelled: This code was cancelled
+  paid: This code was already paid.
+  sessionFull: Your session is getting long. Reset to start again.
+  generic: Something went wrong. Try again.
 
 seedRows:
   topUp: Top up · {method} €{eur}
@@ -65,6 +76,10 @@ common:
   verifiedLabel: Verified business or person
   close: Close
   done: Done
+  cancel: Cancel
+  skip: Skip
+  edit: Edit
+  undo: Undo
   back: Back
   next: Next
   continue: Continue
@@ -77,7 +92,6 @@ common:
   rateChip: €1 ≈ {rate} BCPS · BCPS is not pegged
   rateInfo: Euro amounts use BCPS's current rate, €1 ≈ {rate} BCPS. BCPS is not pegged to the euro.
   rateInfoLabel: About the BCPS rate
-  privacy: Other users see your chosen display name and @username only. BCPS keeps identity data confidential and discloses it only where the law requires.
   phoneLabel: "{name}'s phone, {role}"
   roleCustomer: customer
   roleBusiness: business
@@ -96,40 +110,211 @@ start:
   overline: BLOCKCHAIN PAYMENT SYSTEM
   headline: Pay and get paid in seconds.
   lede: Card-simple. Pay by @username, QR code or link.
-  pillarsLabel: What BCPS is built for
+  open: Open BCPS
   updateReady: A new version is ready.
   updateApply: Reload
 
 about:
   title: About BCPS
-  intro: BCPS is a blockchain payment system. It connects customers, merchants, producers and businesses on one network.
-  simple: Pay by username, QR code or link.
-  pillarsTitle: Four pillars
-  feesTitle: How fees work
+  intro: BCPS is a payment network for people and businesses. Pay and get paid in seconds by @username, QR code or link.
+  feesTitle: What it costs
   fees:
-    - Every payment inside the network costs 1% of the amount. On sales, the business usually pays it.
+    - Every payment inside the network costs 1%, shown before you pay.
     - Converting BCPS to euros costs 1.5%.
     - Top up without a fee.
-  privacyTitle: Privacy
-  safetyTitle: Stay safe
+  privacyTitle: Your data
+  privacy: Other people only see your name and @username.
   safety: BCPS will never ask you to send money or crypto.
   build: Build {sha}
-
-pay:
-  title: BCPS payment code
-  body: You scanned a BCPS payment code.
-  to: To
-  amount: Amount
-  invalid: This payment code can't be read.
-  open: Open BCPS
 
 notFound:
   title: This page doesn't exist.
   body: The link may be incomplete.
-  home: Go to the start
+  home: Go to BCPS
 
 tx:
   to: To {name}
   from: From {name}
   withNote: "{label} · {note}"
   items: "{qty} × {name}"
+
+# ---- Phone runtime and chrome
+
+nav:
+  back: Back
+  home: Home
+  step: "Step {n} of {total}"
+
+tiles:
+  scan: Scan
+  payRequest: Pay & request
+  history: History
+  charge: Charge
+  sales: Sales
+  pay: Pay
+
+hubs:
+  titles:
+    payRequest: Pay & request
+    sales: Sales
+    pay: Pay
+    profile: Profile
+    settings: Settings
+  rows:
+    send: Send money
+    allPayments: All payments
+    paySupplier: Pay supplier
+    notifications: Notifications
+    about: About BCPS
+    logout: Log out
+  sublines:
+    sendHint: To a person or business
+    supplierHint: By @name, code or invoice
+    salesToday: "{count} today · {gross}"
+
+home:
+  profile: Profile
+  settings: Settings
+  bell: Notifications
+  bellUnread: "Notifications, {count} unread"
+  business: BUSINESS
+  tileBadge: "{count} waiting"
+
+steps:
+  available: "Available {amount} BCPS"
+  max: Max
+  keypad: Amount keypad
+  balanceAfter: "Balance after {amount} BCPS"
+  arrives: Arrives in seconds.
+  noteVisibility: "Only you and {name} see the note."
+  noteField: Note
+  backToReview: Back to review
+  total: Total
+  fee: Fee
+  sending: Sending…
+
+# ---- Accounts
+
+login:
+  logIn: Log in
+  biometrics: Log in with biometrics
+  chooseAccount: Choose your account
+  tapAccount: Tap an account above
+  otherPhone: On the other phone
+  emailLabel: EMAIL
+  personal: PERSONAL
+  business: BUSINESS
+  continue: Continue
+  sentTo: "Sent to {email}"
+  mailChip: "From Mail · {code}"
+  resend: "Didn't get it? Send again"
+  verify: Verify and log in
+  codeLabel: Code
+  emailFilled: "Email filled: {email}"
+  codeFilled: Code filled
+  welcomePerson: "{name} · {email}"
+  welcomeBusiness: "Business account · {name}"
+
+logout:
+  title: Log out?
+  body: To come back, choose your account and enter the code from Mail, or use biometrics.
+  cancel: Cancel
+  confirm: Log out
+
+# ---- Stage, phone mode and presenter chrome
+
+stage:
+  noOne: No one logged in
+  swap: Swap phones
+  reset: Reset
+  fullscreen: Full screen
+  settings: Settings
+  zoom: "Zoom {name}"
+  zoomOut: Show both phones
+  dateChip: Virtual time
+  accountMenu: "Switch account, {role}"
+  toastFor: "On {name}'s phone"
+  toastOpen: "Open {name}"
+  counter: "Merchant payments {count} · fees {fees} BCPS ≈ €{eur} vs cards typically ≈ €{cardLow}–{cardHigh} plus additional charges"
+  travelEdge: "{name}"
+  handover: "Now on this phone"
+
+accountMenu:
+  title: Switch account
+  merchants: MERCHANTS
+  customers: END CUSTOMERS
+  onThisPhone: On this phone
+  onOtherPhone: On the other phone
+  showWelcome: Show Welcome on this phone
+  unread: "{count} unread"
+  close: Close menu
+
+phoneMode:
+  pill: "Account menu, {name}"
+  toast: "On {name}'s phone: {what}"
+  switch: Switch
+  upright: Turn your phone upright
+  timeLabel: Virtual time
+  reset: Reset
+  settings: Settings
+
+reset:
+  title: Reset everything?
+  body: All accounts return to their starting balances and history.
+  option: Log Ana and Café Lipa in again
+  confirm: Reset
+  cancel: Cancel
+  done: Everything reset
+  undo: Undo
+  fresh: Fresh start · all accounts at starting balances
+
+settings:
+  title: Settings
+  done: Done
+  reduceMotion: Reduce motion
+  sound: Sound
+  largeText: Large text on navy
+  tape: Payment tape
+  undoReset: Undo reset
+  about: About BCPS
+  build: "Build {sha}"
+
+keys:
+  title: Keyboard shortcuts
+  fullscreen: Full screen
+  zoom: Zoom one phone
+  escape: Close or show both phones
+  help: Show this list
+  close: Close
+
+otherTab:
+  title: BCPS is open in another tab.
+  useHere: Use here
+
+notices:
+  recalculated: Your saved session was recalculated with this version.
+  restoreFailed: Couldn't restore your last session. Started fresh.
+  storageUnavailable: This browser isn't saving changes.
+  writeFailed: The latest changes couldn't be saved. BCPS keeps working in this tab.
+  dismiss: Dismiss
+
+empty:
+  history: No payments yet.
+  notifications:
+    title: You're all caught up.
+    body: New payments and requests appear here.
+
+notifications:
+  title: Notifications
+  markAll: Mark all as read
+  today: TODAY
+  yesterday: YESTERDAY
+  earlier: EARLIER
+  unread: Unread
+  justNow: Just now
+
+groups:
+  today: TODAY
+  yesterday: YESTERDAY
+  thisWeek: THIS WEEK
+  earlier: EARLIER

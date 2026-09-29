@@ -1,31 +1,33 @@
 import { describe, expect, it } from 'vitest'
 import { content } from '@content/load'
-import { parseHash } from '@app/router'
+import { fitsStage, openTarget, parseHash } from '@app/router'
 import { ui } from '@app/copy'
 import { payerShort, rateText, txRef } from '@app/format'
 import { keypadInput } from '@app/kit/Keypad'
 import type { Tx } from '@domain/types'
 
 describe('hash routes', () => {
-  it('maps the built routes and sends everything else to not-found', () => {
-    expect(parseHash('')).toEqual({ name: 'start' })
-    expect(parseHash('#/')).toEqual({ name: 'start' })
+  it('maps the routes and sends everything else to not-found', () => {
+    expect(parseHash('')).toEqual({ name: 'landing' })
+    expect(parseHash('#/')).toEqual({ name: 'landing' })
     expect(parseHash('#/about')).toEqual({ name: 'about' })
     expect(parseHash('#/about/')).toEqual({ name: 'about' })
+    expect(parseHash('#/stage')).toEqual({ name: 'stage' })
+    expect(parseHash('#/phone')).toEqual({ name: 'phone' })
+    expect(parseHash('#/phone/ana')).toEqual({ name: 'phone', persona: 'ana' })
     expect(parseHash('#/pay?v=1&to=@cafelipa&amount=11.00')).toEqual({ name: 'pay' })
-    // The scripted routes are gone; the stage and phone routes arrive with the phone runtime.
-    for (const bad of [
-      '#/stage',
-      '#/stage/1',
-      '#/present/1',
-      '#/phone/ana',
-      '#/tour/1',
-      '#/x',
-      '#/about/more',
-      '#/pay/x',
-    ]) {
+    for (const bad of ['#/stage/1', '#/present/1', '#/phone/ana/x', '#/tour/1', '#/x', '#/about/more', '#/pay/x']) {
       expect(parseHash(bad)).toEqual({ name: 'notFound' })
     }
+  })
+
+  it('opens the stage on a wide landscape window and phone mode otherwise', () => {
+    expect(openTarget(1280, 720)).toBe('#/stage')
+    expect(openTarget(768, 700)).toBe('#/stage')
+    expect(openTarget(767, 700)).toBe('#/phone')
+    expect(openTarget(1024, 1366)).toBe('#/phone')
+    expect(openTarget(390, 844)).toBe('#/phone')
+    expect(fitsStage(1280, 1280)).toBe(false)
   })
 })
 

@@ -1,7 +1,7 @@
 import { summaryFee } from '@domain/fees'
 import { divRoundHalfUp, mustParseMinor } from '@domain/money'
 import type { FeePolicy, FeePolicyId, Minor } from '@domain/types'
-import type { Content, ContentProblem } from './schema'
+import { NOTIFICATION_PLACEHOLDERS, type Content, type ContentProblem } from './schema'
 
 // Cross-file content rules (check-content). The zod schemas check each file on
 // its own; these check that the files agree with each other. The seed arithmetic (every row
@@ -133,6 +133,7 @@ export function checkContent(c: Content): ContentProblem[] {
     }
   }
   scan('copy.en.yaml', c.copy, [])
+  scan('notifications.yaml', c.notifications, [])
   for (const [merchant, list] of Object.entries(c.catalogue.products)) {
     for (const [i, p] of list.entries()) scan('catalogue.yaml', p.name, ['products', merchant, i, 'name'])
   }
@@ -145,6 +146,16 @@ export function checkContent(c: Content): ContentProblem[] {
     scan('catalogue.yaml', o.description, ['templates', 'escrow', 'orders', i, 'description'])
   }
   scan('catalogue.yaml', c.catalogue.templates.supplierPayment.note, ['templates', 'supplierPayment', 'note'])
+
+  // ---- notifications: only known placeholders in titles and lines
+  const known = new Set<string>(NOTIFICATION_PLACEHOLDERS)
+  for (const [kind, n] of Object.entries(c.notifications)) {
+    for (const field of ['title', 'line'] as const) {
+      for (const m of (n[field] ?? '').matchAll(/\{(\w+)\}/g)) {
+        if (!known.has(m[1] ?? '')) add('notifications.yaml', [kind, field], `unknown placeholder {${m[1]}}`)
+      }
+    }
+  }
 
   // ---- config: background patterns keep every slot's gross above its fees (§2.7.1; the fee
   // of a slot row is the policy fee on its gross, like a seeded summary row)

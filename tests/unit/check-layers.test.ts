@@ -98,6 +98,17 @@ describe('check-layers rules', () => {
     expect(rulesOf({ 'src/misc.ts': 'export {}\n' })).toEqual(['unlayered'])
   })
 
+  it('lets a layer import images from src/assets, and nothing else outside the layers', () => {
+    expect(rulesOf({ 'src/app/planted.ts': "import logo from '../assets/brand/emblem-450.webp'\n" })).toEqual([])
+    expect(rulesOf({ 'src/app/planted.ts': "import logo from '../assets/brand/missing.webp'\n" })).toEqual([
+      'unresolved',
+    ])
+    expect(rulesOf({ 'src/misc.ts': 'export {}\n', 'src/app/planted.ts': "import '../misc'\n" }).sort()).toEqual([
+      'outside-layers',
+      'unlayered',
+    ])
+  })
+
   it('ignores imports inside comments, strings and regular expressions', () => {
     const text = [
       "// import { a } from '@app/copy'",

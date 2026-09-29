@@ -1,0 +1,143 @@
+# Home screens: a balance band plus 4 centred tiles (2 × 2) per shell, and the list behind each
+# tile. `opens` is flow (a task directly), hub (one list of rows) or view. `avatar` names the list
+# the header avatar opens. Rows: `row`, `icon`, optional `subline`, `badge`, `planned`; `section`
+# entries are lists filled from state. Labels live in copy.en.yaml (tiles.*, hubs.*).
+consumer:
+  avatar: profile
+  tiles:
+    - { tile: scan,       icon: scan-line,        opens: flow }
+    - { tile: payRequest, icon: arrow-left-right, opens: hub, badge: toPay, subline: toPay }
+    - { tile: wallet,     icon: wallet,           opens: hub }
+    - { tile: history,    icon: list,             opens: view }
+  hubs:
+    payRequest:
+      - { section: toPay }
+      - { row: send,          icon: arrow-up-right,  subline: sendHint }
+      - { row: request,       icon: arrow-down-left, subline: requestHint }
+      - { row: paymentLink,   icon: link,            subline: linkHint }
+      - { row: splitBill,     icon: split,           subline: splitHint }
+      - { row: shopOnline,    icon: shopping-bag,    subline: shopHint }
+      - { row: subscriptions, icon: repeat,          subline: activeSubscription }
+      - { section: waiting }
+    wallet:
+      - { row: topup,      icon: plus }
+      - { row: cashOut,    icon: landmark }
+      - { row: myCode,     icon: qr-code }
+      - { row: saveInvest, icon: calendar-clock, planned: true }
+    profile:
+      - { row: myCode,         icon: qr-code }
+      - { row: subscriptions,  icon: repeat }
+      - { row: paymentMethods, icon: credit-card }
+      - { row: biometrics,     icon: fingerprint }
+      - { row: reduceMotion,   icon: pause }
+      - { row: notifications,  icon: bell }
+      - { row: roadmap,        icon: map }
+      - { row: about,          icon: info }
+      - { row: logout,         icon: log-out }
+pos:
+  avatar: settings
+  tiles:
+    - { tile: charge,  icon: qr-code,     opens: flow }
+    - { tile: sales,   icon: bar-chart-3, opens: hub, subline: salesToday }
+    - { tile: pay,     icon: file-text,   opens: hub, badge: invoicesToPay, subline: invoicesToPay }
+    - { tile: cashOut, icon: landmark,    opens: hub, subline: autoConvert }
+  hubs:
+    sales:
+      - { section: todayKpis }
+      - { row: refundSale,  icon: undo-2 }
+      - { row: allPayments, icon: list }
+    pay:
+      - { section: invoicesToPay }
+      - { row: paySupplier, icon: truck,     subline: supplierHint }
+      - { row: invoices,    icon: file-text, subline: nextInvoice }
+    cashOut:
+      - { row: cashOut,       icon: landmark }
+      - { row: autoConvert,   icon: repeat, subline: autoConvert }
+      - { row: topup,         icon: plus }
+      - { row: payoutHistory, icon: list,   subline: payoutsThisWeek }
+    settings:
+      - { row: feePayer,      icon: receipt }
+      - { row: autoConvert,   icon: repeat }
+      - { row: payoutAccount, icon: landmark }
+      - { row: biometrics,    icon: fingerprint }
+      - { row: integrations,  icon: plug }
+      - { row: roadmap,       icon: map }
+      - { row: about,         icon: info }
+      - { row: logout,        icon: log-out }
+studio:
+  avatar: settings
+  tiles:
+    - { tile: overview,  icon: layout-dashboard, opens: view, subline: revenueToday }
+    - { tile: products,  icon: package,          opens: view }
+    - { tile: customers, icon: users,            opens: hub, subline: activeSubscribers }
+    - { tile: money,     icon: wallet,           opens: hub, badge: invoicesToPay }
+  hubs:
+    customers:
+      - { row: subscribers,    icon: users, subline: subscribersSummary }
+      - { row: refundPurchase, icon: undo-2 }
+    money:
+      - { row: sendPayment,   icon: send }
+      - { row: invoicesToPay, icon: file-text }
+      - { row: cashOut,       icon: landmark }
+      - { row: payoutHistory, icon: list }
+    settings:
+      - { row: feePayer,      icon: receipt }
+      - { row: autoConvert,   icon: repeat }
+      - { row: payoutAccount, icon: landmark }
+      - { row: biometrics,    icon: fingerprint }
+      - { row: integrations,  icon: plug }
+      - { row: roadmap,       icon: map }
+      - { row: about,         icon: info }
+      - { row: logout,        icon: log-out }
+trade:
+  firm:
+    avatar: settings
+    tiles:
+      - { tile: invoices, icon: file-text, opens: hub, badge: invoicesToPay }
+      - { tile: escrow,   icon: file-lock, opens: hub, badge: escrowAction }
+      - { tile: money,    icon: wallet,    opens: hub }
+      - { tile: history,  icon: list,      opens: view }
+    hubs:
+      invoices:
+        - { row: newInvoice, icon: file-plus }
+        - { section: toPay }
+        - { section: sent }
+      escrow:
+        - { row: newEscrow, icon: file-lock }
+        - { section: escrows }
+      money:
+        - { row: sendPayment, icon: send }
+        - { row: topup,       icon: plus }
+        - { row: cashOut,     icon: landmark }
+      settings:
+        - { row: autoConvert,   icon: repeat }
+        - { row: payoutAccount, icon: landmark }
+        - { row: biometrics,    icon: fingerprint }
+        - { row: roadmap,       icon: map }
+        - { row: about,         icon: info }
+        - { row: logout,        icon: log-out }
+  supplier:
+    avatar: settings
+    tiles:
+      - { tile: invoices, icon: file-text, opens: hub, badge: invoicesToPay }
+      - { tile: escrow,   icon: file-lock, opens: hub, badge: escrowAction, subline: lockedForYou }
+      - { tile: money,    icon: wallet,    opens: hub }
+      - { tile: history,  icon: list,      opens: view }
+    hubs:
+      invoices:
+        - { row: newInvoice, icon: file-plus }
+        - { section: toPay }
+        - { section: sent }
+      escrow:
+        - { section: escrows }
+      money:
+        - { row: sendPayment, icon: send }
+        - { row: cashOut,     icon: landmark }
+        - { row: topup,       icon: plus }
+      settings:
+        - { row: autoConvert,   icon: repeat }
+        - { row: payoutAccount, icon: landmark }
+        - { row: biometrics,    icon: fingerprint }
+        - { row: roadmap,       icon: map }
+        - { row: about,         icon: info }
+        - { row: logout,        icon: log-out }

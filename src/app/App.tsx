@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { parseHash, useHash } from './router'
 import { ui } from './copy'
-import { AboutPage, NotFoundPage, PayLanding, StartPage } from './shell/Pages'
+import { parseHash, useHash } from './router'
+import { AboutPage, LandingPage, NotFoundPage } from './shell/Pages'
 
 export function App() {
   const route = parseHash(useHash())
@@ -13,13 +13,11 @@ export function App() {
     window.scrollTo(0, 0)
   }, [route.name])
   switch (route.name) {
-    case 'start':
-      return <StartPage />
+    case 'landing':
+      return <LandingPage />
     case 'about':
       return <AboutPage />
-    case 'pay':
-      return <PayLanding />
-    case 'notFound':
+    default:
       return <NotFoundPage />
   }
 }

@@ -208,12 +208,34 @@ button:disabled,
   animation: bcps-fade var(--dur-fast) var(--ease-standard) both;
 }
 
+/* Reduced motion: the operating system's setting, or Settings › Reduce motion (data-reduce-motion
+   on <html>: "true" forces it, "false" turns it off even when the system asks for it). */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  html:not([data-reduce-motion='false']) *,
+  html:not([data-reduce-motion='false']) *::before,
+  html:not([data-reduce-motion='false']) *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+html[data-reduce-motion='true'] *,
+html[data-reduce-motion='true'] *::before,
+html[data-reduce-motion='true'] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+
+/* Text for screen readers only. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

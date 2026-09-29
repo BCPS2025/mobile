@@ -541,13 +541,18 @@ export function completeHomeProblems(name: HomeShellName, h: ShellHomeContent): 
   return out
 }
 
+/**
+ * The homes of the shells that are live. A shell's home is added when its first tile is live;
+ * `complete: true` (the last milestone) requires every shell, exactly the D28 tiles in order and
+ * every hub row.
+ */
 export const HomesSchema = z
   .strictObject({
     complete: z.boolean().optional(),
     consumer: ShellHome,
     pos: ShellHome,
-    studio: ShellHome,
-    trade: z.strictObject({ firm: ShellHome, supplier: ShellHome }),
+    studio: ShellHome.optional(),
+    trade: z.strictObject({ firm: ShellHome, supplier: ShellHome }).optional(),
   })
   .superRefine((v, ctx) => {
     if (!v.complete) return
@@ -556,13 +561,87 @@ export const HomesSchema = z
       ['consumer', v.consumer],
       ['pos', v.pos],
       ['studio', v.studio],
-      ['trade.firm', v.trade.firm],
-      ['trade.supplier', v.trade.supplier],
+      ['trade.firm', v.trade?.firm],
+      ['trade.supplier', v.trade?.supplier],
     ] as const) {
-      for (const message of completeHomeProblems(name, h)) ctx.addIssue({ code: 'custom', message })
+      if (!h) ctx.addIssue({ code: 'custom', message: `${name}: a complete home needs this shell` })
+      else for (const message of completeHomeProblems(name, h)) ctx.addIssue({ code: 'custom', message })
     }
   })
 export type HomesContent = z.infer<typeof HomesSchema>
+
+// ---- notifications.yaml (one entry per kind; the kinds are derived from the ledger, never stored)
+export const NOTIFICATION_TO = [
+  'payee',
+  'payer',
+  'requester',
+  'merchant',
+  'customer',
+  'owner',
+  'participant',
+  'issuer',
+  'buyer',
+  'seller',
+  'both',
+  'account',
+] as const
+export const NOTIFICATION_OPENS = [
+  'tx',
+  'payItem',
+  'request',
+  'link',
+  'split',
+  'subscription',
+  'subscriber',
+  'invoice',
+  'escrow',
+  'payouts',
+  'home',
+  'none',
+] as const
+/** Placeholders a notification title or line may use (filled from the ledger by store/notifications). */
+export const NOTIFICATION_PLACEHOLDERS = [
+  'payer',
+  'requester',
+  'owner',
+  'merchant',
+  'customer',
+  'issuer',
+  'buyer',
+  'seller',
+  'name',
+  'amount',
+  'note',
+  'items',
+  'item',
+  'plan',
+  'number',
+  'date',
+  'reason',
+  'escrowId',
+  'condition',
+  'eur',
+  'fee',
+  'method',
+  'bank',
+  'arrivesAt',
+  'retryDay',
+  'collected',
+] as const
+const NotificationKind = z
+  .string()
+  .regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)*$/, 'a notification kind looks like "p2p.received"')
+const NotificationEntry = z.strictObject({
+  to: z.enum(NOTIFICATION_TO),
+  title: z.string().min(1),
+  line: z.string().min(1).optional(),
+  opens: z.enum(NOTIFICATION_OPENS),
+  banner: z.boolean(),
+  toast: z.boolean(),
+})
+export const NotificationsSchema = z.record(NotificationKind, NotificationEntry)
+export type NotificationsContent = z.infer<typeof NotificationsSchema>
+export type NotificationEntryContent = z.infer<typeof NotificationEntry>
 
 // ---- copy.en.yaml (the sections the engine reads; src/content/copy-schema.ts adds the interface sections)
 export const CopySchema = z.looseObject({
@@ -597,6 +676,7 @@ export interface Content {
   catalogue: CatalogueContent
   seed: SeedContent
   homes: HomesContent
+  notifications: NotificationsContent
   /** Engine and interface sections, both validated. */
   copy: CopyContent & UiCopy
 }
@@ -609,6 +689,7 @@ export const CONTENT_FILES: Record<keyof Content, string> = {
   catalogue: 'catalogue.yaml',
   seed: 'seed.yaml',
   homes: 'homes.yaml',
+  notifications: 'notifications.yaml',
   copy: 'copy.en.yaml',
 }
 
@@ -641,13 +722,27 @@ export function safeParseContent(raw: RawContent): ContentResult {
   const catalogue = parse('catalogue', CatalogueSchema)
   const seed = parse('seed', SeedSchema)
   const homes = parse('homes', HomesSchema)
+  const notifications = parse('notifications', NotificationsSchema)
   const engineCopy = parse('copy', CopySchema)
   const uiCopy = parse('copy', UiCopySchema)
-  if (!config || !personas || !catalogue || !seed || !homes || !engineCopy || !uiCopy || problems.length > 0) {
+  if (
+    !config ||
+    !personas ||
+    !catalogue ||
+    !seed ||
+    !homes ||
+    !notifications ||
+    !engineCopy ||
+    !uiCopy ||
+    problems.length > 0
+  ) {
     return { ok: false, problems }
   }
   // Both copy schemas are loose at the top level, so each parse keeps every section of the file.
-  return { ok: true, content: { config, personas, catalogue, seed, homes, copy: engineCopy as CopyContent & UiCopy } }
+  return {
+    ok: true,
+    content: { config, personas, catalogue, seed, homes, notifications, copy: engineCopy as CopyContent & UiCopy },
+  }
 }
 
 export function formatProblems(problems: readonly ContentProblem[]): string {

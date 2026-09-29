@@ -1,10 +1,44 @@
-// Tiny typed emitter for ephemeral UI events (never part of the ledger).
+import type { AccountId, Handle, Minor, PersonaId, TxKind } from '@domain/types'
+
+// Tiny typed emitter for ephemeral UI events (never part of the ledger). Cosmetics only: nothing
+// that moves money ever happens inside a handler or a timer started from one.
 
 export interface UiEvents {
   /** A toast/notification on a phone (e.g. the off-screen side in phone mode). */
   notify: { phone: string; textKey?: string; text?: string; txId?: string }
   /** Text for the single page-level aria-live region. */
   'aria-live': { text: string }
+  /**
+   * Money left one account for another (a payment was submitted by the user or a timer). Drives
+   * the token travel between the two visible phones, or towards an edge marker when one side is
+   * not on a phone. `party` names the off-stage person behind a sys:offstage leg.
+   */
+  'money-moved': {
+    txId: string
+    from: AccountId
+    to: AccountId
+    party?: Handle
+    amount: Minor
+    kind: TxKind
+    /** The batch that produced it: replays never emit. */
+    origin: 'user' | 'timer'
+  }
+  /**
+   * A notification arrived for a persona (derived from the ledger when a payment settles). The
+   * app decides whether it becomes a banner (the persona is on a phone) or a toast (it is not).
+   */
+  notification: {
+    persona: PersonaId
+    /** Stable id of the notification (its read mark). */
+    id: string
+    kind: string
+    txId: string
+    title: string
+    line: string | null
+    amount: Minor
+    banner: boolean
+    toast: boolean
+  }
 }
 
 export type UiEventName = keyof UiEvents

@@ -12,6 +12,7 @@ import catalogue from '../../content/catalogue.yaml'
 import config from '../../content/config.yaml'
 import copy from '../../content/copy.en.yaml'
 import homes from '../../content/homes.yaml'
+import notifications from '../../content/notifications.yaml'
 import personas from '../../content/personas.yaml'
 import seed from '../../content/seed.yaml'
 import { EPOCH, content, m } from './helpers'
@@ -101,7 +102,7 @@ describe('invariants detect corruption', () => {
 })
 
 describe('content validation', () => {
-  const raw = { config, personas, catalogue, seed, homes, copy }
+  const raw = { config, personas, catalogue, seed, homes, notifications, copy }
 
   it('accepts the committed content', () => {
     expect(() => parseContent(raw)).not.toThrow()

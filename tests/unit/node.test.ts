@@ -381,4 +381,17 @@ describe('command ids and navigation', () => {
     expect(nav.get()).toEqual({})
     expect(changes).toBe(2)
   })
+
+  it('the nav store holds any screen type and replaces every stack at once', () => {
+    type Screen = { kind: 'home' } | { kind: 'hub'; id: string }
+    const nav = createNavStore<Screen>({ ana: [{ kind: 'home' }] })
+    let changes = 0
+    nav.subscribe(() => {
+      changes += 1
+    })
+    nav.replaceAll({ cafe: [{ kind: 'home' }, { kind: 'hub', id: 'sales' }] })
+    expect(nav.stack('ana')).toEqual([])
+    expect(nav.stack('cafe')).toHaveLength(2)
+    expect(changes).toBe(1)
+  })
 })

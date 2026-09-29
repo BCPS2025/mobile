@@ -9,13 +9,17 @@ import catalogue from '../../content/catalogue.yaml'
 import config from '../../content/config.yaml'
 import copy from '../../content/copy.en.yaml'
 import homes from '../../content/homes.yaml'
+import notifications from '../../content/notifications.yaml'
 import personas from '../../content/personas.yaml'
 import seed from '../../content/seed.yaml'
+import notificationsText from '../../content/notifications.yaml?raw'
 import seedText from '../../content/seed.yaml?raw'
+import { checkInputs } from '../../scripts/banned-core'
+import homesComplete from '../support/homes-complete.yaml'
 
 // Build-time content validation: schemas, cross-file rules, seed arithmetic.
 
-const raw: RawContent = { config, personas, catalogue, seed, homes, copy }
+const raw: RawContent = { config, personas, catalogue, seed, homes, notifications, copy }
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
 type Obj = Record<string, unknown>
 
@@ -92,10 +96,11 @@ describe('schema problems carry a path that resolves to a line', () => {
     })
     expect(messages(dup).join('\n')).toMatch(/duplicate tile charge/)
     const noHub = problemsOf((r) => {
-      delete ((r.homes.consumer as Obj).hubs as Obj).wallet
+      delete ((r.homes.consumer as Obj).hubs as Obj).payRequest
     })
-    expect(messages(noHub).join('\n')).toMatch(/wallet is missing/)
+    expect(messages(noHub).join('\n')).toMatch(/payRequest is missing/)
     const incomplete = problemsOf((r) => {
+      r.homes = clone(homesComplete) as Obj
       r.homes.complete = true
       ;((r.homes.studio as Obj).tiles as Obj[]).pop()
       delete ((r.homes.studio as Obj).hubs as Obj).money
@@ -104,20 +109,26 @@ describe('schema problems carry a path that resolves to a line', () => {
   })
 
   it('complete: true checks every home against D28: tile order, avatar and every hub row', () => {
-    // The committed homes are the D28 homes: complete passes.
-    expect(messages(problemsOf((r) => (r.homes.complete = true)))).toEqual([])
-    const reordered = problemsOf((r) => {
+    // The complete D28 homes (kept as a fixture until the last milestone) pass.
+    const full = (r: Record<keyof RawContent, Obj>) => {
+      r.homes = clone(homesComplete) as Obj
       r.homes.complete = true
+    }
+    expect(messages(problemsOf(full))).toEqual([])
+    // The committed homes list only what is live, so `complete` rejects them.
+    expect(messages(problemsOf((r) => (r.homes.complete = true))).join('\n')).toMatch(/complete home/)
+    const reordered = problemsOf((r) => {
+      full(r)
       ;((r.homes.consumer as Obj).tiles as Obj[]).reverse()
     })
     expect(messages(reordered).join('\n')).toMatch(/consumer: tiles must be scan, payRequest, wallet, history/)
     const missingRow = problemsOf((r) => {
-      r.homes.complete = true
+      full(r)
       ;((r.homes.consumer as Obj).hubs as Obj).wallet = [{ row: 'topup', icon: 'plus' }]
     })
     expect(messages(missingRow).join('\n')).toMatch(/consumer: hubs.wallet is missing row:cashOut, row:myCode/)
     const swapped = problemsOf((r) => {
-      r.homes.complete = true
+      full(r)
       r.homes.pos = clone(r.homes.consumer)
     })
     expect(messages(swapped).join('\n')).toMatch(/pos: tiles must be charge, sales, pay, cashOut/)
@@ -125,6 +136,7 @@ describe('schema problems carry a path that resolves to a line', () => {
     // Without the flag, a home in progress may list fewer rows.
     expect(
       problemsOf((r) => {
+        r.homes = clone(homesComplete) as Obj
         ;((r.homes.consumer as Obj).hubs as Obj).wallet = [{ row: 'topup', icon: 'plus' }]
       }),
     ).toEqual([])
@@ -230,6 +242,52 @@ describe('cross-file rules', () => {
     expect(messages(ps).join('\n')).toMatch(/catalogue.yaml products.cafe.0.name: a literal fee or money figure/)
     const text = (content.copy.fee as Record<string, string>).chipShort ?? ''
     expect(text).toBe('Fee 1% · {fee} (≈ €{eur}) · {payer}')
+  })
+})
+
+describe('notifications.yaml', () => {
+  it('lists the A2 kinds with known fields', () => {
+    expect(Object.keys(content.notifications)).toEqual(['p2p.received', 'sale.received'])
+    expect(content.notifications['sale.received']).toMatchObject({
+      to: 'merchant',
+      opens: 'tx',
+      banner: true,
+      toast: true,
+    })
+  })
+
+  it('an unknown placeholder in a title or line fails with the kind in the path', () => {
+    const ps = problemsOf((r) => {
+      ;(r.notifications['p2p.received'] as Obj).title = '@{payer} sent you {total} BCPS'
+      ;(r.notifications['sale.received'] as Obj).line = 'from @{customerName}'
+    })
+    const text = messages(ps).join('\n')
+    expect(text).toMatch(/notifications.yaml p2p.received.title: unknown placeholder \{total\}/)
+    expect(text).toMatch(/notifications.yaml sale.received.line: unknown placeholder \{customerName\}/)
+  })
+
+  it('an unknown recipient or target, or a kind that is not dotted lower case, fails', () => {
+    expect(
+      problemsOf((r) => {
+        ;(r.notifications['p2p.received'] as Obj).to = 'everyone'
+      }).length,
+    ).toBeGreaterThan(0)
+    expect(
+      problemsOf((r) => {
+        ;(r.notifications['p2p.received'] as Obj).opens = 'elsewhere'
+      }).length,
+    ).toBeGreaterThan(0)
+    expect(
+      problemsOf((r) => {
+        r.notifications.P2P = r.notifications['p2p.received'] as Obj
+      }).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('notification wording is scanned by check-banned like the rest of the copy', () => {
+    const scan = (text: string) => checkInputs([{ path: 'content/notifications.yaml', text, kind: 'content' }])
+    expect(scan(notificationsText)).toEqual([])
+    expect(scan(notificationsText.replace('Payment received', 'Demo payment received')).length).toBeGreaterThan(0)
   })
 })
 

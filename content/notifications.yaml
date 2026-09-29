@@ -1,0 +1,6 @@
+# One entry per notification kind. Notifications are derived from the ledger, never stored; the
+# fields in braces are filled from state. Euro amounts appear only in the payment detail. `banner`
+# and `toast`: also shown as an in-app banner when the account is on a phone, and as a toast when
+# it is not. Outgoing payments create no notification; their receipt is the feedback.
+p2p.received:  { to: payee,    title: "@{payer} sent you {amount} BCPS",  line: "{note}",                 opens: tx, banner: true, toast: true }
+sale.received: { to: merchant, title: "Payment received · {amount} BCPS", line: "from @{payer} · {items}", opens: tx, banner: true, toast: true }

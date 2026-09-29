@@ -22,6 +22,9 @@ export const LAYERS: readonly Layer[] = [
 /** Files under src/ outside every layer. They may be imported by anyone and import nothing from src/. */
 export const SHARED_FILES: readonly string[] = ['src/build-constants.ts']
 
+/** Folders of binary assets (images): any layer may import them; they hold no code. */
+export const ASSET_DIRS: readonly string[] = ['src/assets/']
+
 /** Globals the domain layer never reads (time, randomness, the DOM and browser storage). */
 const DOMAIN_GLOBALS =
   /(?<![.\w$])(Date|window|document|navigator|localStorage|sessionStorage|indexedDB|performance|crypto|setTimeout|setInterval|requestAnimationFrame|globalThis|self)\b|(?<![.\w$])Math\s*\.\s*random\b/g
@@ -233,7 +236,7 @@ export function checkLayers(tree: Tree): Finding[] {
         }
         continue
       }
-      if (SHARED_FILES.includes(r.path)) continue
+      if (SHARED_FILES.includes(r.path) || ASSET_DIRS.some((d) => r.path.startsWith(d))) continue
       const to = layerOf(r.path)
       if (!to || shared) {
         findings.push({

@@ -1,6 +1,19 @@
+import { sessionCounterOf } from '@domain/counter'
 import { available, balanceOf, feeContextFor, incoming, pendingTxs, quoteWith, selectParty } from '@domain/ledger'
 import { asMinor } from '@domain/money'
-import type { AccountId, FeeQuote, LedgerState, Minor, Party, PartyId, PayChannel, Tx } from '@domain/types'
+import type {
+  AccountId,
+  FeeQuote,
+  LedgerState,
+  Minor,
+  Party,
+  PartyId,
+  PayChannel,
+  PersonaId,
+  SimTime,
+  Tx,
+} from '@domain/types'
+import { localDateOf } from '@sim/tz'
 
 // Pure selectors for useLedger. They return primitives or objects that are stable per state.
 
@@ -78,4 +91,41 @@ export function pendingFrom(s: LedgerState, a: AccountId): Tx | undefined {
 /** The pending transaction an account is receiving, if any. */
 export function pendingTo(s: LedgerState, a: AccountId): Tx | undefined {
   return pendingTxs(s).find((tx) => tx.to === a)
+}
+
+/**
+ * The session counter under the stage: merchant, web-checkout and subscription payments of the
+ * session whose card comparison is shown, with their fees (null before the first one).
+ */
+export function sessionCounter(s: LedgerState): ReturnType<typeof sessionCounterOf> | null {
+  const c = sessionCounterOf(s)
+  return c.count === 0 ? null : c
+}
+
+/**
+ * A merchant's sales today: the seeded "Today so far" summary row plus the settled sales of
+ * this session dated today (count and gross). Fresh from Reset: 23 payments, 111.38.
+ */
+export function salesToday(
+  s: LedgerState,
+  merchant: PersonaId,
+  now: SimTime,
+  tz: string,
+): { count: number; gross: Minor } {
+  const today = localDateOf(now, tz)
+  let count = 0
+  let gross = 0
+  for (const id of s.txOrder) {
+    const tx = s.txs[id]
+    if (!tx || tx.to !== merchant || tx.kind !== 'purchase' || tx.status !== 'confirmed') continue
+    if (localDateOf(tx.confirmedAt ?? tx.createdAt, tz) !== today) continue
+    if (tx.seed) {
+      if (tx.seedMeta?.labelKey !== 'todaySoFar') continue
+      count += tx.summary?.count ?? 0
+    } else {
+      count += 1
+    }
+    gross += tx.amount
+  }
+  return { count, gross: asMinor(gross) }
 }

@@ -1,31 +1,38 @@
 import { createContext, useContext, useSyncExternalStore } from 'react'
 
-// Screen stacks per key (a phone slot now; a persona from milestone A2). UI state only: it is
-// not part of the ledger, and Reset of the ledger does not depend on it.
+// Screen stacks per key (a persona in the phone runtime: a stack survives account switching for
+// the page session). UI state only: it is not part of the ledger. The element type is the app's
+// screen union (the store never looks inside a screen); only `home` and `home › hub` are
+// mirrored into the persisted UI state, by the app (see src/app/state).
 
-export type Nav = Record<string, readonly string[]>
+export type Nav<T = string> = Record<string, readonly T[]>
 
-export interface NavStore {
-  get(): Nav
-  stack(key: string): readonly string[]
-  set(key: string, stack: readonly string[]): void
+export interface NavStore<T = string> {
+  get(): Nav<T>
+  stack(key: string): readonly T[]
+  set(key: string, stack: readonly T[]): void
+  /** Replaces every stack at once (Reset, Undo, a session taken over from another tab). */
+  replaceAll(next: Nav<T>): void
   clear(): void
   subscribe(listener: () => void): () => void
 }
 
-const EMPTY: readonly string[] = []
-
-export function createNavStore(initial: Nav = {}): NavStore {
-  let nav: Nav = { ...initial }
+export function createNavStore<T = string>(initial: Nav<T> = {}): NavStore<T> {
+  const empty: readonly T[] = []
+  let nav: Nav<T> = { ...initial }
   const listeners = new Set<() => void>()
   const notify = () => {
     for (const l of [...listeners]) l()
   }
   return {
     get: () => nav,
-    stack: (key) => nav[key] ?? EMPTY,
+    stack: (key) => nav[key] ?? empty,
     set(key, stack) {
       nav = { ...nav, [key]: [...stack] }
+      notify()
+    },
+    replaceAll(next) {
+      nav = { ...next }
       notify()
     },
     clear() {
@@ -39,11 +46,13 @@ export function createNavStore(initial: Nav = {}): NavStore {
   }
 }
 
-export const NavContext = createContext<NavStore | null>(null)
+export const NavContext = createContext<NavStore<unknown> | null>(null)
+
+const EMPTY: readonly never[] = []
 
 /** Screen stack of one key; re-renders when navigation changes. */
-export function useNav(key: string): readonly string[] {
-  const store = useContext(NavContext)
+export function useNav<T = string>(key: string): readonly T[] {
+  const store = useContext(NavContext) as NavStore<T> | null
   if (!store) throw new Error('useNav: missing <NavContext.Provider>')
   const nav = useSyncExternalStore(store.subscribe, store.get, store.get)
   return nav[key] ?? EMPTY

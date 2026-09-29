@@ -109,3 +109,9 @@ export function maskEmail(email: string): string {
   const at = email.lastIndexOf('@')
   return at < 0 ? email : `${email.slice(0, at)}@${MASKED_DOMAIN}`
 }
+
+/** "Fri 25 Sep · 12:15": the date chip of the stage (virtual clock, Ljubljana). */
+export function dateChipText(t: SimTime): string {
+  const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: LJUBLJANA }).format(t)
+  return `${formatWeekday(t, LJUBLJANA)} ${day} · ${formatTime(t, LJUBLJANA)}`
+}

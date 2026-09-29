@@ -1,34 +1,18 @@
-import { BUILD_SHA } from '../boot/build-info'
-import { content } from '@content/load'
-import { formatMinor } from '@domain/money'
-import type { PersonaId } from '@domain/types'
-import { parsePaymentUri } from '@domain/uri'
-import { fill, ui } from '../copy'
-import { persona } from '../format'
-import { Overline, SectionTitle } from '../kit/Overline'
+import { ui } from '../copy'
+import { openTarget } from '../router'
 import { Wordmark } from '../kit/Wordmark'
 import { useUpdateReady } from '../pwa'
+import { AboutContent } from './AboutContent'
+import { useViewport } from './useViewport'
 
-// Start (branded landing), About (product description), the #/pay landing and not-found.
+// The pages outside the phones: the landing, About BCPS and the not-found page.
 
-function Pillars({ onNavy = false, four = true }: { onNavy?: boolean; four?: boolean }) {
-  return (
-    <ul
-      className={`grid grid-cols-1 gap-px sm:grid-cols-2 ${four ? 'lg:grid-cols-4' : ''} ${onNavy ? 'bg-navy-700' : 'bg-line-200'}`}
-    >
-      {ui.pillars.map((p) => (
-        <li key={p.title} className={`p-5 ${onNavy ? 'bg-navy-900' : 'bg-surface'}`}>
-          <span aria-hidden="true" className={`block h-[3px] w-6 ${onNavy ? 'bg-green-500' : 'bg-green-600'}`} />
-          <p className={`mt-3 font-display text-title ${onNavy ? 'text-white' : 'text-navy-900'}`}>{p.title}</p>
-          <p className={`mt-1 font-body text-body ${onNavy ? 'text-muted-navy' : 'text-ink'}`}>{p.body}</p>
-        </li>
-      ))}
-    </ul>
-  )
-}
+const BUTTON_ON_NAVY =
+  'inline-flex h-13 items-center bg-white px-6 font-display text-button text-navy-900 hover:bg-line-100'
 
-export function StartPage() {
+export function LandingPage() {
   const update = useUpdateReady()
+  const { w, h } = useViewport()
   return (
     <div className="min-h-dvh bg-bg">
       {update.ready && (
@@ -47,22 +31,32 @@ export function StartPage() {
         </div>
       )}
       <section className="on-navy bg-navy-900 text-white">
-        <div className="mx-auto max-w-5xl px-5 pt-12 pb-14 sm:px-8 sm:pt-20">
-          <Wordmark className="text-5xl" />
-          <p className="mt-8 font-body text-overline uppercase text-green-500">{ui.start.overline}</p>
-          <h1 className="mt-3 max-w-3xl font-display text-[40px] leading-[1.1] font-semibold tracking-[-0.02em] sm:text-[56px]">
+        <div className="mx-auto max-w-[1280px] px-6 pt-10 pb-16 sm:px-12 lg:px-24 lg:pb-[88px]">
+          <Wordmark className="text-[28px]" />
+          <p className="mt-24 font-body text-overline font-medium uppercase text-green-500 lg:mt-[100px]">
+            {ui.start.overline}
+          </p>
+          <span aria-hidden="true" className="mt-2 block h-[3px] w-6 bg-green-500" />
+          <h1 className="mt-6 max-w-4xl font-display text-[40px] leading-[1.06] font-semibold tracking-[-0.02em] sm:text-[56px] lg:text-[64px] lg:leading-[68px]">
             {ui.start.headline}
           </h1>
-          <p className="mt-5 max-w-2xl font-body text-body-l text-muted-navy">{ui.start.lede}</p>
+          <p className="mt-4 max-w-2xl font-body text-[20px] leading-7 text-line-300">{ui.start.lede}</p>
+          <a href={openTarget(w, h)} data-testid="open-bcps" className={`${BUTTON_ON_NAVY} mt-9`}>
+            {ui.start.open}
+          </a>
         </div>
       </section>
-      <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
-        <Overline bar>{ui.start.pillarsLabel}</Overline>
-        <div className="mt-4">
-          <Pillars />
-        </div>
+      <section className="mx-auto max-w-[1280px] px-6 pt-12 pb-8 sm:px-12 lg:px-24">
+        <ul className="grid grid-cols-1 gap-x-7 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+          {ui.pillars.map((p) => (
+            <li key={p.title} className="border-t-[3px] border-green-600 pt-4">
+              <p className="font-display text-[24px] leading-[30px] font-semibold text-navy-900">{p.title}</p>
+              <p className="mt-2 font-body text-body text-ink">{p.body}</p>
+            </li>
+          ))}
+        </ul>
       </section>
-      <footer className="mx-auto flex max-w-5xl items-center justify-between border-t border-line-200 px-5 py-6 sm:px-8">
+      <footer className="mx-auto flex max-w-[1280px] items-center justify-between border-t border-line-200 px-6 py-6 sm:px-12 lg:px-24">
         <Wordmark className="text-lg text-navy-900" />
         <a href="#/about" className="inline-flex h-12 items-center font-body text-body text-green-700 underline">
           {ui.common.about}
@@ -74,7 +68,7 @@ export function StartPage() {
 
 export function AboutPage() {
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="flex min-h-dvh flex-col bg-bg">
       <header className="on-navy bg-navy-900 text-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-8">
           <a href="#/" aria-label={ui.common.toStart} className="text-white">
@@ -85,87 +79,9 @@ export function AboutPage() {
           </a>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 py-8 sm:px-8">
         <h1 className="font-display text-display-l text-navy-900">{ui.about.title}</h1>
-        <p className="mt-4 font-body text-body-l text-ink">{ui.about.intro}</p>
-        <p className="mt-2 font-body text-body-l text-ink">{ui.about.simple}</p>
-
-        <section className="mt-10">
-          <SectionTitle>{ui.about.pillarsTitle}</SectionTitle>
-          <div className="mt-4">
-            <Pillars four={false} />
-          </div>
-        </section>
-
-        <section className="mt-10">
-          <SectionTitle>{ui.about.feesTitle}</SectionTitle>
-          <ul className="mt-4 border-t border-line-200">
-            {ui.about.fees.map((f) => (
-              <li key={f} className="flex gap-3 border-b border-line-200 py-3 font-body text-body text-ink">
-                <span aria-hidden="true" className="mt-2 inline-block size-2 shrink-0 bg-green-600" />
-                {f}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="mt-10">
-          <SectionTitle>{ui.about.privacyTitle}</SectionTitle>
-          <p className="mt-4 font-body text-body text-ink">{ui.common.privacy}</p>
-        </section>
-
-        <section className="mt-10">
-          <SectionTitle>{ui.about.safetyTitle}</SectionTitle>
-          <p className="mt-4 border-l-4 border-green-600 bg-surface px-4 py-3 font-body text-body text-ink">
-            {ui.about.safety}
-          </p>
-        </section>
-
-        <p className="mt-12 font-mono text-mono text-grey-600">{fill(ui.about.build, { sha: BUILD_SHA })}</p>
-      </main>
-    </div>
-  )
-}
-
-export function PayLanding() {
-  const parsed = parsePaymentUri(location.href)
-  const to = parsed.ok ? content.personas.personas.find((p) => p.handle === parsed.value.to) : undefined
-  const name = to ? (persona(to.id as PersonaId)?.displayName ?? to.handle) : parsed.ok ? parsed.value.to : ''
-  return (
-    <div className="flex min-h-dvh flex-col bg-bg">
-      <header className="on-navy bg-navy-900 px-5 py-4 text-white">
-        <Wordmark className="text-2xl" />
-      </header>
-      <main className="mx-auto w-full max-w-md flex-1 px-5 py-10">
-        <Overline bar>{ui.pay.title}</Overline>
-        {parsed.ok ? (
-          <>
-            <p className="mt-4 font-display text-title text-navy-900">{ui.pay.body}</p>
-            <dl className="mt-5 border-t border-line-200">
-              <div className="flex justify-between border-b border-line-200 py-3 font-body text-body">
-                <dt className="text-grey-600">{ui.pay.to}</dt>
-                <dd className="text-ink">{name}</dd>
-              </div>
-              {parsed.value.amount !== undefined && (
-                <div className="flex justify-between border-b border-line-200 py-3 font-body text-body">
-                  <dt className="text-grey-600">{ui.pay.amount}</dt>
-                  <dd className="text-ink tnum">
-                    {formatMinor(parsed.value.amount)} {ui.common.bcps}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </>
-        ) : (
-          <p className="mt-4 font-display text-title text-navy-900">{ui.pay.invalid}</p>
-        )}
-        <a
-          href="#/"
-          className="mt-8 inline-flex h-13 items-center gap-3 bg-navy-900 px-6 font-display text-button text-white"
-        >
-          <span aria-hidden="true" className="inline-block size-2.5 bg-green-500" />
-          {ui.pay.open}
-        </a>
+        <AboutContent page />
       </main>
     </div>
   )
