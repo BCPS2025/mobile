@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import '@app/phone/register'
-import { authScreen, detailScreen, flowImpl, isImplemented, viewScreen } from '@app/phone/implemented'
+import { authScreen, detailScreen, flowImpl, hubHeader, isImplemented, viewScreen } from '@app/phone/implemented'
 import { DETAILS, FLOWS, HUBS, LIVE_SHELLS, VIEWS } from '@app/phone/registry'
 
 // What is built (screens registered in src/app/phone/register.ts) against what the registry names:
@@ -54,5 +54,29 @@ describe('registered screens and flows agree with the registry', () => {
     expect(viewScreen('about', 'consumer')).toBeDefined()
     expect(viewScreen('about', 'pos')).toBeDefined()
     expect(flowImpl('logout')).toBeDefined()
+  })
+})
+
+describe('the people screens ship', () => {
+  it('Scan, Send, History, Notifications, the payment detail, Log in, the code screen and the Profile card', () => {
+    expect(flowImpl('scan')).toBeDefined()
+    expect(flowImpl('send')).toBeDefined()
+    expect(viewScreen('history', 'consumer')).toBeDefined()
+    expect(viewScreen('notifications', 'consumer')).toBeDefined()
+    expect(viewScreen('notifications', 'pos')).toBeDefined()
+    expect(detailScreen('tx')).toBeDefined()
+    expect(authScreen('login')).toBeDefined()
+    expect(authScreen('code')).toBeDefined()
+    expect(hubHeader('identity')).toBeDefined()
+  })
+
+  it('every consumer tile is visible: Scan, Pay & request (its Send row) and History', () => {
+    for (const target of [
+      { kind: 'flow', id: 'scan' },
+      { kind: 'hub', id: 'payRequest' },
+      { kind: 'view', id: 'history' },
+      { kind: 'flow', id: 'send' },
+    ] as const)
+      expect(isImplemented(target, 'consumer'), `${target.kind}:${target.id}`).toBe(true)
   })
 })

@@ -5,7 +5,11 @@ import { CodeScreen } from './auth/CodeScreen'
 import { LoginScreen } from './auth/LoginScreen'
 import { WelcomeScreen } from './auth/WelcomeScreen'
 import { AboutView } from './AboutView'
-import { registerAuthScreen, registerFlow, registerView } from './implemented'
+import { HistoryView } from './views/HistoryView'
+import { IdentityCard } from './views/IdentityCard'
+import { NotificationsView } from './views/NotificationsView'
+import { TxDetailView } from './views/TxDetail'
+import { registerAuthScreen, registerDetail, registerFlow, registerHubHeader, registerView } from './implemented'
 
 // Everything that is built, registered once. This is where a milestone adds its screens:
 //   registerAuthScreen('login', LoginScreen)         a screen of a logged-out phone
@@ -20,6 +24,10 @@ registerAuthScreen('welcome', WelcomeScreen)
 registerAuthScreen('login', LoginScreen)
 registerAuthScreen('code', CodeScreen)
 registerView('about', AboutView)
+registerView('history', HistoryView)
+registerView('notifications', NotificationsView)
+registerHubHeader('identity', IdentityCard)
+registerDetail('tx', TxDetailView)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)
