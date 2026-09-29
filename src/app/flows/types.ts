@@ -87,6 +87,12 @@ export interface StepDef<D> {
   back?(d: D, ctx: FlowCtx, api: FlowApi<D>): 'default' | 'leave' | { step: string }
   /** Screen body colour (default light; Scan, Charge and Pay code are navy). */
   body?: 'light' | 'navy'
+  /** The task header of this step when it differs from the flow's (Scan is navy, its review light). */
+  header?(d: D, ctx: FlowCtx): 'light' | 'navy' | 'business'
+  /** No dock under this step (Scan while no code is in view). */
+  hideDock?(d: D, ctx: FlowCtx): boolean
+  /** The step shows something that changes with the clock (a code that can expire): it renders every second. */
+  live?: boolean
 }
 
 /** A commit point: the step whose primary button dispatches this command. */
