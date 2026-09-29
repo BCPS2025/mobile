@@ -97,10 +97,13 @@ export interface CommitDef<D> {
   /**
    * `tx`: wait for the transaction this command creates (Sending… then the success screen, read
    * from the ledger). `none`: the command has no payment to wait for; the flow goes on to the
-   * next step at once.
+   * next step at once (unless `onAccepted` is given: it then decides where the flow goes).
    */
   await: 'tx' | 'none'
-  /** Called after an accepted command (for example the café stores nothing, the flow reads the ledger). */
+  /**
+   * Called after an accepted command. With `await: 'none'` it replaces the automatic move to the
+   * next step: move the flow yourself (`api.goto`, `api.next`, `api.leave`) or stay where it is.
+   */
   onAccepted?(d: D, ctx: FlowCtx, api: FlowApi<D>): void
 }
 
@@ -131,4 +134,9 @@ export interface FlowImpl<D = unknown> {
   Success?: ComponentType<SuccessProps<D>>
   /** True once the flow has ended although no payment says so (the café's code was paid). */
   done?(d: D, ctx: FlowCtx): boolean
+  /**
+   * True when the flow already shows this payment (the café's code step, once its code is paid), so
+   * the account gets no banner for it on top of the flow's own screen.
+   */
+  covers?(d: D, ctx: FlowCtx, txId: string): boolean
 }

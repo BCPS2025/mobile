@@ -15,7 +15,10 @@ npm ci
 npm run dev          # development server with hot reload
 ```
 
-Open the address it prints. Routes are hash-based (`#/`, `#/about`, `#/pay?…`).
+Open the address it prints. Routes are hash-based: `#/` (landing), `#/stage` (two phones side by side),
+`#/phone` (one phone with an account switcher), `#/phone/<person>` (logs that person in), `#/about`
+and `#/pay?…` (a payment link opens phone mode). Add `?clock=manual` for a virtual clock that moves
+only when told to (the end-to-end tests use it).
 
 ## Checks
 
@@ -62,7 +65,9 @@ the offline copy and its caches on that device and reloads the app.
 - `content/` – all visible text, people, starting balances and settings (YAML, validated)
 - `src/domain/` – money, fees and the ledger (pure, integer arithmetic)
 - `src/sim/`, `src/store/` – clock, seed and state
-- `src/app/` – screens and components; `src/app/boot/` holds the checks that run before the app renders
+- `src/app/` – screens and components: `shell/` (pages, stage, presenter chrome), `phone/` (screen stacks, the
+  navigation registry, phone chrome), `flows/` (the flow engine and shared steps), `state/` (page state,
+  preferences), `kit/` (small components); `boot/` holds the checks that run before the app renders
 
 Imports run one way only: `domain` ← `content` ← `sim` ← `store` ← `app`. Across layers they use the
 aliases `@domain/*`, `@content/*`, `@sim/*`, `@store/*` and `@app/*` (tsconfig.json);

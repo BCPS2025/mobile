@@ -151,6 +151,6 @@ function runCommit<D>(
     return
   }
   if (commit.await === 'tx') patch((x) => ({ ...withoutError(x), sent: true }))
-  commit.onAccepted?.(d, ctx, api)
-  if (commit.await === 'none') api.next()
+  if (commit.onAccepted) commit.onAccepted(d, ctx, api)
+  else if (commit.await === 'none') api.next()
 }

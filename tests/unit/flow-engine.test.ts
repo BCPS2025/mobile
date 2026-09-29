@@ -249,6 +249,62 @@ describe('starting and ending flows', () => {
   })
 })
 
+describe('a commit with no payment to wait for', () => {
+  const pay1 = (to: `@${string}`, amount: string, debit: string) => (ctx: FlowCtx, cmdId: string) => ({
+    type: 'pay' as const,
+    actor: ctx.persona,
+    cmdId,
+    to,
+    amount: mustParseMinor(amount),
+    channel: 'username' as const,
+    expect: { senderDebit: mustParseMinor(debit) },
+  })
+  const codeFlow: FlowImpl<Draft> = {
+    id: 'charge',
+    title: () => 'Charge',
+    tone: () => 'light',
+    init: () => ({ to: '', amount: '', note: '', templated: false }),
+    steps: [step('items', 'input'), step('code', 'waitFor'), step('cancel', 'confirm', { offPath: true })],
+    commits: [
+      { step: 'items', await: 'none', command: (_d, ctx, id) => pay1('@marko', '1.00', '1.01')(ctx, id) },
+      {
+        step: 'cancel',
+        await: 'none',
+        command: (_d, ctx, id) => pay1('@marko', '2.00', '2.02')(ctx, id),
+        onAccepted: (_d, _ctx, api) => api.goto('items'),
+      },
+    ],
+  }
+  registerFlow(codeFlow as never)
+
+  it('goes on to the next step at once, or wherever onAccepted sends it', () => {
+    const { nav, flowNow, app } = fixture()
+    nav.openFlow('charge')
+    const api = createFlowApi<Draft>(app, { persona: 'ana', slot: 'left', shell: 'consumer' }, flowNow().instanceId)
+    api.press() // items: accepted, no payment awaited → the code step
+    expect(flowNow().step).toBe(1)
+    expect(flowNow().sent).toBe(false)
+    api.goto('cancel')
+    api.press() // cancel: onAccepted moves the flow to the first step and nothing moves it on again
+    expect(flowNow().step).toBe(0)
+    expect(app.runtime.node.getState().txOrder.filter((id) => app.runtime.node.getState().txs[id]?.cmdId).length).toBe(
+      2,
+    )
+  })
+
+  it('Back on the code step leaves the flow, and on the off-path confirm step returns to the code', () => {
+    const { nav, flowNow, app } = fixture()
+    nav.openFlow('charge')
+    const api = createFlowApi<Draft>(app, { persona: 'ana', slot: 'left', shell: 'consumer' }, flowNow().instanceId)
+    api.press()
+    api.goto('cancel')
+    api.back()
+    expect(flowNow().step).toBe(1)
+    api.back()
+    expect(nav.top()).toEqual(HOME_SCREEN)
+  })
+})
+
 describe('the words of a refusal', () => {
   const have = mustParseMinor('5.20')
   const short = mustParseMinor('5.80')

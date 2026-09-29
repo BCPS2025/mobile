@@ -2,6 +2,8 @@ import { ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ui } from '../../copy'
 import { useApp, useTransient } from '../../state/AppContext'
+import { makeFlowCtx } from '../../flows/ctx'
+import { flowImpl } from '../implemented'
 import { openNotification } from '../notify'
 import { usePhone } from '../PhoneContext'
 import { usePhoneStack } from '../nav'
@@ -32,8 +34,24 @@ export function BannerSlot() {
     return () => window.clearTimeout(id)
   }, [seq, sticky, paused, persona, app])
 
-  if (!banner || !persona || !shell) return null
-  const interactive = stack[stack.length - 1]?.kind !== 'flow'
+  const top = stack[stack.length - 1]
+  // A flow that already shows this very payment (the café's code, once paid) needs no banner.
+  const covered =
+    banner !== undefined &&
+    persona !== null &&
+    shell !== null &&
+    top?.kind === 'flow' &&
+    flowImpl(top.id)?.covers?.(
+      top.draft as never,
+      makeFlowCtx(app, { persona, slot: phone.slot, shell }, top.params),
+      banner.txId,
+    ) === true
+  useEffect(() => {
+    if (covered && persona) app.actions.dismissBanner(persona)
+  }, [covered, persona, app])
+
+  if (!banner || !persona || !shell || covered) return null
+  const interactive = top?.kind !== 'flow'
   const text = banner.line ? `${banner.title} · ${banner.line}` : banner.title
   const body = (
     <>
