@@ -14,7 +14,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { invariants } from '@domain/invariants'
 import { evolve } from '@domain/ledger'
-import type { LedgerEvent, LedgerState, SimTime, Tx, UserCommand } from '@domain/types'
+import type { LedgerEvent, LedgerState, SimTime, Tx, PayCommand } from '@domain/types'
 import { buildSeed } from '@sim/seed'
 import { createLogEncoder } from '@store/log-codec'
 import { createLedgerNode } from '@store/node'
@@ -25,7 +25,18 @@ import { restoreText } from '@store/restore'
 import { fakeTime } from '../support/fake-time'
 import { STATE_VERSION } from '../support/records'
 import { content } from '../unit/helpers'
-import { EPOCHS, type Step, cmdIds, lunchCommand, payCommand, sequenceArb } from './arbitraries'
+import {
+  EPOCHS,
+  type Step,
+  cancelCodeCommand,
+  chargeCommand,
+  cmdIds,
+  lunchCommand,
+  payCodeCommand,
+  payCommand,
+  posCodes,
+  sequenceArb,
+} from './arbitraries'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
 const TIMEOUT = 600_000
@@ -37,7 +48,19 @@ const params = (numRuns: number): fc.Parameters<unknown> => ({ numRuns, ...(SEED
 const onePercent = (amount: number) => Math.floor((amount + 50) / 100)
 
 /** What happened across all runs, so the test can show the generators reach the paths. */
-const stats = { accepted: 0, refused: new Map<string, number>(), lunchPaid: 0, jumps: 0, jumpsRefused: 0, events: 0 }
+const stats = {
+  accepted: 0,
+  refused: new Map<string, number>(),
+  lunchPaid: 0,
+  jumps: 0,
+  jumpsRefused: 0,
+  events: 0,
+  charges: 0,
+  replacedCodes: 0,
+  cancels: 0,
+  codesPaid: 0,
+  codesRefused: new Map<string, number>(),
+}
 const countRefusal = (code: string) => stats.refused.set(code, (stats.refused.get(code) ?? 0) + 1)
 
 interface Outcome {
@@ -68,7 +91,7 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         // half of the time, and the other half let dispatch catch up by itself.
         if (cmdId.charCodeAt(15) % 2 === 0) node.run(node.now(), 'catch-up')
         const before = node.getState()
-        const cmd: UserCommand =
+        const cmd: PayCommand =
           step.kind === 'pay' ? payCommand(content, before, step, cmdId) : lunchCommand(before, step.expect, cmdId)
         const r = node.dispatch(cmd)
         const mine = node.events().filter((e) => e.cmdId === cmd.cmdId && e.type === 'tx.submitted')
@@ -89,6 +112,67 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         if (tx.fee.payer === 'sender') expect(tx.fee.senderDebit).toBe(cmd.amount + tx.fee.fee)
         else expect(tx.fee.recipientCredit).toBe(cmd.amount - tx.fee.fee)
         if (cmd.requestId === 'r_seed_lunch') stats.lunchPaid++
+        break
+      }
+      case 'charge': {
+        const cmdId = ids.next({ kind: 'new' })
+        const before = node.getState()
+        const cmd = chargeCommand(content, step, cmdId)
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          // A refused code changes nothing and is not logged.
+          expect(node.events().filter((e) => e.cmdId === cmdId)).toHaveLength(0)
+          expect(node.log().some((l) => 'cmd' in l && l.cmd === cmd)).toBe(false)
+          break
+        }
+        stats.charges++
+        const created = r.value.filter((e) => e.type === 'request.created')
+        expect(created).toHaveLength(1)
+        // The merchant's earlier open codes are cancelled in the same batch, before the new one.
+        const open = posCodes(before)
+          .filter((c) => c.requester === cmd.actor && c.status === 'open')
+          .map((c) => c.id)
+        const cancelled = r.value.flatMap((e) => (e.type === 'request.status' ? [e.requestId] : []))
+        expect([...cancelled].sort()).toEqual(open)
+        stats.replacedCodes += open.length
+        expect(r.value.at(-1)?.type).toBe('request.created')
+        const code = (created[0] as Extract<LedgerEvent, { type: 'request.created' }>).request
+        expect(code).toMatchObject({ requester: cmd.actor, channel: 'pos', status: 'open', policy: 'merchant' })
+        expect(code.payer).toBeUndefined()
+        break
+      }
+      case 'cancel-code': {
+        const cmdId = ids.next({ kind: 'new' })
+        const cmd = cancelCodeCommand(content, node.getState(), step, cmdId)
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          break
+        }
+        stats.cancels++
+        expect(r.value).toHaveLength(1)
+        expect(r.value[0]).toMatchObject({ type: 'request.status', status: 'cancelled' })
+        break
+      }
+      case 'pay-code': {
+        const cmdId = ids.next({ kind: 'new' })
+        const cmd = payCodeCommand(content, node.getState(), step, cmdId)
+        if (!cmd) break
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          const why = r.error.status ? `${r.error.code}:${r.error.status}` : r.error.code
+          stats.codesRefused.set(why, (stats.codesRefused.get(why) ?? 0) + 1)
+          countRefusal(r.error.code)
+          break
+        }
+        stats.codesPaid++
+        const tx = (r.value[0] as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx
+        expect(tx).toMatchObject({ kind: 'purchase', channel: 'qr' })
+        expect(tx.fee.fee).toBe(onePercent(cmd.amount))
+        expect(tx.fee.payer).toBe('recipient')
+        expect(tx.fee.senderDebit).toBe(cmd.amount)
+        expect(node.getState().requests[cmd.requestId ?? '']).toMatchObject({ status: 'paid', txId: tx.id })
         break
       }
       case 'advance':
@@ -177,7 +261,15 @@ describe('ledger properties over random A1 command sequences', () => {
       }),
       params(RUNS),
     )
-    if (process.env.FC_STATS) console.log(JSON.stringify({ ...stats, refused: Object.fromEntries(stats.refused) }))
+    if (process.env.FC_STATS) {
+      console.log(
+        JSON.stringify({
+          ...stats,
+          refused: Object.fromEntries(stats.refused),
+          codesRefused: Object.fromEntries(stats.codesRefused),
+        }),
+      )
+    }
     // The generators reach both sides of every decision.
     expect(stats.accepted).toBeGreaterThan(RUNS)
     expect(stats.events).toBeGreaterThan(RUNS)
@@ -194,6 +286,14 @@ describe('ledger properties over random A1 command sequences', () => {
       expect(stats.refused.get(code) ?? 0, code).toBeGreaterThan(0)
     }
     expect(stats.lunchPaid).toBeGreaterThan(0)
+    // Payment codes: shown, replaced, cancelled and paid; and refused as expired, cancelled or paid.
+    expect(stats.charges).toBeGreaterThan(0)
+    expect(stats.replacedCodes).toBeGreaterThan(0)
+    expect(stats.cancels).toBeGreaterThan(0)
+    expect(stats.codesPaid).toBeGreaterThan(0)
+    for (const why of ['invalid-state:paid', 'invalid-state:cancelled', 'invalid-state:expired']) {
+      expect(stats.codesRefused.get(why) ?? 0, why).toBeGreaterThan(0)
+    }
     expect(stats.jumpsRefused).toBeGreaterThan(0)
     expect(stats.jumps).toBeGreaterThan(stats.jumpsRefused)
   })

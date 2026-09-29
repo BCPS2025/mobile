@@ -75,7 +75,7 @@ describe('record round trip', () => {
     if (!p.ok) return
     expect(p.record.label).toBe('Café loop')
     const e = p.record.log[1]
-    expect(e && 'cmd' in e && e.cmd.note).toBe('Croissant delivery')
+    expect(e && 'cmd' in e && 'note' in e.cmd && e.cmd.note).toBe('Croissant delivery')
   })
 
   it('prefs in a file are ignored', () => {

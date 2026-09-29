@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatHundredths } from '@domain/money'
-import type { SimTime, UserCommand } from '@domain/types'
+import type { SimTime, PayCommand } from '@domain/types'
 import { instantOfAt } from '@sim/tz'
 import { CLOCK_KEY, QUARANTINE_KEY, openStorage, readClockStamp, stateKey } from '@store/persistence'
 import { LIMITS, parseRecord } from '@store/record'
@@ -18,7 +18,7 @@ import { content, m } from './helpers'
 
 const KEY = stateKey(STATE_VERSION)
 const journey = cafeQrBakery(content)
-const [saleCmd, bakeryCmd] = [journey[0]?.cmd as UserCommand, journey[1]?.cmd as UserCommand]
+const [saleCmd, bakeryCmd] = [journey[0]?.cmd as PayCommand, journey[1]?.cmd as PayCommand]
 const bal = (
   rt: { node: { getState(): { balances: Record<string, { confirmed: number } | undefined> } } },
   a: string,
@@ -650,7 +650,7 @@ describe('limits', () => {
   it('a command the file rules cannot hold is refused before it is decided', async () => {
     const { rt } = tab(shared())
     const items = Array.from({ length: 21 }, () => ({ sku: 'croissant', name: 'Croissant', qty: 1, price: m('2.20') }))
-    const big: UserCommand = {
+    const big: PayCommand = {
       ...saleCmd,
       cmdId: 'aaaaaaaaaaaaaaaa:review',
       items,
@@ -659,7 +659,7 @@ describe('limits', () => {
     }
     expect(rt.dispatch(big)).toEqual({ ok: false, error: { code: 'not-storable' } })
     // Notes are cleaned the way an import would clean them.
-    const noted: UserCommand = { ...bakeryCmd, note: '​Croissant\u0007 delivery' }
+    const noted: PayCommand = { ...bakeryCmd, note: '​Croissant\u0007 delivery' }
     at(rt, '12:16:00.000')
     expect(rt.dispatch(noted).ok).toBe(true)
     const last = rt.node.getState().txOrder.at(-1) as string
@@ -670,7 +670,7 @@ describe('limits', () => {
     const { rt } = tab(shared())
     at(rt, '12:16:00.000')
     const flat = { sku: 'flat-white', name: 'Flat white', qty: 1, price: m('3.30') }
-    const cases: [string, UserCommand][] = [
+    const cases: [string, PayCommand][] = [
       ['an item without a sku', { ...saleCmd, items: [{ name: 'Custom', qty: 1, price: m('11.00') }] }],
       [
         "another merchant's item",
@@ -683,17 +683,17 @@ describe('limits', () => {
         },
       ],
       ['an edited price', { ...saleCmd, items: [{ ...flat, price: m('11.00') }] }],
-      ['a persona id in place of a handle', { ...bakeryCmd, to: 'bakery' as UserCommand['to'] }],
+      ['a persona id in place of a handle', { ...bakeryCmd, to: 'bakery' as PayCommand['to'] }],
     ]
     for (const [name, cmd] of cases)
       expect(rt.dispatch(cmd), name).toEqual({ ok: false, error: { code: 'not-storable' } })
     expect(rt.node.log()).toHaveLength(0)
     // A malformed amount is the node's refusal, not an exception.
-    expect(rt.dispatch({ ...saleCmd, amount: Number.NaN as UserCommand['amount'] })).toMatchObject({
+    expect(rt.dispatch({ ...saleCmd, amount: Number.NaN as PayCommand['amount'] })).toMatchObject({
       ok: false,
       error: { code: 'invalid-amount' },
     })
-    expect(rt.dispatch({ ...saleCmd, expect: { senderDebit: Number.NaN as UserCommand['amount'] } })).toMatchObject({
+    expect(rt.dispatch({ ...saleCmd, expect: { senderDebit: Number.NaN as PayCommand['amount'] } })).toMatchObject({
       ok: false,
       error: { code: 'quote-changed' },
     })

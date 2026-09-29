@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyToDraft, beginDraft, decide, decideDue, dueWork, evolve, finishDraft } from '@domain/ledger'
-import type { LedgerEvent, LedgerState, PendingEvent, SimTime, UserCommand } from '@domain/types'
+import type { LedgerEvent, LedgerState, PendingEvent, SimTime, PayCommand } from '@domain/types'
 import { buildSeed } from '@sim/seed'
 import { EPOCH, content, m } from './helpers'
 
@@ -13,8 +13,8 @@ const pay = (
   to: `@${string}`,
   amount: string,
   debit: string,
-  extra: Partial<UserCommand> = {},
-): UserCommand => ({
+  extra: Partial<PayCommand> = {},
+): PayCommand => ({
   type: 'pay',
   actor,
   cmdId: `${(++k).toString(16).padStart(16, '0')}:review`,

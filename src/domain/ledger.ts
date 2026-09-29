@@ -1,5 +1,5 @@
 import { maxSendable, quoteFee } from './fees'
-import { nextRefSeq, txRef } from './ids'
+import { nextRefSeq, requestId as requestIdOf, txRef } from './ids'
 import { asMinor } from './money'
 import type {
   AccountId,
@@ -19,11 +19,14 @@ import type {
   Party,
   PartyId,
   PayChannel,
+  PayCommand,
   PaymentLink,
   PaymentRequest,
   PendingEvent,
   PersonaId,
   Posting,
+  RequestCancelBody,
+  RequestCreateBody,
   Result,
   SimTime,
   Tx,
@@ -177,8 +180,6 @@ function commonChecks(s: LedgerState, c: Command): DomainError | null {
   return null
 }
 
-type PayCommand = Extract<Command, { type: 'pay' }>
-
 function decidePay(s: LedgerState, c: PayCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
   const from: PersonaId = c.actor
   if (!positiveInt(c.amount)) return err('invalid-amount')
@@ -202,6 +203,7 @@ function decidePay(s: LedgerState, c: PayCommand, ctx: DecideCtx): Result<Pendin
     request = entryOf(s.requests, c.requestId)
     if (!request || request.requester !== to.id) return err('invalid-state')
     if (request.status !== 'open') return err('invalid-state', { status: request.status })
+    if (isPosCodeExpired(s, request, ctx.now)) return err('invalid-state', { status: 'expired' })
     if (request.payer !== undefined && request.payer !== from) return err('not-allowed')
     if (request.amount !== c.amount) return err('invalid-amount')
     if (request.items) {
@@ -230,7 +232,8 @@ function decidePay(s: LedgerState, c: PayCommand, ctx: DecideCtx): Result<Pendin
   const tx: Tx = {
     id: nextTxId(s),
     kind: kindOfPolicy(fee.policyId),
-    channel: c.channel,
+    // A payment of a POS code is a QR payment, whatever channel the caller named.
+    channel: request?.channel === 'pos' ? 'qr' : c.channel,
     status: 'pending',
     from,
     to: toAccount,
@@ -252,12 +255,73 @@ function decidePay(s: LedgerState, c: PayCommand, ctx: DecideCtx): Result<Pendin
   return { ok: true, value: [{ type: 'tx.submitted', cmdId: c.cmdId, tx }] }
 }
 
+/** A POS code is good for `posCodeValidityMs` after it was made; later it has expired (its status stays open). */
+export function isPosCodeExpired(s: LedgerState, r: PaymentRequest, now: SimTime): boolean {
+  return r.channel === 'pos' && now >= r.createdAt + s.config.posCodeValidityMs
+}
+
+type RequestCreateCommand = RequestCreateBody & { cmdId: string; actor: PersonaId }
+type RequestCancelCommand = RequestCancelBody & { cmdId: string; actor: PersonaId }
+
+function decideRequestCreate(
+  s: LedgerState,
+  c: RequestCreateCommand,
+  ctx: DecideCtx,
+): Result<PendingEvent[], DomainError> {
+  const actor: PersonaId = c.actor
+  // Only a merchant shows payment codes; the café's is the only one the screens offer.
+  if (c.channel !== 'pos') return err('invalid-state')
+  if (!isMerchant(s, actor)) return err('not-allowed')
+  if (!positiveInt(c.amount)) return err('invalid-amount')
+  const max = s.config.limits.consumerMax
+  if (c.amount > max) return err('invalid-amount', { max })
+  if (c.items && c.items.length > 0) {
+    if (!c.items.every((it) => positiveInt(it.qty) && positiveInt(it.price))) return err('invalid-amount')
+    const sum = c.items.reduce((acc, it) => acc + it.qty * it.price, 0)
+    if (sum !== c.amount) return err('invalid-amount')
+  }
+  const settings = entryOf(s.merchant, actor)
+  if (!settings) return err('not-allowed')
+  const request: PaymentRequest = {
+    id: requestIdOf(s.counters.requestSeq + 1),
+    requester: actor,
+    amount: c.amount,
+    channel: 'pos',
+    // What the payer is charged is fixed now, from the merchant's current setting.
+    feePayer: settings.feePayer,
+    policy: 'merchant',
+    status: 'open',
+    createdAt: ctx.now,
+    cmdId: c.cmdId,
+  }
+  if (c.note !== undefined) request.note = c.note
+  if (c.items && c.items.length > 0) request.items = c.items.map((it) => ({ ...it }))
+  // A merchant has one code at a time: the previous one (also one that ran out) is cancelled first.
+  const replaced: PendingEvent[] = Object.values(s.requests)
+    .filter((r) => r.channel === 'pos' && r.requester === actor && r.status === 'open')
+    .sort((a, b) => (a.id < b.id ? -1 : 1))
+    .map((r) => ({ type: 'request.status', cmdId: c.cmdId, requestId: r.id, status: 'cancelled' }))
+  return { ok: true, value: [...replaced, { type: 'request.created', cmdId: c.cmdId, request }] }
+}
+
+function decideRequestCancel(s: LedgerState, c: RequestCancelCommand): Result<PendingEvent[], DomainError> {
+  const request = entryOf(s.requests, c.requestId)
+  if (!request) return err('invalid-state')
+  if (request.requester !== c.actor) return err('not-allowed')
+  if (request.status !== 'open') return err('invalid-state', { status: request.status })
+  return { ok: true, value: [{ type: 'request.status', cmdId: c.cmdId, requestId: request.id, status: 'cancelled' }] }
+}
+
 export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
   const common = commonChecks(s, c)
   if (common) return { ok: false, error: common }
   switch (c.type) {
     case 'pay':
       return decidePay(s, c, ctx)
+    case 'request.create':
+      return decideRequestCreate(s, c, ctx)
+    case 'request.cancel':
+      return decideRequestCancel(s, c)
   }
 }
 
@@ -411,6 +475,11 @@ function apply(w: Writer, e: LedgerEvent): void {
         const at = pending.indexOf(tx.id)
         if (at >= 0) pending.splice(at, 1)
       }
+      return
+    }
+    case 'request.created': {
+      setEntry(own(w, 'requests'), e.request.id, e.request)
+      s.counters = { ...s.counters, requestSeq: s.counters.requestSeq + 1 }
       return
     }
     case 'request.status': {

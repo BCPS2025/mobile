@@ -42,21 +42,30 @@ export interface WireItem {
 }
 
 /** A user command as the log stores it: amounts as two-decimal strings, items by sku, refs. */
-export type WireCommand = {
-  type: 'pay'
-  to: Handle
-  amount: string
-  channel: PayChannel
-  note?: string
-  items?: WireItem[]
-  requestRef?: Ref
-  linkRef?: Ref
-  expect: { senderDebit: string }
-}
+export type WireCommand =
+  | {
+      type: 'pay'
+      to: Handle
+      amount: string
+      channel: PayChannel
+      note?: string
+      items?: WireItem[]
+      requestRef?: Ref
+      linkRef?: Ref
+      expect: { senderDebit: string }
+    }
+  | { type: 'request.create'; channel: 'pos'; amount: string; note?: string; items?: WireItem[] }
+  | { type: 'request.cancel'; requestRef: Ref }
+
+type WirePay = Extract<WireCommand, { type: 'pay' }>
 
 export type WireCommandType = WireCommand['type']
 /** User command types a log may contain (never `sys.*`). Grows with every new command. */
-export const USER_COMMAND_TYPES: ReadonlySet<string> = new Set<WireCommandType>(['pay'])
+export const USER_COMMAND_TYPES: ReadonlySet<string> = new Set<WireCommandType>([
+  'pay',
+  'request.create',
+  'request.cancel',
+])
 
 export interface CommandEntry {
   at: At
@@ -394,6 +403,14 @@ function ref(v: unknown, path: string): Ref {
   return { seedRow: str(o.seedRow, `${path}.seedRow`, SEED_KEY) }
 }
 
+function wireItems(v: unknown, path: string): WireItem[] {
+  return arr(v, path, LIMITS.items).map((it, i) => {
+    const p = `${path}[${i}]`
+    const io = obj(it, p, ['sku', 'qty'])
+    return { sku: str(io.sku, `${p}.sku`, SKU), qty: int(io.qty, `${p}.qty`, 1, 999) }
+  })
+}
+
 function command(v: unknown, path: string): WireCommand {
   if (!v || typeof v !== 'object' || Array.isArray(v)) refuse('shape', path)
   const type = (v as Obj).type
@@ -404,7 +421,7 @@ function command(v: unknown, path: string): WireCommand {
       const channel = o.channel
       if (typeof channel !== 'string' || !PAY_CHANNELS.has(channel)) refuse('shape', `${path}.channel`)
       const expect = obj(o.expect, `${path}.expect`, ['senderDebit'])
-      const out: WireCommand = {
+      const out: WirePay = {
         type: 'pay',
         to: str(o.to, `${path}.to`, HANDLE) as Handle,
         amount: str(o.amount, `${path}.amount`, AMOUNT),
@@ -412,16 +429,26 @@ function command(v: unknown, path: string): WireCommand {
         expect: { senderDebit: str(expect.senderDebit, `${path}.expect.senderDebit`, AMOUNT) },
       }
       if (o.note !== undefined) out.note = text(o.note, `${path}.note`, LIMITS.note)
-      if (o.items !== undefined) {
-        out.items = arr(o.items, `${path}.items`, LIMITS.items).map((it, i) => {
-          const p = `${path}.items[${i}]`
-          const io = obj(it, p, ['sku', 'qty'])
-          return { sku: str(io.sku, `${p}.sku`, SKU), qty: int(io.qty, `${p}.qty`, 1, 999) }
-        })
-      }
+      if (o.items !== undefined) out.items = wireItems(o.items, `${path}.items`)
       if (o.requestRef !== undefined) out.requestRef = ref(o.requestRef, `${path}.requestRef`)
       if (o.linkRef !== undefined) out.linkRef = ref(o.linkRef, `${path}.linkRef`)
       return out
+    }
+    case 'request.create': {
+      const o = obj(v, path, ['type', 'channel', 'amount'], ['note', 'items'])
+      if (o.channel !== 'pos') refuse('shape', `${path}.channel`)
+      const out: Extract<WireCommand, { type: 'request.create' }> = {
+        type: 'request.create',
+        channel: 'pos',
+        amount: str(o.amount, `${path}.amount`, AMOUNT),
+      }
+      if (o.note !== undefined) out.note = text(o.note, `${path}.note`, LIMITS.note)
+      if (o.items !== undefined) out.items = wireItems(o.items, `${path}.items`)
+      return out
+    }
+    case 'request.cancel': {
+      const o = obj(v, path, ['type', 'requestRef'])
+      return { type: 'request.cancel', requestRef: ref(o.requestRef, `${path}.requestRef`) }
     }
   }
 }

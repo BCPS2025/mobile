@@ -140,6 +140,16 @@ export function invariants(s: LedgerState): string[] {
     }
   }
 
+  // A merchant has at most one open payment code, and a code has no payer and the merchant policy.
+  const openCodes = new Map<string, number>()
+  for (const req of Object.values(s.requests)) {
+    if (req.channel !== 'pos') continue
+    if (req.payer !== undefined) bad(7, `payment code ${req.id} names a payer`)
+    if (req.policy !== 'merchant') bad(17, `payment code ${req.id} does not use the merchant fee policy`)
+    if (req.status === 'open') openCodes.set(req.requester, (openCodes.get(req.requester) ?? 0) + 1)
+  }
+  for (const [merchant, n] of openCodes) if (n > 1) bad(7, `${merchant} has ${n} open payment codes`)
+
   // ---- links (7, 17)
   for (const link of Object.values(s.links)) {
     for (const id of link.payments) {

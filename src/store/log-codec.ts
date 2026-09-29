@@ -49,6 +49,20 @@ export function encodeCommand(s: LedgerState, c: UserCommand): Result<WireComman
       }
       return { ok: true, value: out }
     }
+    case 'request.create': {
+      const out: WireCommand = { type: 'request.create', channel: c.channel, amount: minorString(c.amount) }
+      if (c.note !== undefined) out.note = c.note
+      if (c.items !== undefined) {
+        if (!c.items.every((it) => it.sku !== undefined)) return { ok: false, error: 'unencodable' }
+        out.items = c.items.map((it) => ({ sku: it.sku as string, qty: it.qty }))
+      }
+      return { ok: true, value: out }
+    }
+    case 'request.cancel': {
+      const r = refOf(entryOf(s.requests, c.requestId))
+      if (!r) return { ok: false, error: 'unknown-ref' }
+      return { ok: true, value: { type: 'request.cancel', requestRef: r } }
+    }
   }
 }
 
@@ -103,6 +117,31 @@ export function decodeCommand(
         out.linkId = id
       }
       return { ok: true, value: out }
+    }
+    case 'request.create': {
+      const amount = parseMinor(w.amount)
+      if (!amount.ok) return { ok: false, error: 'bad-amount' }
+      const out: UserCommand = {
+        type: 'request.create',
+        actor: e.actor,
+        cmdId: e.cmdId,
+        channel: w.channel,
+        amount: amount.value,
+      }
+      if (w.note !== undefined) out.note = w.note
+      if (w.items !== undefined) {
+        try {
+          out.items = resolveItems(content, e.actor, w.items)
+        } catch {
+          return { ok: false, error: 'unknown-item' }
+        }
+      }
+      return { ok: true, value: out }
+    }
+    case 'request.cancel': {
+      const id = resolveRef(s.requests, w.requestRef)
+      if (id === null) return { ok: false, error: 'unknown-ref' }
+      return { ok: true, value: { type: 'request.cancel', actor: e.actor, cmdId: e.cmdId, requestId: id } }
     }
   }
 }

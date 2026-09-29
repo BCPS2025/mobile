@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { invariants } from '@domain/invariants'
 import { formatHundredths } from '@domain/money'
-import type { DueItem, LedgerState, SimTime, Tx, UserCommand } from '@domain/types'
+import type { DueItem, LedgerState, SimTime, Tx, PayCommand } from '@domain/types'
 import { KIND_RANK, MAX_TIMER_MS, compareDue, nextDue, runDue, timerDelay } from '@sim/scheduler'
 import { buildSeed } from '@sim/seed'
 import { CMD_ID, cmdIdFor, newFlowInstanceId } from '@store/cmdIds'
@@ -15,7 +15,7 @@ const seed = buildSeed(content, EPOCH)
 let k = 0
 const id = () => `${(++k).toString(16).padStart(16, '0')}:review`
 
-const sale = (amount = '11.00'): UserCommand => ({
+const sale = (amount = '11.00'): PayCommand => ({
   type: 'pay',
   actor: 'ana',
   cmdId: id(),
@@ -24,7 +24,7 @@ const sale = (amount = '11.00'): UserCommand => ({
   channel: 'qr',
   expect: { senderDebit: m(amount) },
 })
-const send = (amount: string, debit: string): UserCommand => ({
+const send = (amount: string, debit: string): PayCommand => ({
   type: 'pay',
   actor: 'ana',
   cmdId: id(),
@@ -98,7 +98,7 @@ describe('LedgerNode', () => {
     const left = cmdIdFor(newFlowInstanceId(), 'review')
     const right = cmdIdFor(newFlowInstanceId(), 'review')
     expect(node.dispatch({ ...sale(), cmdId: left }).ok).toBe(true)
-    const toBakery: UserCommand = {
+    const toBakery: PayCommand = {
       type: 'pay',
       actor: 'cafe',
       cmdId: right,
@@ -110,7 +110,7 @@ describe('LedgerNode', () => {
     expect(node.dispatch(toBakery).ok).toBe(true)
     expect(node.commands().map((c) => c.at)).toEqual([seed.t0, seed.t0])
     // The bakery cannot pay yet; once the café's payment has settled the same id goes through.
-    const onward: UserCommand = {
+    const onward: PayCommand = {
       ...toBakery,
       actor: 'bakery',
       cmdId: cmdIdFor(newFlowInstanceId(), 'review'),
@@ -138,7 +138,7 @@ describe('LedgerNode', () => {
     // The café pays the bakery (which starts at 0.00); a minute later the bakery pays 5.00 on.
     // The bakery's money only exists once the first payment has settled, so the second command
     // is accepted only because the settle ran first (at t0 + 1400), before the decision.
-    const bakery = (actor: string, to: `@${string}`, amount: string, debit: string): UserCommand => ({
+    const bakery = (actor: string, to: `@${string}`, amount: string, debit: string): PayCommand => ({
       type: 'pay',
       actor,
       cmdId: id(),

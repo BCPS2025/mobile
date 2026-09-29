@@ -27,7 +27,7 @@ interface Draft {
   locked: string | null
 }
 
-const validityMs = (ctx: FlowCtx): number => ctx.content.config.posCodeValidityMin * 60_000
+const validityMs = (ctx: FlowCtx): number => ctx.state.config.posCodeValidityMs
 
 /** The code the viewfinder is locked onto right now, if any. */
 function candidateOf(ctx: FlowCtx): ScanCandidate | undefined {

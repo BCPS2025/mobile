@@ -8,8 +8,18 @@
 import fc from 'fast-check'
 import type { Content } from '@content/schema'
 import { mustParseMinor } from '@domain/money'
-import type { Handle, LedgerState, Minor, PayChannel, PersonaId, TxItem, UserCommand } from '@domain/types'
-import { quoteFor } from '@store/selectors'
+import type {
+  Handle,
+  LedgerState,
+  Minor,
+  PayChannel,
+  PayCommand,
+  PaymentRequest,
+  PersonaId,
+  TxItem,
+  UserCommand,
+} from '@domain/types'
+import { quoteFor, quoteForRequest } from '@store/selectors'
 
 export const EPOCHS = ['2026-09-25', '2026-10-23', '2027-03-26'] as const
 
@@ -70,8 +80,35 @@ export interface PayStep {
   cmdId: { kind: 'new' } | { kind: 'repeat'; index: number } | { kind: 'malformed'; id: string }
 }
 
+/** A merchant shows a payment code (mostly the café; sometimes another account, which is refused). */
+export interface ChargeStep {
+  kind: 'charge'
+  actor: { kind: 'cafe' } | { kind: 'any'; index: number }
+  amount: AmountPick
+  items: ItemsPick
+  note: string | null
+}
+
+/** The requester cancels a code (the latest, one that does not exist, or the seeded Lunch request). */
+export interface CancelCodeStep {
+  kind: 'cancel-code'
+  actor: { kind: 'cafe' } | { kind: 'any'; index: number }
+  which: 'latest' | 'oldest' | 'bogus' | 'lunch'
+}
+
+/** Someone pays a code exactly as the review step shows it (or with a wrong debit). */
+export interface PayCodeStep {
+  kind: 'pay-code'
+  payer: number
+  which: 'latest' | 'oldest'
+  expect: ExpectPick
+}
+
 export type Step =
   | PayStep
+  | ChargeStep
+  | CancelCodeStep
+  | PayCodeStep
   /** The Lunch request exactly as Ana would pay it (so the paid-request paths are reached). */
   | { kind: 'pay-lunch'; expect: ExpectPick }
   /** Time passes on the clock without the timer firing (a late or throttled timer). */
@@ -228,6 +265,46 @@ export function likelyPayStepArb(content: Content): fc.Arbitrary<PayStep> {
   })
 }
 
+const merchantArb = fc.oneof(
+  { weight: 6, arbitrary: fc.constant({ kind: 'cafe' as const }) },
+  { weight: 1, arbitrary: fc.nat(11).map((index) => ({ kind: 'any' as const, index })) },
+)
+
+export function chargeStepArb(opts: StepOptions = {}): fc.Arbitrary<ChargeStep> {
+  return fc.record({
+    kind: fc.constant('charge' as const),
+    actor: merchantArb,
+    amount: fc.oneof(
+      { weight: 4, arbitrary: fc.integer({ min: 1, max: 3000 }).map((value) => ({ kind: 'small' as const, value })) },
+      { weight: 1, arbitrary: amountArb },
+    ),
+    items: fc.oneof(
+      { weight: 3, arbitrary: fc.constant({ kind: 'none' as const }) },
+      { weight: 4, arbitrary: picksArb.map((picks) => ({ kind: 'catalogue' as const, picks })) },
+      { weight: 1, arbitrary: itemsArb(opts.runtime === true) },
+    ),
+    note: fc.oneof(
+      { weight: 3, arbitrary: fc.constant('Table 4') },
+      { weight: 1, arbitrary: noteArb(opts.runtime === true) },
+    ),
+  })
+}
+
+export const cancelCodeStepArb: fc.Arbitrary<CancelCodeStep> = fc.record({
+  kind: fc.constant('cancel-code' as const),
+  actor: merchantArb,
+  which: fc.constantFrom<CancelCodeStep['which']>('latest', 'latest', 'latest', 'oldest', 'bogus', 'lunch'),
+})
+
+export function payCodeStepArb(content: Content): fc.Arbitrary<PayCodeStep> {
+  return fc.record({
+    kind: fc.constant('pay-code' as const),
+    payer: fc.nat(actorsOf(content).length - 1),
+    which: fc.constantFrom<PayCodeStep['which']>('latest', 'latest', 'latest', 'oldest'),
+    expect: fc.constantFrom<ExpectPick>('right', 'right', 'right', 'right', 'off-by-one'),
+  })
+}
+
 export interface StepOptions {
   /** Runtime-level properties: Reset and Undo, and commands the runtime must refuse as not storable. */
   runtime?: boolean
@@ -241,6 +318,9 @@ export function stepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<
       weight: 1,
       arbitrary: fc.constantFrom<ExpectPick>('right', 'off-by-one').map((expect) => ({ kind: 'pay-lunch', expect })),
     },
+    { weight: 3, arbitrary: chargeStepArb(opts) },
+    { weight: 1, arbitrary: cancelCodeStepArb },
+    { weight: 3, arbitrary: payCodeStepArb(content) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 5000 }).map((ms) => ({ kind: 'advance', ms })) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 3000 }).map((ms) => ({ kind: 'fire', ms })) },
     { weight: 1, arbitrary: fc.constant({ kind: 'catch-up' }) },
@@ -297,44 +377,57 @@ function itemsFor(content: Content, merchant: string | undefined, picks: { index
 
 const sum = (items: readonly TxItem[]) => items.reduce((acc, it) => acc + it.qty * it.price, 0)
 
-/** The engine command of a pay step against `s` (the state it will be decided on). */
-export function payCommand(content: Content, s: LedgerState, step: PayStep, cmdId: string): UserCommand {
-  const actor = actorsOf(content)[step.actor] as PersonaId
-  const to = handlesOf(content)[step.to] as Handle
-  const recipient = content.personas.personas.find((p) => p.handle === to)
-  let amount = step.amount.value
+/**
+ * Items of a pick for one merchant's catalogue, and the amount they make (the picked amount when
+ * there are none, or one hundredth more for a `mismatch`).
+ */
+function applyItems(
+  content: Content,
+  recipient: string | undefined,
+  pick: ItemsPick,
+  amount: number,
+): { items: TxItem[] | undefined; amount: number } {
   let items: TxItem[] | undefined
-  switch (step.items.kind) {
+  switch (pick.kind) {
     case 'none':
       break
     case 'catalogue':
-      items = itemsFor(content, recipient?.id, step.items.picks)
+      items = itemsFor(content, recipient, pick.picks)
       if (items.length > 0) amount = sum(items)
       else items = undefined
       break
     case 'mismatch':
-      items = itemsFor(content, recipient?.id, step.items.picks)
+      items = itemsFor(content, recipient, pick.picks)
       if (items.length > 0) amount = sum(items) + 1
       else items = undefined
       break
     case 'foreign': {
-      const other = recipient?.id === 'cafe' ? 'studio' : 'cafe'
-      items = itemsFor(content, other, step.items.picks)
+      const other = recipient === 'cafe' ? 'studio' : 'cafe'
+      items = itemsFor(content, other, pick.picks)
       amount = sum(items)
       break
     }
     case 'repriced':
-      items = itemsFor(content, recipient?.id ?? 'cafe', step.items.picks).map((it) => ({
+      items = itemsFor(content, recipient ?? 'cafe', pick.picks).map((it) => ({
         ...it,
         price: (it.price + 10) as Minor,
       }))
       amount = sum(items)
       break
     case 'no-sku':
-      items = [{ name: 'Custom', qty: step.items.qty, price: 110 as Minor }]
+      items = [{ name: 'Custom', qty: pick.qty, price: 110 as Minor }]
       amount = sum(items)
       break
   }
+  return { items, amount }
+}
+
+/** The engine command of a pay step against `s` (the state it will be decided on). */
+export function payCommand(content: Content, s: LedgerState, step: PayStep, cmdId: string): PayCommand {
+  const actor = actorsOf(content)[step.actor] as PersonaId
+  const to = handlesOf(content)[step.to] as Handle
+  const recipient = content.personas.personas.find((p) => p.handle === to)
+  const { items, amount } = applyItems(content, recipient?.id, step.items, step.amount.value)
   let channel = step.channel
   let requestId: string | undefined
   let linkId: string | undefined
@@ -343,7 +436,7 @@ export function payCommand(content: Content, s: LedgerState, step: PayStep, cmdI
   if (step.link === 'bogus') linkId = 'l_nothing'
   if (requestId !== undefined) channel = 'request'
   const debit = expectedDebit(s, to, channel, amount, step.expect)
-  const cmd: UserCommand = {
+  const cmd: PayCommand = {
     type: 'pay',
     actor,
     cmdId,
@@ -359,8 +452,61 @@ export function payCommand(content: Content, s: LedgerState, step: PayStep, cmdI
   return cmd
 }
 
+const merchantOf = (content: Content, actor: ChargeStep['actor']): PersonaId =>
+  actor.kind === 'cafe' ? 'cafe' : (actorsOf(content)[actor.index % actorsOf(content).length] as PersonaId)
+
+/** The command that shows a payment code. */
+export function chargeCommand(content: Content, step: ChargeStep, cmdId: string): UserCommand {
+  const actor = merchantOf(content, step.actor)
+  const { items, amount } = applyItems(content, actor, step.items, step.amount.value)
+  const cmd: UserCommand = { type: 'request.create', actor, cmdId, channel: 'pos', amount: amount as Minor }
+  if (items !== undefined) cmd.items = items
+  if (step.note !== null) cmd.note = step.note
+  return cmd
+}
+
+/** The payment codes of the state, oldest first. */
+export const posCodes = (s: LedgerState): PaymentRequest[] =>
+  Object.values(s.requests)
+    .filter((r) => r.channel === 'pos')
+    .sort((a, b) => (a.id < b.id ? -1 : 1))
+
+export function cancelCodeCommand(content: Content, s: LedgerState, step: CancelCodeStep, cmdId: string): UserCommand {
+  const actor = merchantOf(content, step.actor)
+  const codes = posCodes(s)
+  const requestId =
+    step.which === 'bogus'
+      ? 'R-999999'
+      : step.which === 'lunch'
+        ? 'r_seed_lunch'
+        : ((step.which === 'oldest' ? codes[0] : codes[codes.length - 1])?.id ?? 'R-999999')
+  return { type: 'request.cancel', actor, cmdId, requestId }
+}
+
+/** A payment of a code as the payer's review shows it, or null when no code was ever made. */
+export function payCodeCommand(content: Content, s: LedgerState, step: PayCodeStep, cmdId: string): PayCommand | null {
+  const codes = posCodes(s)
+  const code = step.which === 'oldest' ? codes[0] : codes[codes.length - 1]
+  if (!code) return null
+  const actor = actorsOf(content)[step.payer] as PersonaId
+  const to = s.directory[code.requester]?.handle as Handle
+  const q = quoteForRequest(s, code)
+  const right = q ? q.senderDebit : code.amount
+  return {
+    type: 'pay',
+    actor,
+    cmdId,
+    to,
+    amount: code.amount,
+    channel: 'qr',
+    requestId: code.id,
+    ...(code.note ? { note: code.note } : {}),
+    expect: { senderDebit: (step.expect === 'off-by-one' ? right + 1 : right) as Minor },
+  }
+}
+
 /** The Lunch request as the payer's review step shows it. */
-export function lunchCommand(s: LedgerState, expect: ExpectPick, cmdId: string): UserCommand {
+export function lunchCommand(s: LedgerState, expect: ExpectPick, cmdId: string): PayCommand {
   const amount = mustParseMinor('13.20')
   return {
     type: 'pay',

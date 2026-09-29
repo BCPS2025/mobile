@@ -1,6 +1,6 @@
 {
   "stateVersion": 2,
-  "reason": "Comments only: plan section references removed; replay results unchanged",
+  "reason": "Payment codes added (request.create, request.cancel, code expiry in pay); logs that only hold payments replay to the same ledger",
   "inputs": {
     "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
     "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
@@ -10,19 +10,19 @@
     "src/domain/counter.ts": "f2096f6068d560be59b665231f82003cf6bca322978541cabddddf5ff685fb7b",
     "src/domain/fees.ts": "8f03ed588123bb7d49b1a608d5105eb6f38fe7584ebc435dec35f2250d0dc282",
     "src/domain/ids.ts": "c887635c96980d661642b2a910b2a199bf6ae7eba139caea656469b2aac31b28",
-    "src/domain/invariants.ts": "708ff1a94b19a93d4286903b69dee58a83b9f93b5349a96c16ea0be19d020544",
-    "src/domain/ledger.ts": "cf454714196f4685fcdc283dd0dce92bd363f6a01d910644dd1ce3a89ba9cca3",
+    "src/domain/invariants.ts": "b691ddebdb25c1ff301f64355dee22eef80852d967f1e4b2f2761e22b648ca30",
+    "src/domain/ledger.ts": "09db1e47bfd9da1ccb53d8669f74a2bcef6383ba6267f3f9ca5cc8551f497311",
     "src/domain/money.ts": "fcd5ee3f2028e6bcbb90f46f2eab8d6d388e0b76f0c6da7206aaff4c7620a671",
     "src/domain/rate.ts": "43a207247e91eb6c9ffe29c3d3f25f0ebca069366ebdaf87d8cb06a462eacdfb",
-    "src/domain/types.ts": "eec58b72e535e236aa98b087312cf3c07f86856deb069d127abf71d7990b7124",
+    "src/domain/types.ts": "c8473f9dd9423298f7bdaf790d3e31e940273ddf7c51654d33305f0617cc2afb",
     "src/domain/uri.ts": "6bdaa9f900485176344fd1313ebf2cf9bb8d0ba07d4fea2099bcef82b9b267cc",
     "src/sim/clock.ts": "045ccec1197d916f83fba7c7015672ab33353a04ef6cfb851d580934989b25ae",
     "src/sim/scheduler.ts": "1f766ee5a0a006b12e36dc1c2cc92e232b186d2b72bc256d5f67671d63af6346",
-    "src/sim/seed.ts": "8ba3c64ddce77c8554beda7f04b83280eb05459627eaa7e3e61c1556c36de76a",
+    "src/sim/seed.ts": "aeee9b40089ba0f501515e429d9e33aeb500b5fe4595e6d9d1ede21851facecc",
     "src/sim/t0.ts": "8ec76304bd00501e35c0c98c4b0ddb741f8681522e2f672b95dba98cb6c400c8",
     "src/sim/tz.ts": "69164a4b8eb1affbcbaba847d89483a52898e73511ecfc215deec0fb0db849b8",
     "src/sim/validate-content.ts": "99fb423c2db7f76d6fe97093605c2615e52368ca2325d198015a8c50de5440d9",
-    "src/store/log-codec.ts": "148ca0415b3900a52cfb0bd6415d0f3fcb1663b8228503395528de9ffb63c664",
+    "src/store/log-codec.ts": "804a2978035d4b6f6f6c80922b5ca90ce1b6e78c19f93e97432884af96ddaee1",
     "src/store/replay.ts": "15e915ee327962faf02af9e2ee4e4ffff0baf516b0d7ba93a7afd72b4f9417c2"
   }
 }

@@ -75,6 +75,7 @@ export function simConfigFrom(content: Content): SimConfig {
   const l = config.limits
   return {
     settleMs: config.settleMs,
+    posCodeValidityMs: config.posCodeValidityMin * 60_000,
     rate,
     fees,
     cardRange: { ...config.cardRange },

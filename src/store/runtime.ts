@@ -390,7 +390,7 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
   }
 
   function cleanNote(cmd: UserCommand): UserCommand {
-    if (cmd.note === undefined) return cmd
+    if (cmd.type === 'request.cancel' || cmd.note === undefined) return cmd
     const note = stripControl(cmd.note).trim()
     const { note: _drop, ...rest } = cmd
     return note.length > 0 ? { ...rest, note } : (rest as UserCommand)
@@ -404,7 +404,9 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
    * the domain error (`invalid-amount`, `quote-changed`, `invalid-state`).
    */
   function storable(cmd: UserCommand): boolean {
-    if (!Number.isSafeInteger(cmd.amount) || !Number.isSafeInteger(cmd.expect?.senderDebit)) return true
+    if (cmd.type === 'pay') {
+      if (!Number.isSafeInteger(cmd.amount) || !Number.isSafeInteger(cmd.expect?.senderDebit)) return true
+    } else if (cmd.type === 'request.create' && !Number.isSafeInteger(cmd.amount)) return true
     const s = node.getState()
     const wire = encodeCommand(s, cmd)
     if (!wire.ok) return wire.error === 'unknown-ref'

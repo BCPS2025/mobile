@@ -221,6 +221,8 @@ export interface Limits {
 
 export interface SimConfig {
   settleMs: number
+  /** How long a POS payment code can be paid, in milliseconds (a code older than this has expired). */
+  posCodeValidityMs: number
   rate: Rate
   fees: Record<FeePolicyId, FeePolicy>
   cardRange: { lowBps: number; highBps: number }
@@ -428,7 +430,7 @@ export interface Expect {
   senderDebit: Minor
 }
 
-export type UserCommandBody = {
+export type PayCommandBody = {
   type: 'pay'
   to: Handle
   amount: Minor
@@ -439,8 +441,23 @@ export type UserCommandBody = {
   linkId?: string
   expect: Expect
 }
+/**
+ * A merchant shows a payment code for one amount (the café's Charge). The fee payer and policy are
+ * fixed here from the merchant's settings; the previous open code of the merchant is cancelled.
+ */
+export type RequestCreateBody = {
+  type: 'request.create'
+  channel: 'pos'
+  amount: Minor
+  items?: TxItem[]
+  note?: string
+}
+/** The requester withdraws an open request (its code stops working; no money moves). */
+export type RequestCancelBody = { type: 'request.cancel'; requestId: string }
+export type UserCommandBody = PayCommandBody | RequestCreateBody | RequestCancelBody
 /** A user command: `cmdId` is `${flowInstanceId}:${stepId}`; `actor` is a persona id. */
 export type UserCommand = UserCommandBody & { cmdId: string; actor: PersonaId }
+export type PayCommand = PayCommandBody & { cmdId: string; actor: PersonaId }
 export type Command = UserCommand
 export type CommandType = Command['type']
 
@@ -455,6 +472,7 @@ export type LedgerEventBody =
   /** Also marks a request paid (links.requestId) or records a link payment (links.linkId). */
   | { type: 'tx.submitted'; tx: Tx }
   | { type: 'tx.confirmed'; txId: string }
+  | { type: 'request.created'; request: PaymentRequest }
   | {
       type: 'request.status'
       requestId: string

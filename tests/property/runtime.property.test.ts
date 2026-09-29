@@ -14,14 +14,26 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { invariants } from '@domain/invariants'
-import type { SimTime, UserCommand } from '@domain/types'
+import type { SimTime, PayCommand } from '@domain/types'
 import { stableStringify } from '@store/record'
 import { createRuntime } from '@store/runtime'
 import { fakeLocks, settle } from '../support/fake-locks'
 import { fakeTime } from '../support/fake-time'
 import { memoryStorage } from '../support/records'
 import { content } from '../unit/helpers'
-import { EPOCHS, type PayStep, type Step, cmdIds, lunchCommand, payCommand, sequenceArb } from './arbitraries'
+import {
+  EPOCHS,
+  type PayStep,
+  type Step,
+  cancelCodeCommand,
+  chargeCommand,
+  cmdIds,
+  lunchCommand,
+  payCodeCommand,
+  payCommand,
+  posCodes,
+  sequenceArb,
+} from './arbitraries'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
 const TIMEOUT = 600_000
@@ -32,7 +44,7 @@ const SEED = process.env.FC_SEED === undefined ? undefined : Number(process.env.
 const CONTROL = /[\p{Cc}\p{Cf}]/u
 
 /** Steps whose command no screen sends and the runtime must refuse whatever the ledger says. */
-function mustRefuse(step: PayStep, cmd: UserCommand): boolean {
+function mustRefuse(step: PayStep, cmd: PayCommand): boolean {
   if (step.cmdId.kind === 'malformed') return true
   if (step.items.kind === 'foreign' || step.items.kind === 'repriced' || step.items.kind === 'no-sku') {
     return cmd.items !== undefined && cmd.items.length > 0
@@ -79,6 +91,26 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
             expect(tx.note.length).toBeLessThanOrEqual(40)
           }
         }
+        break
+      }
+      case 'charge': {
+        const r = rt.dispatch(chargeCommand(content, step, ids.next({ kind: 'new' })))
+        if (r.ok) {
+          stats.accepted++
+          const code = posCodes(rt.node.getState()).at(-1)
+          if (code?.note !== undefined) {
+            expect(code.note).not.toMatch(CONTROL)
+            expect(code.note.length).toBeLessThanOrEqual(40)
+          }
+        }
+        break
+      }
+      case 'cancel-code':
+        rt.dispatch(cancelCodeCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' })))
+        break
+      case 'pay-code': {
+        const cmd = payCodeCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
+        if (cmd) rt.dispatch(cmd)
         break
       }
       case 'advance':
