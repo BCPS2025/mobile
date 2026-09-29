@@ -1,0 +1,114 @@
+# People and businesses in the app. Login emails use reserved domains (RFC 2606); each code is
+# the first login code shown after Reset and rotates per login.
+personas:
+  - id: ana
+    handle: "@ana"
+    displayName: Ana Novak
+    roleLabel: CUSTOMER
+    segment: customer              # merchant | customer | saas | xborder (account menu groups 01–04)
+    shell: consumer                # consumer | pos | studio | trade
+    kind: person                   # person | business
+    verified: true
+    country: SI
+    tz: Europe/Ljubljana
+    onStage: true
+    login: { email: ana.novak@example.com, code: "482916" }
+    methods: { card: "7719", bank: "SI56 •••• •••• 4821" }
+
+  - id: marko
+    handle: "@marko"
+    displayName: Marko Kovač
+    roleLabel: CUSTOMER / PLAYER
+    segment: customer
+    shell: consumer
+    kind: person
+    verified: true
+    country: SI
+    tz: Europe/Ljubljana
+    onStage: true
+    login: { email: marko.kovac@example.com, code: "731058" }
+    methods: { card: "3056", bank: "SI56 •••• •••• 7730" }
+
+  - id: cafe
+    handle: "@cafelipa"
+    displayName: Café Lipa
+    subtitle: Ljubljana
+    roleLabel: CAFÉ
+    segment: merchant
+    shell: pos
+    kind: business
+    verified: true
+    country: SI
+    tz: Europe/Ljubljana
+    onStage: true
+    login: { email: hello@cafelipa.example, code: "264903" }
+    methods: { bank: "SI56 •••• •••• 1934" }
+
+  - id: studio
+    handle: "@lintvern"
+    displayName: Lintvern Games
+    subtitle: indie studio
+    roleLabel: GAME STUDIO
+    segment: saas
+    shell: studio
+    kind: business
+    verified: true
+    country: SI
+    tz: Europe/Ljubljana
+    onStage: true
+    login: { email: studio@lintvern.example, code: "590317" }
+    methods: { bank: "SI56 •••• •••• 5082" }
+
+  - id: firm
+    handle: "@kovinanova"
+    displayName: Kovina Nova d.o.o.
+    subtitle: Slovenia
+    roleLabel: BUYER · SLOVENIA
+    segment: xborder
+    shell: trade
+    kind: business
+    verified: true
+    country: SI
+    tz: Europe/Ljubljana
+    onStage: true
+    login: { email: finance@kovinanova.example, code: "118642" }
+    methods: { bank: "SI56 •••• •••• 6617" }
+
+  - id: supplier
+    handle: "@hanbit"
+    displayName: Hanbit Precision Co.
+    subtitle: Busan
+    roleLabel: SUPPLIER · KOREA
+    segment: xborder
+    shell: trade
+    kind: business
+    verified: true
+    country: KR
+    tz: Asia/Seoul
+    onStage: true
+    login: { email: accounts@hanbit.example, code: "907425" }
+    methods: { bank: "KR •••• •••• 3318" }
+
+  - id: bakery                     # off-stage ledger account (never in the account menu)
+    handle: "@pekarnazrno"
+    displayName: Pekarna Zrno
+    subtitle: Producer
+    kind: business
+    verified: true
+    country: SI
+    tz: Europe/Ljubljana
+    onStage: false
+
+# Directory-only people. Their money moves through the internal account sys:offstage, and every
+# such posting names the person's handle.
+offstage:
+  - { handle: "@marta_k", displayName: Marta K. }
+  - { handle: "@eva",     displayName: Eva R. }
+  - { handle: "@tine",    displayName: Tine B. }
+  - { handle: "@maja",    displayName: Maja P. }
+  - { handle: "@jure",    displayName: Jure L. }
+  - { handle: "@luka",    displayName: Luka M. }
+  - { handle: "@nika",    displayName: Nika S. }
+  - { handle: "@zala",    displayName: Zala T. }
+  - { handle: "@rok",     displayName: Rok V. }
+  - { handle: "@ines",    displayName: Ines D. }

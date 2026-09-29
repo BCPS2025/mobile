@@ -1,0 +1,11 @@
+language js
+
+or {
+  `navigator.mediaDevices`,
+  `$_.getUserMedia($...)`,
+  `navigator.permissions`,
+  `navigator.geolocation`,
+  `Notification.requestPermission($...)`
+} as $use where {
+  register_diagnostic(span=$use, message="No device access: no camera, microphone, media, permission or location API in the app.")
+}

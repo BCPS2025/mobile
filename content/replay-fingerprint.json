@@ -1,0 +1,28 @@
+{
+  "stateVersion": 2,
+  "reason": "Comments no longer cite the internal plan; replay results are unchanged",
+  "inputs": {
+    "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
+    "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
+    "content/personas.yaml": "e3dce2089d806fb19b8c9e7b7a86b8bf40dec15313521cb015fa79ba540b8c6e",
+    "content/seed.yaml": "d119067b2dd0bbc09a1ce3f23c4f17baa97f9b54cb1a3fdab635348a4fd2b6f4",
+    "content/signup.yaml": "absent",
+    "src/domain/counter.ts": "f2096f6068d560be59b665231f82003cf6bca322978541cabddddf5ff685fb7b",
+    "src/domain/fees.ts": "8f03ed588123bb7d49b1a608d5105eb6f38fe7584ebc435dec35f2250d0dc282",
+    "src/domain/ids.ts": "c887635c96980d661642b2a910b2a199bf6ae7eba139caea656469b2aac31b28",
+    "src/domain/invariants.ts": "81e3d2c2cc413bc4efe0f9f5943702064bd3f7a27f9848c027ec7dd75d5679c6",
+    "src/domain/ledger.ts": "cbe6fbe02781a80e9f460c0b7bfff9ba628a06125fed326e374fbc96ea455f48",
+    "src/domain/money.ts": "fcd5ee3f2028e6bcbb90f46f2eab8d6d388e0b76f0c6da7206aaff4c7620a671",
+    "src/domain/rate.ts": "43a207247e91eb6c9ffe29c3d3f25f0ebca069366ebdaf87d8cb06a462eacdfb",
+    "src/domain/types.ts": "938cc7350064a5e581bb6694fa5a76ea654189b3fc8ce9c6a25985c9d56b3a37",
+    "src/domain/uri.ts": "6bdaa9f900485176344fd1313ebf2cf9bb8d0ba07d4fea2099bcef82b9b267cc",
+    "src/sim/clock.ts": "045ccec1197d916f83fba7c7015672ab33353a04ef6cfb851d580934989b25ae",
+    "src/sim/scheduler.ts": "1a32e729c043a74e344da498c9e4e874ab5208bc14b9604eade86f91e5805bda",
+    "src/sim/seed.ts": "8ba3c64ddce77c8554beda7f04b83280eb05459627eaa7e3e61c1556c36de76a",
+    "src/sim/t0.ts": "8ec76304bd00501e35c0c98c4b0ddb741f8681522e2f672b95dba98cb6c400c8",
+    "src/sim/tz.ts": "69164a4b8eb1affbcbaba847d89483a52898e73511ecfc215deec0fb0db849b8",
+    "src/sim/validate-content.ts": "99fb423c2db7f76d6fe97093605c2615e52368ca2325d198015a8c50de5440d9",
+    "src/store/log-codec.ts": "96be13ba615c5422202c58c416fc051520f7b5448c60a66b9295feff1d767640",
+    "src/store/replay.ts": "7f39f577b6c8233e6489149ae924c6f722b3a09e2281897628a31e8e3873ee4b"
+  }
+}

@@ -1,0 +1,135 @@
+# Every public UI string. Fields in {braces} are filled in by the app.
+# Keep clock times out of copy; the app formats times from its own clock.
+
+app:
+  title: BCPS
+
+boot:
+  framed: This page can't be displayed inside another site.
+
+tape:
+  row: "{time} {from} → {to} · {amount} BCPS · {status} · fee {fee}"
+  empty: No payments yet today
+  status:
+    pending: sending
+    confirmed: settled
+
+fee:
+  chip: Fee 1% · {fee} BCPS (≈ €{eur})
+  chipShort: Fee 1% · {fee} (≈ €{eur}) · {payer}
+  chipNone: No fee
+  chipConversion: Conversion 1.5% · {fee}
+  chipCards: Cards 1.5–3% +
+  payerYou: you
+  transaction: Transaction fee 1% · {fee} BCPS (≈ €{eur})
+  paidBy: Transaction fee 1% · paid by {name}
+  paidByYou: Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by you · total {total}
+  lineYou: "{fee} BCPS (≈ €{eur}) · paid by you · total {total}"
+  lineOther: "{fee} BCPS (≈ €{eur}) · paid by {name}"
+  feeInfo: "A 1% fee on every payment, always shown before you pay. Conversion to EUR: 1.5%."
+  cardInfo: Card-network merchant fees are commonly quoted at 1.5–3% or higher, depending on the contract, plus additional charges.
+  infoLabel: More about this fee
+  cardInfoLabel: More about card fees
+
+# Merchant payment-detail lines (shared.tx, the business view of a sale).
+txDetail:
+  net: Net {net} · Transaction fee 1% · {fee} BCPS (≈ €{eur})
+  cards: Cards typically ≈ €{cardLow}–{cardHigh} · 1.5–3% plus additional charges
+  payout: Card payout would typically arrive {first}–{last} (1–3 business days) · typical
+  final: Final · no chargebacks
+
+errors:
+  insufficientFunds: You have {have}. Top up {short} to pay.
+  unknownRecipient: No BCPS user '{handle}'. Check the spelling.
+
+seedRows:
+  topUp: Top up · {method} €{eur}
+  methods:
+    bank-transfer: bank transfer
+    card: card
+    local-method: local payment method
+  carriedOver: Balance carried over
+  dailySales: Daily sales · {count} payments
+  todaySoFar: Today so far · {count} payments
+  autoConverted: "Auto-converted {sharePct}% to EUR · {amount} BCPS · Conversion to EUR: 1.5% · {fee} BCPS · ≈ €{eur} to bank"
+  cashOut: "Cash out · {amount} BCPS · Conversion to EUR: 1.5% · {fee} BCPS · ≈ €{eur} to bank"
+
+# ---- Interface
+
+common:
+  bcps: BCPS
+  deleteKey: Delete
+  approxEur: ≈ €{eur}
+  planned: PLANNED
+  verified: Verified
+  verifiedLabel: Verified business or person
+  close: Close
+  done: Done
+  back: Back
+  next: Next
+  continue: Continue
+  toStart: Start
+  about: About BCPS
+  sending: Sending…
+  balance: BALANCE
+  incoming: Incoming {amount} BCPS
+  rate: €1 ≈ {rate} BCPS
+  rateChip: €1 ≈ {rate} BCPS · BCPS is not pegged
+  rateInfo: Euro amounts use BCPS's current rate, €1 ≈ {rate} BCPS. BCPS is not pegged to the euro.
+  rateInfoLabel: About the BCPS rate
+  privacy: Other users see your chosen display name and @username only. BCPS keeps identity data confidential and discloses it only where the law requires.
+  phoneLabel: "{name}'s phone, {role}"
+  roleCustomer: customer
+  roleBusiness: business
+
+pillars:
+  - title: Settles in seconds
+    body: Pay by @username, QR code or link
+  - title: Low-cost
+    body: ≈ 1% per payment, against 1.5–3% on card networks
+  - title: One network
+    body: Customers, merchants and suppliers
+  - title: Always open
+    body: Pay and get paid on Sundays too
+
+start:
+  overline: BLOCKCHAIN PAYMENT SYSTEM
+  headline: Pay and get paid in seconds.
+  lede: Card-simple. Pay by @username, QR code or link.
+  pillarsLabel: What BCPS is built for
+  updateReady: A new version is ready.
+  updateApply: Reload
+
+about:
+  title: About BCPS
+  intro: BCPS is a blockchain payment system. It connects customers, merchants, producers and businesses on one network.
+  simple: Pay by username, QR code or link.
+  pillarsTitle: Four pillars
+  feesTitle: How fees work
+  fees:
+    - Every payment inside the network costs 1% of the amount. On sales, the business usually pays it.
+    - Converting BCPS to euros costs 1.5%.
+    - Top up without a fee.
+  privacyTitle: Privacy
+  safetyTitle: Stay safe
+  safety: BCPS will never ask you to send money or crypto.
+  build: Build {sha}
+
+pay:
+  title: BCPS payment code
+  body: You scanned a BCPS payment code.
+  to: To
+  amount: Amount
+  invalid: This payment code can't be read.
+  open: Open BCPS
+
+notFound:
+  title: This page doesn't exist.
+  body: The link may be incomplete.
+  home: Go to the start
+
+tx:
+  to: To {name}
+  from: From {name}
+  withNote: "{label} · {note}"
+  items: "{qty} × {name}"

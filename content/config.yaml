@@ -1,0 +1,81 @@
+# Engine settings. Integers only: money in hundredths (as two-decimal strings where noted),
+# the rate as an integer ratio, times as local "HH:MM".
+# Bump stateVersion whenever this file, seed.yaml, personas.yaml, catalogue.yaml or the
+# engine changes what a stored command log replays to.
+stateVersion: 2
+
+# Reference rate, held fixed: 11 BCPS per 10 EUR (€1 = 1.10 BCPS).
+rate: { bcps: 11, eur: 10 }
+
+# Settle delay in milliseconds (never shown as a number).
+settleMs: 1400
+
+# T0: the most recent weekday on or before the start date, at this local time.
+t0: { weekday: 5, time: "12:15", tz: Europe/Ljubljana }
+
+clock:
+  idlePauseMs: 120000                    # the live clock holds after 2 minutes without input
+  farJumpConfirmDays: 60
+  jumpTo:                                # Clock shortcuts (labels in copy.en.yaml clock.*)
+    - { id: in-an-hour, kind: relative, minutes: 60 }
+    - { id: tomorrow,   kind: next-local, time: "08:00" }
+    - { id: sunday,     kind: next-weekday, weekday: 0, time: "07:30" }
+    - { id: monday,     kind: next-weekday, weekday: 1, time: "08:00" }
+
+# Card comparison range, in basis points of the EUR amount.
+cardRange: { lowBps: 150, highBps: 300 }
+
+# Fee policies (decision D29): 1% of every payment in the network, no minimum; 1.5% to convert
+# BCPS to EUR. fee = round half-up of amount × rateBps / 10000. The payer is the default; a
+# merchant's setting overrides it on merchant, web-checkout and subscription payments.
+# cardCompareMinEurCents: smallest EUR amount that shows the card comparison (null = never).
+fees:
+  merchant:       { kind: percent, rateBps: 100, payer: recipient, cardCompareMinEurCents: 500 }
+  web-checkout:   { kind: percent, rateBps: 100, payer: recipient, cardCompareMinEurCents: 500 }
+  subscription:   { kind: percent, rateBps: 100, payer: recipient, cardCompareMinEurCents: 500 }
+  transfer:       { kind: percent, rateBps: 100, payer: sender,    cardCompareMinEurCents: null }   # people, requests, links, supplier, B2B invoices
+  escrow-lock:    { kind: percent, rateBps: 100, payer: sender,    cardCompareMinEurCents: null }
+  escrow-release: { kind: zero }                                                                   # releases and escrow refunds
+  refund:         { kind: zero }
+  on-ramp:        { kind: zero }
+  off-ramp:       { kind: percent, rateBps: 150, payer: sender }                                   # cash-out and auto-convert
+
+limits:                                  # hundredths as strings
+  consumerMax: "999.99"                  # send, request, link, POS charge
+  businessMax: "99999.99"                # business transfers, invoices, escrow
+  topUpMaxEur: { person: 10000, business: 100000 }
+  cashOutMin: "1.10"
+  noteMaxChars: 40
+
+bankingHours:
+  SI: { days: [1, 2, 3, 4, 5], open: "08:00", close: "17:00", tz: Europe/Ljubljana }
+  KR: { days: [1, 2, 3, 4, 5], open: "09:00", close: "16:00", tz: Asia/Seoul }
+bankTransferTopUp: { withinHoursDelayMin: 120, nextDayArrival: "10:00" }
+posCodeValidityMin: 5
+
+# Invoice numbers per issuer: prefix plus four digits, counting on from `next`.
+invoiceNumbers:
+  supplier: { prefix: HB, next: 918 }
+  firm:     { prefix: KN, next: 2291 }
+  cafe:     { prefix: CL, next: 101 }
+  studio:   { prefix: LG, next: 501 }
+
+# Off-stage sales from the day after T0, by weekday (0 = Sunday); copied from the seed pattern.
+background:
+  cafe:
+    open: { "1": ["07:30", "21:30"], "2": ["07:30", "21:30"], "3": ["07:30", "21:30"], "4": ["07:30", "21:45"], "5": ["07:30", "21:30"], "6": ["07:30", "21:40"] }
+    slotEnds: ["09:30", "11:30", "13:30", "15:30", "17:30", "19:30"]   # plus closing time
+    days: { "1": { count: 26, gross: "179.16" }, "2": { count: 21, gross: "143.02" }, "3": { count: 19, gross: "141.08" },
+            "4": { count: 41, gross: "283.40" }, "5": { count: 44, gross: "305.80" }, "6": { count: 48, gross: "334.58" } }
+  studio:
+    renewalsAt: "02:10"
+    slotEnds: ["06:00", "12:00", "18:00", "23:50"]
+    days: { "0": { r: 5, g: 14, s: 19 }, "1": { r: 4, g: 6, s: 9 }, "2": { r: 5, g: 7, s: 11 }, "3": { r: 5, g: 8, s: 10 },
+            "4": { r: 5, g: 10, s: 12 }, "5": { r: 5, g: 9, s: 14 }, "6": { r: 4, g: 15, s: 22 } }
+
+# Starting merchant settings (changed later by the merchant.settings command).
+merchants:
+  cafe:     { feePayer: recipient, autoConvert: { enabled: true,  schedule: daily,  weekdays: [],  atLocal: "23:00", sharePct: 50, onlyOnDaysWithSales: true } }
+  studio:   { feePayer: recipient, autoConvert: { enabled: false, schedule: weekly, weekdays: [1], atLocal: "23:00", sharePct: 50, onlyOnDaysWithSales: true } }
+  firm:     { feePayer: recipient, autoConvert: { enabled: false, schedule: daily,  weekdays: [],  atLocal: "23:00", sharePct: 50, onlyOnDaysWithSales: false } }
+  supplier: { feePayer: recipient, autoConvert: { enabled: false, schedule: daily,  weekdays: [],  atLocal: "23:00", sharePct: 50, onlyOnDaysWithSales: false } }

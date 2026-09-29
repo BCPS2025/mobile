@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+
+@import '@fontsource/space-grotesk/latin-500.css';
+@import '@fontsource/space-grotesk/latin-ext-500.css';
+@import '@fontsource/space-grotesk/latin-600.css';
+@import '@fontsource/space-grotesk/latin-ext-600.css';
+@import '@fontsource/space-grotesk/latin-700.css';
+@import '@fontsource/space-grotesk/latin-ext-700.css';
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-ext-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-ext-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/ibm-plex-sans/latin-ext-600.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-ext-400.css';
+
+/* Colours extracted from the reference design document; "derived" values added for WCAG AA. */
+@theme {
+  --color-navy-900: #0d1b2a;
+  --color-navy-800: #1e3446;
+  --color-navy-700: #2a3946;
+  --color-green-500: #00e676; /* on navy only; never text on light */
+  --color-green-600: #00a667; /* graphics on white only; never text */
+  --color-green-700: #007a4d; /* derived: all green text on light */
+  --color-green-50: #e6f9ef;  /* derived */
+  --color-ink: #3a4553;
+  --color-grey-600: #5a6472;
+  --color-grey-500: #6b7683;
+  --color-grey-400: #8c9aa8;
+  --color-line-300: #c9d2dc;
+  --color-line-200: #dde2e8;
+  --color-line-100: #e6eaef;
+  --color-bg: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-danger: #c62828;
+  --color-danger-on-dark: #ff8a80; /* derived */
+  --color-warning: #8a5200; /* derived */
+  --color-warning-on-dark: #ffb020; /* derived */
+  --color-muted-on-800: #aab6c3; /* derived: muted text on navy-800 */
+  --color-muted-projector: #c9d2dc; /* derived: projector preset */
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --radius-none: 0;
+
+  --shadow-sheet: 0 -8px 24px rgba(13, 27, 42, 0.16);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emph: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Type scale (reference design): size / line height / tracking / weight */
+  --text-display-xl: 2.5rem;
+  --text-display-xl--line-height: 2.75rem;
+  --text-display-xl--letter-spacing: -0.02em;
+  --text-display-xl--font-weight: 600;
+  --text-display-l: 2rem;
+  --text-display-l--line-height: 2.25rem;
+  --text-display-l--letter-spacing: -0.02em;
+  --text-display-l--font-weight: 600;
+  --text-display-m: 1.5rem;
+  --text-display-m--line-height: 1.875rem;
+  --text-display-m--letter-spacing: -0.01em;
+  --text-display-m--font-weight: 600;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.625rem;
+  --text-title--font-weight: 600;
+  --text-body-l: 1rem;
+  --text-body-l--line-height: 1.5rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.375rem;
+  --text-button: 1rem;
+  --text-button--line-height: 1.25rem;
+  --text-button--letter-spacing: 0.01em;
+  --text-button--font-weight: 600;
+  --text-mono: 0.8125rem;
+  --text-mono--line-height: 1.125rem;
+}
+
+/* Sizes and colours the projector preset lifts (see .projector below). */
+@theme inline {
+  --color-muted-navy: var(--bcps-muted-navy);
+  --text-section: var(--bcps-section);
+  --text-section--line-height: 1.2;
+  --text-section--letter-spacing: 0.14em;
+  --text-section--font-weight: 600;
+  --text-overline: var(--bcps-overline);
+  --text-overline--line-height: 1.34;
+  --text-overline--letter-spacing: 0.16em;
+  --text-overline--font-weight: 500;
+  --text-body-s: var(--bcps-body-s);
+  --text-body-s--line-height: 1.39;
+  --text-caption: var(--bcps-caption);
+  --text-caption--line-height: 1.34;
+  --text-caption--letter-spacing: 0.01em;
+}
+
+:root {
+  --bcps-muted-navy: #aab6c3;
+  --bcps-section: 13px;
+  --bcps-overline: 12px;
+  --bcps-body-s: 13px;
+  --bcps-caption: 12px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --s10: 40px;
+  --s14: 56px;
+  --dur-press: 120ms;
+  --dur-fast: 200ms;
+  --dur-base: 280ms;
+  --dur-count: 500ms;
+  --dur-travel: 700ms;
+  --sim-settle: 1400ms;
+}
+
+/* Projector preset: muted text on navy lifts to line-300, and no text below 14 px at scale 1. */
+.projector {
+  --bcps-muted-navy: #c9d2dc;
+  --bcps-section: 14px;
+  --bcps-overline: 14px;
+  --bcps-body-s: 14px;
+  --bcps-caption: 14px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* Focus rings are always visible. */
+:focus-visible {
+  outline: 2px solid var(--color-green-600);
+  outline-offset: 2px;
+}
+.on-navy :focus-visible {
+  outline-color: var(--color-green-500);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes bcps-pending {
+  50% {
+    opacity: 0.4;
+  }
+}
+@keyframes bcps-push {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes bcps-sheet {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@keyframes bcps-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes bcps-lit {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(0, 230, 118, 0);
+  }
+}
+
+.anim-pending {
+  animation: bcps-pending 1.2s linear infinite;
+}
+.anim-push {
+  animation: bcps-push var(--dur-base) var(--ease-standard) both;
+}
+.anim-sheet {
+  animation: bcps-sheet var(--dur-base) var(--ease-emph) both;
+}
+.anim-fade {
+  animation: bcps-fade var(--dur-fast) var(--ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

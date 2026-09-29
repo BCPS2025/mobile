@@ -1,0 +1,10 @@
+{
+  "$comment": "Build budgets in bytes. initialJsGzip was set from measurement in milestone A1 (78.2 kB gzip at level 9 on 2026-09-28, plus about 12 % headroom); raise it only with a reason in the commit and never above 150000. Checked by scripts/check-budgets.ts.",
+  "initialJsGzip": 88000,
+  "precacheBytes": 2500000,
+  "assets": [
+    { "pattern": "brand/icon-*.png", "maxBytes": 60000 },
+    { "pattern": "brand/apple-touch-icon.png", "maxBytes": 60000 },
+    { "pattern": "assets/emblem-*", "maxBytes": 120000 }
+  ]
+}

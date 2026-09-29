@@ -1,0 +1,39 @@
+# Products, plans, form templates and chips.
+products:
+  cafe:
+    - { sku: flat-white, name: Flat white, price: "3.30" }
+    - { sku: espresso,   name: Espresso,   price: "2.20" }
+    - { sku: croissant,  name: Croissant,  price: "2.20" }
+    - { sku: brunch,     name: Brunch,     price: "13.20" }
+  studio:
+    - { sku: aurora-wings, name: Aurora wings skin, price: "1.10", oneOff: true }
+    - { sku: gem-pack-500, name: Gem pack ×500,     price: "5.50" }
+    - { sku: season-pass,  name: Season Pass,       price: "11.00", plan: season-pass }
+plans:
+  - { id: season-pass, merchant: studio, sku: season-pass, amount: "11.00", interval: month, chargeAtLocal: "02:10" }
+templates:
+  supplierPayment: { from: cafe, to: bakery, amount: "8.80", note: Croissant delivery }
+  invoices:
+    supplier:
+      - { description: Tooling spare parts, amount: "1100.00" }
+      - { description: Precision parts, amount: "5280.00" }
+      - { description: Freight, amount: "240.00" }
+    firm:
+      - { description: Stainless shelving, amount: "220.00", defaultPayer: cafe }   # payable from the start: café 286.00 − 222.20 = 63.80
+  escrow:
+    orders:
+      - { description: "Precision parts, PO-2026-117", amount: "5280.00" }
+      - { description: "Tooling, PO-2026-118", amount: "2200.00" }
+    presets:
+      - { id: doc30-del70, milestones: [ { shareBps: 3000, condition: shipping-document }, { shareBps: 7000, condition: delivery-confirmed } ] }
+      - { id: doc50-del50, milestones: [ { shareBps: 5000, condition: shipping-document }, { shareBps: 5000, condition: delivery-confirmed } ] }
+      - { id: del100,      milestones: [ { shareBps: 10000, condition: delivery-confirmed } ] }
+    deadlineDays: [30, 45, 60]
+    defaultDeadlineDays: 45
+    document: { name: bill-of-lading-HB0917.pdf, sizeKb: 214 }
+noteChips:
+  person: [Cinema, Lunch, Pizza, Taxi share, Groceries]
+  business: [Croissant delivery, Freight, Stainless shelving]
+declineReasons:
+  invoice: [Wrong amount, Not ordered, Already paid, Other]
+  dispute: [Goods not shipped, Goods damaged, Wrong quantity, Other]

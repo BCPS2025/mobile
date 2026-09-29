@@ -1,0 +1,137 @@
+# History at T0 and the other starting records.
+# Amounts are BCPS strings with exactly two decimals and no grouping. Times are local
+# Europe/Ljubljana: a day offset from T0 plus "HH:MM"; startedAt is the same day's first sale.
+# Postings are derived per row and always sum to zero:
+#   feePayer sender:    from −(amount + fee), to +amount,        sys:fees +fee
+#   feePayer recipient: from −amount,         to +(amount − fee), sys:fees +fee
+#   no policy:          from −amount,         to +amount
+#   conversion (off-ramp): from −amount,      to +(amount − fee), sys:fees +fee
+#                       (the converter pays out of the amount; the row has no feePayer)
+# A policy's fee is computed; a `fee` or `eur` written on a row is checked against it.
+# Daily sales summary rows carry `summary` (count, gross, optional product mix); their fee is
+# the policy's 1% of the gross (rounded once per row), paid by the business. `party` names the
+# person behind sys:offstage. The carried-over rows and Marko's taxi share with Ana's pizza
+# keep the start balances.
+
+rows:
+  # ---- Ana Novak (247.50)
+  - { key: ana-topup-bank, at: { day: -30, time: "10:00" }, kind: on-ramp, channel: auto, policy: on-ramp,
+      from: "sys:issuance", to: ana, amount: "143.00", eur: "130.00", method: bank-transfer, labelKey: topUp }
+  - { key: taxi-share, at: { day: -6, time: "23:14" }, kind: transfer, channel: username, policy: transfer,
+      from: marko, to: ana, amount: "8.61", fee: "0.09", feePayer: sender, note: Taxi share }
+  - { key: ana-pizza, at: { day: -5, time: "20:30" }, kind: transfer, channel: username, policy: transfer,
+      from: ana, to: "sys:offstage", party: "@marta_k", amount: "7.44", fee: "0.07", feePayer: sender, note: Pizza }
+  - { key: ana-topup-card, at: { day: -4, time: "18:20" }, kind: on-ramp, channel: auto, policy: on-ramp,
+      from: "sys:issuance", to: ana, amount: "110.00", eur: "100.00", method: card, labelKey: topUp }
+  - { key: cafe-tue-espresso, at: { day: -3, time: "08:10" }, kind: purchase, channel: qr, policy: merchant,
+      from: ana, to: cafe, amount: "2.20", fee: "0.02", feePayer: recipient, items: [ { sku: espresso, qty: 1 } ] }
+  - { key: concert-tickets, at: { day: -2, time: "20:05" }, kind: transfer, channel: username, policy: transfer,
+      from: marko, to: ana, amount: "22.00", fee: "0.22", feePayer: sender, note: Concert tickets }
+  - { key: cafe-thu-brunch, at: { day: -1, time: "12:40" }, kind: purchase, channel: qr, policy: merchant,
+      from: ana, to: cafe, amount: "26.40", fee: "0.26", feePayer: recipient, note: Brunch for two,
+      items: [ { sku: brunch, qty: 2 } ] }
+
+  # ---- Marko Kovač (132.98); his two transfers to Ana are listed above.
+  - { key: marko-topup-bank, at: { day: -30, time: "10:00" }, kind: on-ramp, channel: auto, policy: on-ramp,
+      from: "sys:issuance", to: marko, amount: "110.00", eur: "100.00", method: bank-transfer, labelKey: topUp }
+  - { key: marko-topup-card, at: { day: -5, time: "10:30" }, kind: on-ramp, channel: auto, policy: on-ramp,
+      from: "sys:issuance", to: marko, amount: "55.00", eur: "50.00", method: card, labelKey: topUp }
+  - { key: studio-tue-skin, at: { day: -3, time: "21:40" }, kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: marko, to: studio, amount: "1.10", fee: "0.01", feePayer: recipient, items: [ { sku: aurora-wings, qty: 1 } ] }
+
+  # ---- Café Lipa (286.00); Ana's espresso and brunch are listed above. Closed on Sundays.
+  - { key: cafe-carried-over, at: { day: -7, time: "23:30" }, kind: transfer, channel: auto,
+      from: "sys:offstage", to: cafe, amount: "97.59", labelKey: carriedOver }
+  - { key: cafe-sat, at: { day: -6, time: "21:40" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
+      from: "sys:offstage", to: cafe, summary: { count: 48, gross: "334.58" }, labelKey: dailySales }
+  - { key: cafe-autoconvert-sat, at: { day: -6, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: cafe, to: "sys:issuance", amount: "214.41", fee: "3.22", eur: "191.99", sharePct: 50, labelKey: autoConverted }
+  - { key: cafe-mon, at: { day: -4, time: "21:30" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
+      from: "sys:offstage", to: cafe, summary: { count: 26, gross: "179.16" }, labelKey: dailySales }
+  - { key: cafe-autoconvert-mon, at: { day: -4, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: cafe, to: "sys:issuance", amount: "195.89", fee: "2.94", eur: "175.41", sharePct: 50, labelKey: autoConverted }
+  - { key: cafe-tue, at: { day: -3, time: "21:30" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
+      from: "sys:offstage", to: cafe, summary: { count: 21, gross: "143.02" }, labelKey: dailySales }
+  - { key: cafe-autoconvert-tue, at: { day: -3, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: cafe, to: "sys:issuance", amount: "169.83", fee: "2.55", eur: "152.07", sharePct: 50, labelKey: autoConverted }
+  - { key: cafe-wed, at: { day: -2, time: "21:30" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
+      from: "sys:offstage", to: cafe, summary: { count: 19, gross: "141.08" }, labelKey: dailySales }
+  - { key: cafe-cashout-wed, at: { day: -2, time: "21:50" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: cafe, to: "sys:issuance", amount: "220.00", fee: "3.30", eur: "197.00", labelKey: cashOut }
+  - { key: cafe-autoconvert-wed, at: { day: -2, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: cafe, to: "sys:issuance", amount: "44.75", fee: "0.67", eur: "40.07", sharePct: 50, labelKey: autoConverted }
+  - { key: cafe-thu, at: { day: -1, time: "21:45" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
+      from: "sys:offstage", to: cafe, summary: { count: 41, gross: "283.40" }, labelKey: dailySales }
+  - { key: cafe-autoconvert-thu, at: { day: -1, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: cafe, to: "sys:issuance", amount: "175.73", fee: "2.64", eur: "157.35", sharePct: 50, labelKey: autoConverted }
+  - { key: cafe-today, at: { day: 0, time: "12:10" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
+      from: "sys:offstage", to: cafe, summary: { count: 23, gross: "111.38" }, labelKey: todaySoFar }
+
+  # ---- Lintvern Games (1254.00); Marko's skin is listed above. Mix: season-pass × 11.00,
+  # gem-pack-500 × 5.50, aurora-wings × 1.10.
+  - { key: studio-carried-over, at: { day: -8, time: "23:30" }, kind: transfer, channel: auto,
+      from: "sys:offstage", to: studio, amount: "944.70", labelKey: carriedOver }
+  - { key: studio-fri, at: { day: -7, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 28, gross: "119.90", mix: { season-pass: 5, gem-pack-500: 9, aurora-wings: 14 } }, labelKey: dailySales }
+  - { key: studio-sat, at: { day: -6, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 41, gross: "150.70", mix: { season-pass: 4, gem-pack-500: 15, aurora-wings: 22 } }, labelKey: dailySales }
+  - { key: studio-sun, at: { day: -5, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 38, gross: "152.90", mix: { season-pass: 5, gem-pack-500: 14, aurora-wings: 19 } }, labelKey: dailySales }
+  - { key: studio-cashout-mon, at: { day: -4, time: "10:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
+      from: studio, to: "sys:issuance", amount: "600.00", fee: "9.00", eur: "537.27", labelKey: cashOut }
+  - { key: studio-mon, at: { day: -4, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 19, gross: "86.90", mix: { season-pass: 4, gem-pack-500: 6, aurora-wings: 9 } }, labelKey: dailySales }
+  - { key: studio-tue, at: { day: -3, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 23, gross: "105.60", mix: { season-pass: 5, gem-pack-500: 7, aurora-wings: 11 } }, labelKey: dailySales }
+  - { key: studio-wed, at: { day: -2, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 23, gross: "110.00", mix: { season-pass: 5, gem-pack-500: 8, aurora-wings: 10 } }, labelKey: dailySales }
+  - { key: studio-thu, at: { day: -1, time: "23:50" }, startedAt: "00:00", kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, summary: { count: 27, gross: "123.20", mix: { season-pass: 5, gem-pack-500: 10, aurora-wings: 12 } }, labelKey: dailySales }
+  - { key: studio-renewal-eva, at: { day: 0, time: "02:10" }, kind: subscription-charge, channel: auto, policy: subscription,
+      from: "sys:offstage", to: studio, party: "@eva", amount: "11.00", fee: "0.11", feePayer: recipient, items: [ { sku: season-pass, qty: 1 } ] }
+  - { key: studio-renewal-tine, at: { day: 0, time: "02:10" }, kind: subscription-charge, channel: auto, policy: subscription,
+      from: "sys:offstage", to: studio, party: "@tine", amount: "11.00", fee: "0.11", feePayer: recipient, items: [ { sku: season-pass, qty: 1 } ] }
+  - { key: studio-renewal-maja, at: { day: 0, time: "02:10" }, kind: subscription-charge, channel: auto, policy: subscription,
+      from: "sys:offstage", to: studio, party: "@maja", amount: "11.00", fee: "0.11", feePayer: recipient, items: [ { sku: season-pass, qty: 1 } ] }
+  - { key: studio-renewal-jure, at: { day: 0, time: "02:10" }, kind: subscription-charge, channel: auto, policy: subscription,
+      from: "sys:offstage", to: studio, party: "@jure", amount: "11.00", fee: "0.11", feePayer: recipient, items: [ { sku: season-pass, qty: 1 } ] }
+  - { key: studio-luka-gems, at: { day: 0, time: "08:47" }, kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, party: "@luka", amount: "5.50", fee: "0.06", feePayer: recipient, items: [ { sku: gem-pack-500, qty: 1 } ] }
+  - { key: studio-nika-skin, at: { day: 0, time: "10:03" }, kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, party: "@nika", amount: "1.10", fee: "0.01", feePayer: recipient, items: [ { sku: aurora-wings, qty: 1 } ] }
+  - { key: studio-zala-gems, at: { day: 0, time: "11:26" }, kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, party: "@zala", amount: "5.50", fee: "0.06", feePayer: recipient, items: [ { sku: gem-pack-500, qty: 1 } ] }
+  - { key: studio-rok-subscription, at: { day: 0, time: "11:58" }, kind: subscription-charge, channel: web-checkout, policy: subscription,
+      from: "sys:offstage", to: studio, party: "@rok", amount: "11.00", fee: "0.11", feePayer: recipient, items: [ { sku: season-pass, qty: 1 } ] }
+  - { key: studio-ines-skin, at: { day: 0, time: "12:09" }, kind: purchase, channel: web-checkout, policy: web-checkout,
+      from: "sys:offstage", to: studio, party: "@ines", amount: "1.10", fee: "0.01", feePayer: recipient, items: [ { sku: aurora-wings, qty: 1 } ] }
+
+  # ---- Kovina Nova (12100.00)
+  - { key: firm-topup-bank, at: { day: -4, time: "10:00" }, kind: on-ramp, channel: auto, policy: on-ramp,
+      from: "sys:issuance", to: firm, amount: "12100.00", eur: "11000.00", method: bank-transfer, labelKey: topUp }
+
+  # ---- Hanbit Precision (880.00)
+  - { key: supplier-topup-local, at: { day: -20, time: "10:00" }, kind: on-ramp, channel: auto, policy: on-ramp,
+      from: "sys:issuance", to: supplier, amount: "880.00", eur: "800.00", method: local-method, labelKey: topUp }
+
+  # ---- Pekarna Zrno: no rows (starts at 0.00).
+
+requests:
+  - { id: r_seed_lunch, requester: marko, payer: ana, amount: "13.20", note: Lunch, channel: username, at: { day: 0, time: "11:52" } }
+
+invoices:
+  - { id: HB-0917, issuer: supplier, payer: firm, amount: "1100.00", description: Tooling spare parts,
+      issuedAt: { day: 0, time: "10:05" }, dueDays: 7 }
+  - { id: PZ-0412, issuer: bakery, payer: cafe, amount: "52.80", description: Weekly bread order,
+      issuedAt: { day: 0, time: "09:40" }, dueDays: 7 }        # starting record only; the bakery never issues invoices live
+
+stats: { studio: { activeSubscribers: 142, namedSubscribers: ["@rok", "@eva", "@tine", "@maja", "@jure"] } }
+
+ownership: { marko: [aurora-wings] }
+
+# Notifications that start unread; everything else starts read.
+unread:
+  ana: ["request:r_seed_lunch"]
+  cafe: ["tx:cafe-autoconvert-thu", "invoice:PZ-0412"]
+  studio: ["subscription-started:@rok"]
+  firm: ["invoice:HB-0917"]
