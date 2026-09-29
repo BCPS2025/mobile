@@ -56,7 +56,8 @@ export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string)
   const name = other ? partyLabel(other) : ''
   const leading = other ? <PartyAvatar party={other} /> : tone(Wallet)
   const items = itemsText(tx.items)
-  if (tx.kind === 'purchase' && row.direction === 'out') {
+  // Money paid to a shop or a business names it, with what it was for under the name.
+  if (row.direction === 'out' && (tx.kind === 'purchase' || other?.kind === 'business')) {
     const what = items || tx.note
     return {
       title: name,

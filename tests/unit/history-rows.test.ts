@@ -83,6 +83,24 @@ describe('History rows', () => {
     expect(carried?.text.summary).toBe(false)
   })
 
+  it('the café: a payment to its supplier names the business, with the note under the name', () => {
+    const { node } = headless('2026-09-25')
+    node.dispatch({
+      type: 'pay',
+      actor: 'cafe',
+      cmdId: 'd4d4d4d4d4d4d4d4:review',
+      to: '@pekarnazrno',
+      amount: m('8.80'),
+      channel: 'username',
+      note: 'Croissant delivery',
+      expect: { senderDebit: m('8.89') },
+    })
+    node.settleDue()
+    const first = rows('cafe', node)[0]
+    expect(first?.text).toMatchObject({ title: 'Pekarna Zrno', sub: '12:15 · Croissant delivery', openable: true })
+    expect(first?.row.signed).toBe(-880)
+  })
+
   it('an off-stage person is named by @handle', () => {
     const { node } = headless('2026-09-25')
     const pizza = rows('ana', node).find((r) => r.text.title.startsWith('@marta_k'))

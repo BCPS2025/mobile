@@ -21,10 +21,9 @@ function sessionTxs(s: LedgerState): Tx[] {
 }
 
 export function tapeRowText(tx: Tx): string {
-  const from = persona(tx.from)
   return fill(copy.tape.row, {
     time: timeText(tx.confirmedAt ?? tx.createdAt, true),
-    from: from ? from.handle : '',
+    from: counterpartyLabel(tx.from, tx.party),
     to: counterpartyLabel(tx.to, tx.party) || (persona(tx.to)?.displayName ?? ''),
     amount: formatMinor(tx.amount),
     status: tx.status === 'confirmed' ? copy.tape.status.confirmed : copy.tape.status.pending,
