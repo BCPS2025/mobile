@@ -6,7 +6,8 @@
 //                                        visible-copy rule on shown string values
 //   *.md tracked by git (incl. docs/,     word, source-reference, pattern and visible-copy rules
 //   legacy/)
-//   src/**                               pattern classes only (emails, phone numbers, magnitudes)
+//   src/** (text files only)             pattern classes only (emails, phone numbers, magnitudes);
+//                                        images and other binary assets are skipped
 //   package.json                         visible-copy rule on the name, description, script names
 //   content/states/*.json                every rule on the visible fields (label, note, reason)
 //   index.html                           every rule on <title> and the meta description
@@ -16,7 +17,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { checkInputs, formatFinding, type Input } from './banned-core.ts'
+import { checkInputs, formatFinding, isTextFile, type Input } from './banned-core.ts'
 
 const root = process.cwd()
 const toPosix = (p: string) => p.split(sep).join('/')
@@ -77,7 +78,7 @@ for (const name of readdirSync(join(root, 'content')).sort()) {
   }
 }
 for (const path of markdownFiles().sort()) inputs.push({ path, text: read(path), kind: 'markdown' })
-for (const path of walk(join(root, 'src'), () => true).sort()) inputs.push({ path, text: read(path), kind: 'source' })
+for (const path of walk(join(root, 'src'), isTextFile).sort()) inputs.push({ path, text: read(path), kind: 'source' })
 if (existsSync(join(root, 'package.json')))
   inputs.push({ path: 'package.json', text: read('package.json'), kind: 'package' })
 if (existsSync(join(root, 'content', 'states'))) {

@@ -14,6 +14,7 @@
     "typecheck": "tsc -b --noEmit",
     "check": "tsc -b && biome ci . && node scripts/check-layers.ts && node scripts/check-content.ts && node scripts/check-state-version.ts && node scripts/check-banned.ts",
     "budgets": "node scripts/check-budgets.ts",
+    "brand:emblem": "node scripts/brand/extract-emblem.mjs",
     "brand:icons": "node scripts/render-icons.mjs",
     "ci": "bash scripts/ci-local.sh all",
     "ci:static": "bash scripts/ci-local.sh static",

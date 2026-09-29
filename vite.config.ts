@@ -108,15 +108,17 @@ export default defineConfig(({ mode }) => {
             manifest: {
               name: 'BCPS',
               short_name: 'BCPS',
-              description: 'BCPS payments',
+              description: 'Pay and get paid in seconds.',
               start_url: './',
               scope: './',
               display: 'standalone',
+              orientation: 'portrait',
               theme_color: '#0D1B2A',
-              background_color: '#F8F9FA',
+              background_color: '#0D1B2A',
               icons: [
                 { src: 'brand/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
                 { src: 'brand/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+                { src: 'brand/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
               ],
             },
             workbox: {

@@ -28,10 +28,16 @@ declare module 'node:fs' {
   export function mkdirSync(path: string, options?: { recursive?: boolean }): string | undefined
   export function mkdtempSync(prefix: string): string
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void
-  export function writeFileSync(path: string, data: string): void
+  export function writeFileSync(path: string, data: string | Uint8Array): void
+  export function statSync(path: string): { size: number }
   export function existsSync(path: string): boolean
   export function readFileSync(path: string, encoding: 'utf8'): string
   export function readFileSync(path: string): Uint8Array
+}
+
+declare module 'node:zlib' {
+  export function deflateSync(data: Uint8Array, options?: { level?: number }): Uint8Array
+  export function inflateSync(data: Uint8Array): Uint8Array
 }
 
 declare module 'node:os' {

@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { maskEmail } from '@app/format'
-import { checkInputs, type Input, type InputKind } from '../../scripts/banned-core'
+import { checkInputs, isTextFile, type Input, type InputKind } from '../../scripts/banned-core'
 import { content } from './helpers'
 
 const SAVE_INVEST =
@@ -453,6 +453,53 @@ describe('check-banned CLI', () => {
 
   it('exits 1 on an email address under src/', () => {
     expect(run(tree({ ...base, 'src/x.ts': 'const a = "someone@gmail.com"\n' })).code).toBe(1)
+  })
+
+  it('skips binary assets under src/ and still scans text files there', () => {
+    // Bytes that read as an email address and are not valid UTF-8, like the inside of an image.
+    const bytes = Uint8Array.from([
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0xff,
+      0xfe,
+      ...new TextEncoder().encode(' someone@gmail.com '),
+    ])
+    const cwd = tree({ ...base })
+    mkdirSync(join(cwd, 'src/assets/brand'), { recursive: true })
+    for (const name of ['emblem-900.png', 'emblem-900.webp', 'icon.ico']) {
+      writeFileSync(join(cwd, 'src/assets/brand', name), bytes)
+    }
+    expect(run(cwd).code).toBe(0)
+    writeFileSync(join(cwd, 'src/assets/brand/notes.ts'), 'const a = "someone@gmail.com"\n')
+    expect(run(cwd).code).toBe(1)
+  })
+
+  it('classifies files by extension: text kinds are scanned, images and other binaries are not', () => {
+    for (const p of [
+      'src/app/App.tsx',
+      'src/a.ts',
+      'src/app/tokens.css',
+      'src/x.json',
+      'src/x.yaml',
+      'src/x.md',
+      'src/a.html',
+      'src/assets/logo.svg',
+      'src/A.TS',
+    ]) {
+      expect(isTextFile(p), p).toBe(true)
+    }
+    for (const p of [
+      'src/assets/brand/emblem-900.png',
+      'src/assets/brand/emblem-900.webp',
+      'src/x.jpg',
+      'src/x.woff2',
+      'src/noext',
+      'src/dir.d/noext',
+    ]) {
+      expect(isTextFile(p), p).toBe(false)
+    }
   })
 
   it('scans collected visible text passed with --visible', () => {

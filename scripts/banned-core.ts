@@ -477,3 +477,13 @@ export function checkInputs(inputs: readonly Input[]): Finding[] {
 export function formatFinding(f: Finding): string {
   return `${f.path}:${f.line}  ${f.rule}  "${f.match}"`
 }
+
+/** Extensions of the files under src/ that are text; images and other binary assets are skipped. */
+const TEXT_EXTENSIONS: ReadonlySet<string> = new Set(['.ts', '.tsx', '.css', '.json', '.yaml', '.md', '.html', '.svg'])
+
+/** Whether a file is read as text by the source scan (a binary asset read as text gives false hits). */
+export function isTextFile(path: string): boolean {
+  const dot = path.lastIndexOf('.')
+  const slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))
+  return dot > slash && TEXT_EXTENSIONS.has(path.slice(dot).toLowerCase())
+}
