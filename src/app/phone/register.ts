@@ -1,4 +1,6 @@
 import { logoutFlow } from '../flows/logout'
+import { CodeScreen } from './auth/CodeScreen'
+import { LoginScreen } from './auth/LoginScreen'
 import { WelcomeScreen } from './auth/WelcomeScreen'
 import { AboutView } from './AboutView'
 import { registerAuthScreen, registerFlow, registerView } from './implemented'
@@ -13,5 +15,7 @@ import { registerAuthScreen, registerFlow, registerView } from './implemented'
 // (registry.ts) and in content/homes.yaml.
 
 registerAuthScreen('welcome', WelcomeScreen)
+registerAuthScreen('login', LoginScreen)
+registerAuthScreen('code', CodeScreen)
 registerView('about', AboutView)
 registerFlow(logoutFlow)

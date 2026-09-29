@@ -10,13 +10,12 @@ import { authScreen } from '../implemented'
 import { usePhone } from '../PhoneContext'
 import { fill } from '../../copy'
 import { slotOf } from '@store/sessions'
+import { BIOMETRIC_MS } from './timing'
 
 // Welcome (auth.welcome): navy, the emblem, "Pay and get paid in seconds.", the account this
 // phone remembers under the headline, and the dock: [Log in] and [Log in with biometrics]. There
 // is no [Create account]. Biometrics logs the remembered account in after a glyph in the button
 // (500 ms). [Log in] opens the Log in screen (choose your account), when it is built.
-
-const BIOMETRIC_MS = 500
 
 export function WelcomeScreen() {
   const app = useApp()
@@ -62,6 +61,7 @@ export function WelcomeScreen() {
               icon: <ScanFace size={20} strokeWidth={1.75} aria-hidden="true" />,
               onPress: () => remembered && setBusy(true),
               sending: busy,
+              keepLabel: true,
               disabled: !remembered,
             },
           ]}

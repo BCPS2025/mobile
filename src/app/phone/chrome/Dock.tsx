@@ -18,6 +18,8 @@ export interface DockPrimary {
   enabled?: boolean
   /** A commit is in flight: the label reads "Sending…" and the button does not react. */
   sending?: boolean
+  /** While `sending`, keep the label instead of "Sending…" (the glyph still shows: Log in with biometrics). */
+  keepLabel?: boolean
   onPress: () => void
   icon?: ReactNode
 }
@@ -37,6 +39,8 @@ export interface StackItem {
   icon?: ReactNode
   disabled?: boolean
   sending?: boolean
+  /** While `sending`, keep the label instead of "Sending…". */
+  keepLabel?: boolean
 }
 
 const BASE =
@@ -46,7 +50,15 @@ const TONES: Record<ButtonTone, string> = {
   money:
     'bg-green-500 text-navy-900 active:ring-[3px] active:ring-navy-900 active:ring-inset disabled:bg-line-200 disabled:text-grey-500 disabled:ring-0',
   navy: 'bg-navy-900 text-white active:bg-navy-700 disabled:bg-line-200 disabled:text-grey-500',
-  white: 'bg-white text-navy-900 active:bg-line-100 disabled:bg-line-200 disabled:text-grey-500',
+  // White buttons sit on navy docks: disabled, they sink into the dock (navy-700, grey text).
+  white: 'bg-white text-navy-900 active:bg-line-100 disabled:bg-navy-700 disabled:text-grey-400',
+}
+
+/** A button that is sending keeps its own colours (disabled styles would grey it out). */
+const SENDING: Record<ButtonTone, string> = {
+  money: 'disabled:bg-green-500 disabled:text-navy-900',
+  navy: 'disabled:bg-navy-900 disabled:text-white',
+  white: 'disabled:bg-white disabled:text-navy-900',
 }
 
 /** The glyph shown inside a button while its payment is pending. */
@@ -60,7 +72,7 @@ function SendingGlyph() {
 }
 
 export function DockButton({ primary, testId = 'dock-primary' }: { primary: DockPrimary; testId?: string }) {
-  const { label, tone, enabled = true, sending = false, onPress, icon } = primary
+  const { label, tone, enabled = true, sending = false, keepLabel = false, onPress, icon } = primary
   return (
     <button
       type="button"
@@ -68,7 +80,7 @@ export function DockButton({ primary, testId = 'dock-primary' }: { primary: Dock
       aria-busy={sending || undefined}
       disabled={!enabled || sending}
       onClick={onPress}
-      className={`${BASE} ${TONES[tone]} ${sending ? 'disabled:bg-green-500 disabled:text-navy-900 opacity-80' : ''}`}
+      className={`${BASE} ${TONES[tone]} ${sending ? `${SENDING[tone]} opacity-80` : ''}`}
     >
       {sending ? (
         <SendingGlyph />
@@ -77,7 +89,7 @@ export function DockButton({ primary, testId = 'dock-primary' }: { primary: Dock
       ) : tone === 'money' ? (
         <span aria-hidden="true" className="inline-block size-2 bg-navy-900" />
       ) : null}
-      {sending ? ui.common.sending : label}
+      {sending && !keepLabel ? ui.common.sending : label}
     </button>
   )
 }
@@ -111,12 +123,12 @@ export function Dock({
               aria-busy={item.sending || undefined}
               className={`${BASE} ${
                 item.kind === 'white'
-                  ? 'bg-white text-navy-900 active:bg-line-100'
+                  ? 'bg-white text-navy-900 active:bg-line-100 disabled:bg-navy-700 disabled:text-grey-400'
                   : 'border border-line-300 text-white active:bg-navy-800'
-              }`}
+              } ${item.disabled && !item.sending ? 'opacity-50' : ''}`}
             >
               {item.sending ? <SendingGlyph /> : item.icon}
-              {item.sending ? ui.common.sending : item.label}
+              {item.sending && !item.keepLabel ? ui.common.sending : item.label}
             </button>
           ))}
         </div>
