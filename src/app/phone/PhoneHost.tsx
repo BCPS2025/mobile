@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fill, ui } from '../copy'
 import { Avatar } from '../kit/Avatar'
 import { useApp, useTransient, useUi } from '../state/AppContext'
@@ -42,8 +42,22 @@ function PersonaScreens({ persona, shell }: { persona: string; shell: Shell }) {
   const stack = usePhoneStack(persona)
   const top = stack[stack.length - 1] as Screen
   const key = `${stack.length}:${top.kind}:${'id' in top ? top.id : ''}${top.kind === 'flow' ? `:${top.instanceId}` : ''}`
+  const root = useRef<HTMLDivElement>(null)
+  const opened = useRef(key)
+
+  // A screen that opens takes the focus (the button that opened it is gone), unless the focus is
+  // already inside it or in the other phone.
+  useEffect(() => {
+    if (opened.current === key) return
+    opened.current = key
+    const screen = root.current?.querySelector<HTMLElement>('[data-screen]')
+    const active = document.activeElement
+    const idle = !active || active === document.body
+    if (screen && idle && !screen.contains(active)) screen.focus({ preventScroll: true })
+  }, [key])
+
   return (
-    <div key={key} className="anim-fade h-full">
+    <div key={key} ref={root} className="anim-fade h-full">
       <ScreenView screen={top} shell={shell} />
     </div>
   )

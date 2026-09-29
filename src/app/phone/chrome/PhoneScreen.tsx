@@ -44,6 +44,7 @@ export function PhoneScreen({
   return (
     <section
       data-screen={id}
+      tabIndex={-1}
       className={`flex h-full min-h-0 flex-col ${
         body === 'navy-800'
           ? 'on-navy bg-navy-800 text-white'

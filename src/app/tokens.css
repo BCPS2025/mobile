@@ -160,6 +160,24 @@ button:disabled,
   outline-color: var(--color-green-500);
 }
 
+/* A screen takes focus when it opens (so a keyboard or screen-reader user starts at its top); no ring around it. */
+[data-screen]:focus {
+  outline: none;
+}
+
+/* A search field in a bordered row: the row shows the focus, not the input inside it. */
+.field {
+  border: 1px solid var(--color-line-300);
+}
+.field:focus-within {
+  border-color: var(--color-navy-900);
+  outline: 2px solid var(--color-green-600);
+  outline-offset: 2px;
+}
+.field input:focus-visible {
+  outline: none;
+}
+
 .tnum {
   font-variant-numeric: tabular-nums;
 }

@@ -111,6 +111,7 @@ export const UiCopySchema = z.looseObject({
     fee: S,
     sending: S,
   }),
+  party: z.strictObject({ placeholder: S, searchLabel: S, recent: S, business: S, businessIn: S }),
   login: z.strictObject({
     logIn: S,
     biometrics: S,

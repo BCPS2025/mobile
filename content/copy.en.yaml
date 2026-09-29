@@ -193,6 +193,13 @@ steps:
   fee: Fee
   sending: Sending…
 
+party:
+  placeholder: Name or @username
+  searchLabel: Find a person or business
+  recent: RECENT
+  business: Business
+  businessIn: "Business · {place}"
+
 # ---- Accounts
 
 login:

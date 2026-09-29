@@ -22,6 +22,8 @@ for (const c of cases) {
       await page.getByTestId('avatar').click()
       const hub = page.locator(`[data-screen="${c.hub}"]`)
       await expect(hub).toBeVisible()
+      // A screen that opens takes the focus, so a keyboard or screen-reader user starts at its top.
+      await expect(hub).toBeFocused()
       await expect(page.getByTestId('nav-back')).toBeVisible()
       await expect(page.getByTestId('nav-home')).toBeVisible()
       await page.getByRole('button', { name: 'About BCPS' }).click()
@@ -33,6 +35,7 @@ for (const c of cases) {
       await expect(hub).toBeVisible()
       await page.getByTestId('nav-home').click()
       await expect(page.locator(`[data-screen="${c.shell}"]`)).toBeVisible()
+      await expect(page.locator(`[data-screen="${c.shell}"]`)).toBeFocused()
     })
 
     test('Log out: a confirm step with Cancel and Log out; Welcome remembers the account', async ({ page }) => {
