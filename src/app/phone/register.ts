@@ -1,4 +1,5 @@
 import { logoutFlow } from '../flows/logout'
+import { sendFlow } from '../flows/send'
 import { CodeScreen } from './auth/CodeScreen'
 import { LoginScreen } from './auth/LoginScreen'
 import { WelcomeScreen } from './auth/WelcomeScreen'
@@ -19,3 +20,4 @@ registerAuthScreen('login', LoginScreen)
 registerAuthScreen('code', CodeScreen)
 registerView('about', AboutView)
 registerFlow(logoutFlow)
+registerFlow(sendFlow)

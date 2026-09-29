@@ -1,8 +1,9 @@
 import { content } from '@content/load'
 import { formatHundredths, formatMinor } from '@domain/money'
 import { approxEur } from '@domain/rate'
-import type { AccountId, Minor, Persona, Rate, SimTime, Tx } from '@domain/types'
+import type { AccountId, LedgerState, Minor, Party, PersonaId, Persona, Rate, SimTime, Tx, TxItem } from '@domain/types'
 import { LJUBLJANA, formatTime, formatWeekday, zonedParts } from '@sim/tz'
+import { counterpartyOf } from '@store/parties'
 import { copy, fill, ui } from './copy'
 
 // Display helpers shared by the apps and the stage. Pure functions of state and copy.
@@ -113,8 +114,40 @@ export function maskEmail(email: string): string {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /** "Fri 25 Sep · 12:15": the date chip of the stage (virtual clock, Ljubljana). */
-export function dateChipText(t: SimTime): string {
+export const dateChipText = (t: SimTime): string => dateTimeText(t, false)
+
+/** "Fri 25 Sep · 12:15:32": a date and time with seconds (receipts). */
+export function dateTimeText(t: SimTime, seconds = true): string {
   const { date } = zonedParts(t, LJUBLJANA)
   const [, month = '1', day = '1'] = date.split('-')
-  return `${formatWeekday(t, LJUBLJANA)} ${Number(day)} ${MONTHS[Number(month) - 1] ?? ''} · ${formatTime(t, LJUBLJANA)}`
+  return `${formatWeekday(t, LJUBLJANA)} ${Number(day)} ${MONTHS[Number(month) - 1] ?? ''} · ${formatTime(t, LJUBLJANA, seconds)}`
+}
+
+/** "Tue 22 Sep": a day heading. */
+export function dayText(date: string): string {
+  const [year = 0, month = 1, day = 1] = date.split('-').map(Number)
+  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+    new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+  ]
+  return `${weekday} ${day} ${MONTHS[month - 1] ?? ''}`
+}
+
+/** How a party is named in a line: people by @handle, businesses by name ("to @marko", "to Café Lipa"). */
+export const partyLabel = (p: Pick<Party, 'kind' | 'handle' | 'displayName'>): string =>
+  p.kind === 'person' ? p.handle : p.displayName
+
+/** "2 × flat white · 2 × croissant": a sale's items. */
+export function itemsText(items: readonly TxItem[] | undefined): string {
+  return (items ?? [])
+    .map((it) => fill(copy.tx.items, { qty: it.qty, name: it.name.toLocaleLowerCase('en') }))
+    .join(' · ')
+}
+
+/** Who bears a payment's fee, from one account's point of view: `you`, or the other party's label. */
+export function feePayerOf(s: LedgerState, tx: Tx, viewer: PersonaId): { you: boolean; name: string } | null {
+  if (tx.fee.payer === null) return null
+  const account = tx.fee.payer === 'sender' ? tx.from : tx.to
+  if (account === viewer) return { you: true, name: '' }
+  const party = counterpartyOf(s, account, tx.party)
+  return { you: false, name: party ? partyLabel(party) : '' }
 }

@@ -2,10 +2,10 @@ import { Check, ChevronRight, Search } from 'lucide-react'
 import { type KeyboardEvent, useMemo } from 'react'
 import type { Content } from '@content/schema'
 import type { LedgerState, Party, PersonaId } from '@domain/types'
-import { type PartyFilter, normaliseQuery, resolveParty, searchParties } from '@store/parties'
+import { type PartyFilter, isSelf, normaliseQuery, resolveParty, searchParties } from '@store/parties'
 import { errorText } from '../../errors'
 import { fill, ui } from '../../copy'
-import { initials } from '../../format'
+import { PartyAvatar } from '../../kit/PartyAvatar'
 import { ErrorLine } from '../../phone/chrome/ErrorLine'
 import { ListSection } from '../../phone/chrome/ListRow'
 
@@ -30,26 +30,8 @@ export interface PickPartyStepProps {
   onSubmit?: () => void
 }
 
-function PartyAvatar({ party }: { party: Party }) {
-  return party.kind === 'business' ? (
-    <span
-      aria-hidden="true"
-      className="flex size-10 shrink-0 items-center justify-center bg-navy-900 font-display text-[13px] font-semibold text-white"
-    >
-      {initials(party.displayName)}
-    </span>
-  ) : (
-    <span
-      aria-hidden="true"
-      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-line-100 font-display text-[13px] font-semibold text-navy-900"
-    >
-      {initials(party.displayName)}
-    </span>
-  )
-}
-
 /** What a row says: the first and the second line. */
-function lines(p: Party, content: Content): { first: string; second: string; verified: boolean } {
+export function partyLines(p: Party, content: Content): { first: string; second: string; verified: boolean } {
   if (p.kind === 'business') {
     const place = content.personas.personas.find((x) => x.handle === p.handle)?.subtitle
     return {
@@ -101,16 +83,18 @@ export function PickPartyStep(p: PickPartyStepProps) {
       </div>
       {unknown && (
         <ErrorLine className="mt-3">
-          {errorText({
-            code: 'unknown-recipient',
-            handle: typed.startsWith('@') ? typed : `@${normaliseQuery(typed)}`,
-          })}
+          {isSelf(p.state, p.viewer, typed)
+            ? errorText({ code: 'self-payment' })
+            : errorText({
+                code: 'unknown-recipient',
+                handle: typed.startsWith('@') ? typed : `@${normaliseQuery(typed)}`,
+              })}
         </ErrorLine>
       )}
       {!unknown && list.length > 0 && typed === '' && <ListSection>{ui.party.recent}</ListSection>}
       <ul className="min-h-0 flex-1 overflow-y-auto pt-1" data-testid="party-list">
         {list.map((party) => {
-          const t = lines(party, p.content)
+          const t = partyLines(party, p.content)
           const on = picked?.id === party.id
           return (
             <li key={party.id}>
