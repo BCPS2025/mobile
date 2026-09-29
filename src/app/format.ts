@@ -1,9 +1,8 @@
 import { content } from '@content/load'
 import { formatHundredths, formatMinor } from '@domain/money'
 import { approxEur } from '@domain/rate'
-import type { AccountId, LedgerState, Minor, Party, PersonaId, Persona, Rate, SimTime, Tx, TxItem } from '@domain/types'
+import type { AccountId, Minor, Party, Persona, Rate, SimTime, Tx, TxItem } from '@domain/types'
 import { LJUBLJANA, formatTime, formatWeekday, zonedParts } from '@sim/tz'
-import { counterpartyOf } from '@store/parties'
 import { copy, fill, ui } from './copy'
 
 // Display helpers shared by the apps and the stage. Pure functions of state and copy.
@@ -141,13 +140,4 @@ export function itemsText(items: readonly TxItem[] | undefined): string {
   return (items ?? [])
     .map((it) => fill(copy.tx.items, { qty: it.qty, name: it.name.toLocaleLowerCase('en') }))
     .join(' · ')
-}
-
-/** Who bears a payment's fee, from one account's point of view: `you`, or the other party's label. */
-export function feePayerOf(s: LedgerState, tx: Tx, viewer: PersonaId): { you: boolean; name: string } | null {
-  if (tx.fee.payer === null) return null
-  const account = tx.fee.payer === 'sender' ? tx.from : tx.to
-  if (account === viewer) return { you: true, name: '' }
-  const party = counterpartyOf(s, account, tx.party)
-  return { you: false, name: party ? partyLabel(party) : '' }
 }

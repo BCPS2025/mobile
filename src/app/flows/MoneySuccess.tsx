@@ -1,14 +1,23 @@
 import { formatMinor } from '@domain/money'
-import type { Tx } from '@domain/types'
+import type { LedgerState, PersonaId, Tx } from '@domain/types'
 import { counterpartyOf } from '@store/parties'
 import { fill, ui } from '../copy'
-import { approx, dateTimeText, feePayerOf, partyLabel } from '../format'
+import { approx, dateTimeText, partyLabel } from '../format'
 import { SuccessScreen } from '../phone/chrome/SuccessScreen'
 import type { FlowCtx } from './types'
 
 // The success screen of a payment the account made (Pay · Paid · money moved): the overline (PAID
 // or SENT), a green check, the amount, "to Café Lipa", then Reference, Fee and Time; [Done] returns
 // Home. Nothing else is added.
+
+/** Who bears a payment's fee, from one account's point of view: `you`, or the other party's label. */
+function feePayerOf(s: LedgerState, tx: Tx, viewer: PersonaId): { you: boolean; name: string } | null {
+  if (tx.fee.payer === null) return null
+  const account = tx.fee.payer === 'sender' ? tx.from : tx.to
+  if (account === viewer) return { you: true, name: '' }
+  const party = counterpartyOf(s, account, tx.party)
+  return { you: false, name: party ? partyLabel(party) : '' }
+}
 
 export function MoneySuccess({
   id,

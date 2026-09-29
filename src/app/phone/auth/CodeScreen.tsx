@@ -127,8 +127,10 @@ export function CodeScreen() {
             className="anim-sheet mt-4 inline-flex h-11 items-center gap-2 border border-green-500 bg-navy-800 px-4 font-body text-body font-medium text-white"
           >
             <Mail size={20} strokeWidth={1.75} aria-hidden="true" className="text-green-500" />
-            <span>{chipLabel.trimEnd()}</span>
-            <span className="font-mono text-body font-medium tabular-nums">{formatCode(code)}</span>
+            <span>
+              <span className="whitespace-pre">{chipLabel}</span>
+              <span className="font-mono text-body font-medium tabular-nums">{formatCode(code)}</span>
+            </span>
           </button>
         )}
         {/* biome-ignore lint/a11y/useSemanticElements: a row of display boxes; a fieldset's default box would break the layout */}

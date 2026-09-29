@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import { Children, type ReactNode } from 'react'
 
 // A Home tile: white, 1 px line, sharp corners, a centred icon, the label under it, an optional
 // live line ("23 today · 111.38") and an optional count badge (navy square, top right). The whole
@@ -40,11 +41,25 @@ export function Tile({
   )
 }
 
-/** The tiles, two across, centred in the space under the balance band. */
-export function TileGrid({ children }: { children: React.ReactNode }) {
+/**
+ * The tiles, two across, centred in the space under the balance band. While a feature is not live
+ * its tile is absent, so an odd last tile sits centred on its own row.
+ */
+export function TileGrid({ children }: { children: ReactNode }) {
+  const tiles = Children.toArray(children)
+  const odd = tiles.length % 2 === 1
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-      <div className="grid h-full max-h-[358px] w-full max-w-[358px] grid-cols-2 grid-rows-2 gap-3">{children}</div>
+      <div className="grid h-full max-h-[358px] w-full max-w-[358px] grid-cols-2 grid-rows-2 gap-3">
+        {odd ? (
+          <>
+            {tiles.slice(0, -1)}
+            <div className="col-span-2 mx-auto h-full w-[calc(50%-6px)]">{tiles[tiles.length - 1]}</div>
+          </>
+        ) : (
+          tiles
+        )}
+      </div>
     </div>
   )
 }
