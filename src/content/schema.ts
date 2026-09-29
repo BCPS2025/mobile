@@ -556,7 +556,7 @@ export const HomesSchema = z
   })
   .superRefine((v, ctx) => {
     if (!v.complete) return
-    // Strict from milestone F (§3.5): exactly the D28 tiles in order, and every row present.
+    // Strict from milestone F: exactly the D28 tiles in order, and every row present.
     for (const [name, h] of [
       ['consumer', v.consumer],
       ['pos', v.pos],

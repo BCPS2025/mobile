@@ -28,7 +28,7 @@ const TIMEOUT = 600_000
 const RUNS = Number(process.env.FC_RUNS ?? 200)
 const SEED = process.env.FC_SEED === undefined ? undefined : Number(process.env.FC_SEED)
 
-// Cc and Cf characters, as the record format strips them from notes (§2.6).
+// Cc and Cf characters, as the record format strips them from notes.
 const CONTROL = /[\p{Cc}\p{Cf}]/u
 
 /** Steps whose command no screen sends and the runtime must refuse whatever the ledger says. */

@@ -75,7 +75,7 @@ export function isLedgerPersona(s: LedgerState, id: PartyId): boolean {
   return p !== undefined && !p.offstage && entryOf(s.balances, id) !== undefined
 }
 
-/** A business whose QR and checkout payments are sales (café and studio, §4.3). */
+/** A business whose QR and checkout payments are sales (café and studio). */
 export function isMerchant(s: LedgerState, id: PartyId): boolean {
   return entryOf(s.directory, id)?.merchant === true && entryOf(s.merchant, id) !== undefined
 }

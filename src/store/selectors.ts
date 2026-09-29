@@ -65,7 +65,7 @@ export function lastSessionTx(s: LedgerState): Tx | undefined {
   return undefined
 }
 
-/** The transaction a user command created (flows read their phase from the ledger, §2.3.2). */
+/** The transaction a user command created (flows read their phase from the ledger). */
 export function txByCmdId(s: LedgerState, cmdId: string): Tx | undefined {
   for (let i = s.txOrder.length - 1; i >= 0; i--) {
     const tx = s.txs[s.txOrder[i] ?? '']

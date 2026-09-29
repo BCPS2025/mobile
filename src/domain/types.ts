@@ -149,7 +149,7 @@ export interface TxSummary {
 }
 
 export interface Tx {
-  /** The visible reference, "BC-4F7K2Q" (§4.1 E4). */
+  /** The visible reference, "BC-4F7K2Q". */
   id: string
   kind: TxKind
   channel: TxChannel
@@ -233,7 +233,7 @@ export interface Balance {
   held: Minor
 }
 
-// ---- state slices (§4.2)
+// ---- state slices
 export type RequestChannel = 'username' | 'pos' | 'split' | 'invoice'
 export type RequestStatus = 'open' | 'paid' | 'declined' | 'cancelled'
 
@@ -469,7 +469,7 @@ export type LedgerEventType = LedgerEvent['type']
 /** Output of decide(); the node stamps seq and at. */
 export type PendingEvent = { cmdId?: string } & LedgerEventBody
 
-/** Where an applied batch of events came from (effects coalesce by origin, §2.5). */
+/** Where an applied batch of events came from (effects coalesce by origin). */
 export type BatchOrigin = 'user' | 'timer' | 'jump' | 'catch-up' | 'replay'
 
 export interface DecideCtx {

@@ -23,7 +23,7 @@ export const KIND_RANK: Record<DueKind, number> = {
   'auto-convert': 5,
 }
 
-/** Items per run before the scheduler gives up (bounds imported files, §2.6). */
+/** Items per run before the scheduler gives up (bounds imported files). */
 export const ITERATION_CAP = 20_000
 
 /** Timers never wait longer than this (browsers fire delays above 2³¹ − 1 ms at once). */

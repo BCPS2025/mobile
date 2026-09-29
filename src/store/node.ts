@@ -16,7 +16,7 @@ import { runDue, timerDelay } from '@sim/scheduler'
 
 // One page, one ledger: every phone is a view over this single node.
 // dispatch -> run due work up to the command's time -> decide -> evolve -> notify.
-// The node notifies only on events and loads; the time lives in its clock store (§2.5).
+// The node notifies only on events and loads; the time lives in its clock store.
 // Screen stacks live in store/nav, persistence in store/persistence.
 
 export type { Timers }
@@ -38,7 +38,7 @@ export interface LoggedCommand {
   cmd: UserCommand
 }
 
-/** A Clock jump (presenter tools), logged as its own entry (§2.6). */
+/** A Clock jump (presenter tools), logged as its own entry. */
 export interface LoggedJump {
   at: SimTime
   jump: true
@@ -49,7 +49,7 @@ export type NodeLogEntry = LoggedCommand | LoggedJump
 
 export const isJump = (e: NodeLogEntry): e is LoggedJump => 'jump' in e
 
-/** Events applied together, with where they came from (effects coalesce by origin, §2.5). */
+/** Events applied together, with where they came from (effects coalesce by origin). */
 export interface AppliedBatch {
   origin: BatchOrigin
   events: readonly LedgerEvent[]
@@ -205,7 +205,7 @@ export function createLedgerNode(opts: LedgerNodeOptions): LedgerNode {
   }
 
   // Due work never runs ahead of the clock: a settle stamped later than `now` would let the next
-  // command spend money that replay has not settled yet (live must equal replay, §2.7).
+  // command spend money that replay has not settled yet (live must equal replay).
   function run(until: SimTime, origin: BatchOrigin = 'timer'): LedgerEvent[] {
     const applied = runInternal(Math.min(until, clock.now()) as SimTime, origin)
     afterBatch(applied)

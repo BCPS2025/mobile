@@ -55,7 +55,7 @@ export type Notice =
 
 /** Refusals that come from the store, not the domain. */
 export type StoreRefusal =
-  /** The session reached its limit (§2.6): "Your session is getting long. Save it to a file and reset soon." */
+  /** The session reached its limit: "Your session is getting long. Save it to a file and reset soon." */
   | { code: 'session-full' }
   /** The command could not be saved within the file rules (too many items, a note too long). */
   | { code: 'not-storable' }
@@ -64,7 +64,7 @@ export type DispatchResult = Result<LedgerEvent[], DomainError | StoreRefusal>
 
 /**
  * Why the Clock control's jump was refused: the node's reasons, plus the file limits a jump
- * must keep so the session can always be saved and loaded again (§2.6): `session-full` at 100 %
+ * must keep so the session can always be saved and loaded again: `session-full` at 100 %
  * usage (as for commands), `too-far` beyond day 400 after T0's date.
  */
 export type RuntimeJumpRefusal = JumpRefusal | 'session-full' | 'too-far'
@@ -205,7 +205,7 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
     notice('restore-failed')
   }
 
-  /** Reads the stored session (§2.6 Load, including the version-mismatch path). */
+  /** Reads the stored session (load, including the version-mismatch path). */
   function load(): Loaded {
     if (!storage) return { restored: null, notices: ['storage-unavailable'] }
     const key = stateKey(stateVersion)
@@ -320,7 +320,7 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
   /**
    * Takes over what another tab wrote (queued lock, [Use here]). A stored record that does not
    * restore keeps this tab's session and is quarantined first, so the write that follows never
-   * silently replaces it (§2.6).
+   * silently replaces it.
    */
   function reloadFromStorage(raw: string | null): void {
     if (!storage || raw === null) return
@@ -488,7 +488,7 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
         return { ok: false, error: 'bad-file' }
       }
       if (!parsed.ok) return { ok: false, error: 'bad-file' }
-      // Re-based onto this device's T0 by calendar (day offset and local time, §2.6).
+      // Re-based onto this device's T0 by calendar (day offset and local time).
       const rebased = { ...parsed.record, t0Date: meta.t0Date }
       const r = restoreRecord(rebased, parsed.olderVersion, env)
       if (!r.ok) return { ok: false, error: 'bad-file' }

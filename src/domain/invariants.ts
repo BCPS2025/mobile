@@ -4,7 +4,7 @@ import type { AccountId, LedgerState, Tx } from './types'
 
 // Ledger health checks, numbered 1–16. Checked after every event in tests and in
 // development. An empty list means healthy; each string names one violation and its number.
-// §4.6 item 14 (determinism) is a property of replay and is asserted by the replay tests.
+// Determinism is a property of replay and is asserted by the replay tests.
 
 /** Accounts allowed a negative available balance: money enters and leaves the network there. */
 const MAY_GO_NEGATIVE: ReadonlySet<AccountId> = new Set(['sys:issuance', 'sys:offstage'])

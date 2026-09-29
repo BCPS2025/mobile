@@ -8,7 +8,7 @@ import type { NodeLogEntry } from './node'
 import { type LogEntry, isJumpEntry } from './record'
 
 // Ledger = seed + command log. Replay applies exactly the live boundary rule of
-// §2.7: before each entry the scheduler runs every item due at or before the entry's time, one
+// Before each entry the scheduler runs every item due at or before the entry's time, one
 // at a time in the total order and each at its own time; then the entry is decided at its time
 // (a jump entry only moves the clock); after the last entry the scheduler runs up to `clock`.
 // Scheduler work (settling, and from later milestones conversions, renewals, deadlines, bank

@@ -11,7 +11,7 @@ import { CMD_ID } from './cmdIds'
 export const RECORD_FORMAT = 'bcps-state'
 export const FORMAT_VERSION = 1
 
-/** One set of limits, shared by live use and import (§2.6). */
+/** One set of limits, shared by live use and import. */
 export const LIMITS = {
   /** Log entries (commands and jumps). */
   entries: 5000,
@@ -28,7 +28,7 @@ export const LIMITS = {
   maxDay: 400,
 } as const
 
-/** Share of a limit at which Settings warns (§2.6). */
+/** Share of a limit at which Settings warns. */
 export const WARN_RATIO = 0.8
 
 // ---- shapes (the JSON form; persona-keyed maps are plain objects here and Maps after parsing)
@@ -88,14 +88,14 @@ export interface ReadMarks {
   readIds: string[]
 }
 
-/** The persisted UI (§2.4, §2.5): which account is on which phone, who is logged in, where each
+/** The persisted UI: which account is on which phone, who is logged in, where each
  *  persona's screen stack stands (Home and one list level) and what they have read. */
 export interface UiState {
   phones: { stage: { left: Slot; right: Slot }; phone: Slot }
   sessions: Map<PersonaId, boolean>
   nav: Map<PersonaId, string[]>
   read: Map<PersonaId, ReadMarks>
-  /** Logins per persona since Reset (the displayed login code rotates with it, §2.4). */
+  /** Logins per persona since Reset (the displayed login code rotates with it). */
   logins: Map<PersonaId, number>
 }
 
@@ -114,7 +114,7 @@ export interface StateRecord {
   startingState?: string
 }
 
-/** The fresh-start UI: everyone logged out; left phone remembers Ana, right the café (§2.4). */
+/** The fresh-start UI: everyone logged out; left phone remembers Ana, right the café. */
 export function freshUi(): UiState {
   return {
     phones: {
@@ -255,7 +255,7 @@ export interface RecordProblem {
 export interface ParseOptions {
   /** The build's stateVersion. */
   stateVersion: number
-  /** Accept an older stateVersion (the caller then replays it on the new seed, §2.6). */
+  /** Accept an older stateVersion (the caller then replays it on the new seed). */
   acceptOlder?: boolean
   /** Weekday T0 falls on (config t0.weekday, 5 = Friday). */
   t0Weekday: number
@@ -505,7 +505,7 @@ function ui(v: unknown, path: string, ids: ReadonlySet<string>): UiState {
 }
 
 /**
- * The UI as a record may carry it (§2.6 caps): persona keys and slots from `personaIds` only,
+ * The UI as a record may carry it (with its caps): persona keys and slots from `personaIds` only,
  * screen stacks cut to Home and one list level, well-formed screen and read ids, the newest 500
  * read ids. The writer applies it before every write, so a UI the parser would refuse can never
  * make the whole record (ledger included) fail to restore.
@@ -562,7 +562,7 @@ export function checkWireCommand(cmd: WireCommand): RecordProblem | null {
 
 /**
  * Parses and validates a record or state file (untrusted). Refuses anything outside the rules
- * of §2.6; strips control and format characters from notes and the label. It does not replay:
+ * of the format; strips control and format characters from notes and the label. It does not replay:
  * whether the commands are accepted, and whether the UI fits the replayed state, is checked
  * after replay (store/restore).
  */
@@ -631,7 +631,7 @@ export function parseRecord(textIn: string, opts: ParseOptions): ParseResult {
     }
     if (o.label !== undefined) record.label = text(o.label, '$.label', LIMITS.label)
     if (o.startingState !== undefined) record.startingState = str(o.startingState, '$.startingState', STATE_ID)
-    // `prefs` in a file are ignored (presenter preferences never travel, §2.6).
+    // `prefs` in a file are ignored (presenter preferences never travel).
     return { ok: true, record, olderVersion }
   } catch (e) {
     if (e instanceof Refusal) return { ok: false, problem: e.problem }

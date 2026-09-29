@@ -15,7 +15,7 @@ export const isReservedDomain = (email: string): boolean => {
   return RESERVED.includes(domain) || domain.endsWith('.example')
 }
 
-/** Count and gross of slot k (1-based) of n, by the cumulative rule of §2.7.1 (totals stay exact). */
+/** Count and gross of slot k (1-based) of n, by the cumulative rule (totals stay exact). */
 export function slotShare(total: number, k: number, n: number): number {
   return divRoundHalfUp(total * k, n) - divRoundHalfUp(total * (k - 1), n)
 }
@@ -157,7 +157,7 @@ export function checkContent(c: Content): ContentProblem[] {
     }
   }
 
-  // ---- config: background patterns keep every slot's gross above its fees (§2.7.1; the fee
+  // ---- config: background patterns keep every slot's gross above its fees (the fee
   // of a slot row is the policy fee on its gross, like a seeded summary row)
   const rate = c.config.rate
   const slotFee = (id: FeePolicyId, count: number, gross: number) =>

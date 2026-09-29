@@ -7,10 +7,10 @@ import { type At, type IsoDate, atOfInstant } from '@sim/tz'
 import type { LoggedCommand, NodeLogEntry } from './node'
 import type { CommandEntry, LogEntry, Ref, WireCommand } from './record'
 
-// Between the engine's commands and the log's stored form (§3.8): amounts become two-decimal
+// Between the engine's commands and the log's stored form: amounts become two-decimal
 // strings, items are stored by sku and quantity (names and prices come back from the catalogue),
 // and entities are named by the command that created them or by their seed key, never by display
-// id, so seed growth between versions cannot break a log (§2.6). Times become calendar stamps.
+// id, so seed growth between versions cannot break a log. Times become calendar stamps.
 
 export type CodecError = 'unknown-ref' | 'unknown-item' | 'bad-amount' | 'unencodable'
 
