@@ -69,8 +69,7 @@ function ScanBody({ ctx }: StepProps<Draft>) {
   return (
     <div className="flex min-h-0 flex-1 flex-col px-5 pt-5 pb-3">
       <div className="flex flex-1 flex-col items-center">
-        <div
-          role="img"
+        <figure
           aria-label={ui.scan.viewfinder}
           className="relative size-[260px] shrink-0 bg-navy-800"
           data-testid="viewfinder"
@@ -90,7 +89,7 @@ function ScanBody({ ctx }: StepProps<Draft>) {
           ) : (
             <span aria-hidden="true" className="absolute top-1/2 right-10 left-10 h-0.5 bg-navy-700" />
           )}
-        </div>
+        </figure>
         {candidate && merchant ? (
           <>
             <p

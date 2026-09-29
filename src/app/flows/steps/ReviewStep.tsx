@@ -59,7 +59,7 @@ export function ReviewStep({
                   type="button"
                   data-testid={`edit-${r.label}`}
                   onClick={r.onEdit}
-                  className="min-h-11 px-2.5 font-body text-body-s font-semibold text-green-700"
+                  className="min-h-11 px-2.5 font-body text-body-s font-semibold text-green-700 underline underline-offset-2"
                 >
                   {ui.common.edit}
                 </button>

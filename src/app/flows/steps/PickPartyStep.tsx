@@ -109,7 +109,7 @@ export function PickPartyStep(p: PickPartyStepProps) {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1 font-body text-body font-semibold text-navy-900">
                     <span className="truncate">{t.first}</span>
-                    {t.verified && (
+                    {t.verified && typed !== '' && (
                       <Check
                         size={15}
                         strokeWidth={2.25}

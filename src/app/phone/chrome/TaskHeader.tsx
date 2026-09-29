@@ -40,7 +40,9 @@ export function TaskHeader({
     <header
       className={`grid h-14 shrink-0 grid-cols-[100px_1fr_100px] items-center px-1 ${
         navy
-          ? `on-navy text-white ${tone === 'navy800' ? 'bg-navy-800' : 'bg-navy-900'} ${tone === 'business' ? 'border-b border-navy-700' : ''}`
+          ? `on-navy text-white ${tone === 'navy800' ? 'bg-navy-800' : 'bg-navy-900'} ${
+              tone === 'business' || (tone === 'navy' && !overline) ? 'border-b border-navy-700' : ''
+            }`
           : 'border-b border-line-200 bg-bg text-navy-900'
       }`}
     >

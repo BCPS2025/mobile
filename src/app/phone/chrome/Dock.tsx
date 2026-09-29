@@ -54,11 +54,11 @@ const TONES: Record<ButtonTone, string> = {
   white: 'bg-white text-navy-900 active:bg-line-100 disabled:bg-navy-700 disabled:text-grey-400',
 }
 
-/** A button that is sending keeps its own colours (disabled styles would grey it out). */
+/** A button that is sending keeps its own colours, a little faded (the disabled colours would grey it out). */
 const SENDING: Record<ButtonTone, string> = {
-  money: 'disabled:bg-green-500 disabled:text-navy-900',
-  navy: 'disabled:bg-navy-900 disabled:text-white',
-  white: 'disabled:bg-white disabled:text-navy-900',
+  money: 'bg-green-500 text-navy-900 opacity-80',
+  navy: 'bg-navy-900 text-white opacity-80',
+  white: 'bg-white text-navy-900 opacity-80',
 }
 
 /** The glyph shown inside a button while its payment is pending. */
@@ -80,7 +80,7 @@ export function DockButton({ primary, testId = 'dock-primary' }: { primary: Dock
       aria-busy={sending || undefined}
       disabled={!enabled || sending}
       onClick={onPress}
-      className={`${BASE} ${TONES[tone]} ${sending ? `${SENDING[tone]} opacity-80` : ''}`}
+      className={`${BASE} ${sending ? SENDING[tone] : TONES[tone]}`}
     >
       {sending ? (
         <SendingGlyph />
@@ -140,7 +140,7 @@ export function Dock({
               data-testid="dock-secondary"
               disabled={secondary.disabled}
               onClick={secondary.onPress}
-              className={`inline-flex min-h-12 shrink-0 items-center py-3.5 pr-3 font-body text-body font-semibold disabled:opacity-40 ${
+              className={`inline-flex min-h-12 shrink-0 items-center py-3.5 pr-3 font-body text-body font-semibold underline underline-offset-2 disabled:opacity-40 ${
                 navy ? 'text-green-500' : 'text-green-700'
               }`}
             >
