@@ -1,0 +1,93 @@
+import { useLedgerState } from '@store/useLedger'
+import { ErrorLine } from '../phone/chrome/ErrorLine'
+import { Dock, type DockPrimary } from '../phone/chrome/Dock'
+import { PhoneScreen } from '../phone/chrome/PhoneScreen'
+import { flowImpl } from '../phone/implemented'
+import { usePhoneNav } from '../phone/nav'
+import { usePersonaPhone } from '../phone/PhoneContext'
+import type { FlowScreen } from '../phone/types'
+import { ui } from '../copy'
+import { useApp } from '../state/AppContext'
+import { createFlowApi } from './actions'
+import { makeFlowCtx } from './ctx'
+import { phaseOf, stepBar, txOf } from './engine'
+import type { FlowImpl } from './types'
+
+// Renders the flow entry on top of a persona's stack: the current step inside the shared chrome
+// (task header, step bar, error line, dock), or the flow's success screen once the ledger says
+// the payment is confirmed (a persona that was away finds it when it comes back). Back and Home
+// are disabled while the payment sends.
+
+export function FlowHost({ screen }: { screen: FlowScreen }) {
+  const app = useApp()
+  const phone = usePersonaPhone()
+  const nav = usePhoneNav()
+  useLedgerState() // re-render on every ledger change: the phase comes from the ledger
+  const impl = flowImpl(screen.id) as FlowImpl<unknown> | undefined
+  if (!impl) return null
+
+  const who = { persona: phone.persona, slot: phone.slot, shell: phone.shell }
+  const ctx = makeFlowCtx(app, who, screen.params)
+  const d = screen.draft
+  const phase = phaseOf(screen, impl, ctx)
+
+  if (phase === 'success') {
+    const Success = impl.Success
+    if (!Success) return null
+    return (
+      <Success
+        d={d}
+        ctx={ctx}
+        tx={txOf(screen, impl, ctx)}
+        done={() => nav.home()}
+        followOn={(id, params) => nav.followOn(id, params)}
+      />
+    )
+  }
+
+  const step = impl.steps[screen.step]
+  if (!step) return null
+  const api = createFlowApi<unknown>(app, who, screen.instanceId)
+  const sending = phase === 'sending'
+  const navyBody = step.body === 'navy'
+  const tone = impl.tone(ctx)
+
+  const def = screen.editing
+    ? { label: ui.steps.backToReview, tone: 'navy' as const, enabled: true }
+    : step.primary(d, ctx)
+  const primary: DockPrimary = {
+    label: def.label,
+    tone: navyBody && def.tone === 'navy' ? 'white' : def.tone,
+    enabled: def.enabled && !sending,
+    sending,
+    onPress: api.press,
+  }
+  const secondary = screen.editing ? null : (step.secondary?.(d, ctx, api) ?? null)
+  const Body = step.Screen
+
+  return (
+    <PhoneScreen
+      id={step.screen}
+      header={tone}
+      body={navyBody ? 'navy' : 'light'}
+      title={impl.title(ctx)}
+      businessName={app.persona(phone.persona)?.displayName ?? ''}
+      onBack={nav.back}
+      onHome={nav.home}
+      backDisabled={sending}
+      homeDisabled={sending}
+      step={stepBar(impl, d, ctx, screen.step)}
+      error={screen.error ? <ErrorLine onNavy={navyBody}>{screen.error}</ErrorLine> : null}
+      dock={<Dock tone={navyBody ? 'navy' : 'light'} primary={primary} {...(secondary ? { secondary } : {})} />}
+    >
+      <Body
+        d={d}
+        ctx={ctx}
+        api={api}
+        sending={sending}
+        error={screen.error ?? null}
+        editing={screen.editing === true}
+      />
+    </PhoneScreen>
+  )
+}

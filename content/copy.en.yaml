@@ -42,7 +42,7 @@ errors:
   insufficientFunds: You have {have} BCPS. Top up {short} BCPS to pay.
   unknownRecipient: No BCPS user '{handle}'. Check the spelling.
   selfPayment: You can't pay yourself.
-  invalidAmount: Enter an amount above zero.
+  invalidAmount: "Enter an amount above {min}."
   maxAmount: The maximum is {max} BCPS.
   invalidState: This was already {status}.
   notAllowed: Only {name} can do this.

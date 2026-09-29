@@ -1,0 +1,308 @@
+import type { HomesContent, ROW_IDS, ShellHomeContent, TILE_IDS } from '@content/schema'
+import type { Shell } from './types'
+
+// The navigation graph of the phones, as pure data (no React): every tile, hub, view, detail and
+// flow that is live, with its edges and the follow-ons a flow may hand off to. The unit test
+// walks it (one hub level, at most five screens before a flow, every flow ends on a success that
+// returns Home, the two-tap rule, every id registered). Components are registered separately
+// (screens.tsx, flows/index.ts); a tile or row whose target has no component yet is hidden.
+//
+// What a milestone makes live is added here, in content/homes.yaml and in copy.en.yaml.
+
+export type TileId = (typeof TILE_IDS)[number]
+export type RowId = (typeof ROW_IDS)[number]
+
+export type FlowId = 'scan' | 'send' | 'charge' | 'paySupplier' | 'logout'
+export type ViewId = 'history' | 'notifications' | 'about'
+export type DetailId = 'tx' | 'received'
+export type HubId = 'payRequest' | 'sales' | 'pay' | 'profile' | 'settings'
+
+export type Target =
+  | { kind: 'flow'; id: FlowId }
+  | { kind: 'view'; id: ViewId }
+  | { kind: 'hub'; id: HubId }
+  | { kind: 'detail'; id: DetailId }
+
+export const targetKey = (t: Target): string => `${t.kind}:${t.id}`
+
+const flow = (id: FlowId): Target => ({ kind: 'flow', id })
+const view = (id: ViewId): Target => ({ kind: 'view', id })
+const hub = (id: HubId): Target => ({ kind: 'hub', id })
+
+/** The shells whose screens exist. A shell's accounts appear in the menus once it is live. */
+export const LIVE_SHELLS: readonly Shell[] = ['consumer', 'pos']
+
+/** data-screen of each shell's Home. */
+export const HOME_SCREENS: Record<Shell, string> = {
+  consumer: 'c.home',
+  pos: 'pos.home',
+  studio: 'studio.home',
+  trade: 'trade.home',
+}
+
+/** What each Home tile opens. */
+export const TILES: Partial<Record<TileId, Target>> = {
+  scan: flow('scan'),
+  payRequest: hub('payRequest'),
+  history: view('history'),
+  charge: flow('charge'),
+  sales: hub('sales'),
+  pay: hub('pay'),
+}
+
+/** What each hub row opens. */
+export const ROWS: Partial<Record<RowId, Target>> = {
+  send: flow('send'),
+  allPayments: view('history'),
+  paySupplier: flow('paySupplier'),
+  notifications: view('notifications'),
+  about: view('about'),
+  logout: flow('logout'),
+}
+
+/** The bell in every Home header. */
+export const BELL: Target = view('notifications')
+
+export interface HubSpec {
+  /** data-screen of the hub. */
+  screen: string
+  shell: Shell
+  /** A block above the rows (Profile's identity card); the component is registered by name. */
+  header?: 'identity'
+}
+export const HUBS: Record<HubId, HubSpec> = {
+  payRequest: { screen: 'c.payRequest.hub', shell: 'consumer' },
+  profile: { screen: 'c.profile', shell: 'consumer', header: 'identity' },
+  sales: { screen: 'pos.sales.hub', shell: 'pos' },
+  pay: { screen: 'pos.pay', shell: 'pos' },
+  settings: { screen: 'biz.settings', shell: 'pos' },
+}
+
+export interface ViewSpec {
+  /** data-screen, by shell (or one for all). */
+  screen: string | Partial<Record<Shell, string>>
+  shells: readonly Shell[]
+  /** Details its rows open. */
+  details: readonly DetailId[]
+}
+export const VIEWS: Record<ViewId, ViewSpec> = {
+  history: { screen: { consumer: 'c.history', pos: 'biz.history' }, shells: ['consumer', 'pos'], details: ['tx'] },
+  notifications: { screen: 'shared.notifications', shells: ['consumer', 'pos'], details: ['tx', 'received'] },
+  about: { screen: 'shared.about', shells: ['consumer', 'pos'], details: [] },
+}
+
+export interface DetailSpec {
+  screen: string
+  /** One related detail a detail may link to (a second detail replaces the top one). */
+  related: readonly DetailId[]
+  /** Flows its buttons start. */
+  flows: readonly FlowId[]
+}
+export const DETAILS: Record<DetailId, DetailSpec> = {
+  tx: { screen: 'shared.tx', related: [], flows: ['send'] },
+  received: { screen: 'biz.received', related: ['tx'], flows: [] },
+}
+
+export type StepKind = 'input' | 'review' | 'confirm' | 'waitFor' | 'committed'
+export interface StepSpec {
+  id: string
+  /** data-screen of the step. */
+  screen: string
+  kind: StepKind
+}
+
+export type SuccessKind = 'money' | 'neutral' | 'welcome'
+
+export interface FlowSpec {
+  shells: readonly Shell[]
+  /** The kinds of screen the flow may be started from. */
+  startsFrom: readonly ('home' | 'hub' | 'view' | 'detail')[]
+  steps: readonly StepSpec[]
+  /** Steps whose primary action dispatches a ledger command. */
+  commits: readonly string[]
+  /**
+   * How the flow ends: `money` and `neutral` are the two success screens ([Done] returns Home,
+   * or a follow-on below); `welcome` ends on the Welcome screen (Log out).
+   */
+  success: SuccessKind
+  /** data-screen of the success screen. */
+  successScreen: string
+  /** Flows this one may start once it has ended (from its success screen: Home first). */
+  followOns: readonly FlowId[]
+  /** Flows this one may replace itself with, keeping the stack below it ("Pay by @username"). */
+  handoffs: readonly FlowId[]
+}
+
+export const FLOWS: Record<FlowId, FlowSpec> = {
+  scan: {
+    shells: ['consumer'],
+    startsFrom: ['home'],
+    steps: [
+      { id: 'scan', screen: 'c.scan', kind: 'input' },
+      { id: 'review', screen: 'c.payCode.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'money',
+    successScreen: 'c.payCode.success',
+    followOns: [],
+    handoffs: ['send'],
+  },
+  send: {
+    shells: ['consumer'],
+    startsFrom: ['hub', 'detail'],
+    steps: [
+      { id: 'to', screen: 'c.send.to', kind: 'input' },
+      { id: 'amount', screen: 'c.send.amount', kind: 'input' },
+      { id: 'note', screen: 'c.send.note', kind: 'input' },
+      { id: 'review', screen: 'c.send.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'money',
+    successScreen: 'c.send.success',
+    followOns: [],
+    handoffs: [],
+  },
+  charge: {
+    shells: ['pos'],
+    startsFrom: ['home'],
+    steps: [
+      { id: 'items', screen: 'pos.charge', kind: 'input' },
+      { id: 'code', screen: 'pos.code', kind: 'waitFor' },
+      { id: 'cancel', screen: 'pos.code.cancel', kind: 'confirm' },
+    ],
+    commits: ['items', 'cancel'],
+    success: 'money',
+    successScreen: 'pos.paid',
+    followOns: ['charge'],
+    handoffs: [],
+  },
+  paySupplier: {
+    shells: ['pos'],
+    startsFrom: ['hub'],
+    steps: [
+      { id: 'to', screen: 'biz.send.to', kind: 'input' },
+      { id: 'amount', screen: 'biz.send.amount', kind: 'input' },
+      { id: 'note', screen: 'biz.send.note', kind: 'input' },
+      { id: 'review', screen: 'biz.send.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'money',
+    successScreen: 'biz.send.done',
+    followOns: [],
+    handoffs: [],
+  },
+  logout: {
+    shells: ['consumer', 'pos'],
+    startsFrom: ['hub'],
+    steps: [{ id: 'confirm', screen: 'auth.logout', kind: 'confirm' }],
+    commits: [],
+    success: 'welcome',
+    successScreen: 'auth.welcome',
+    followOns: [],
+    handoffs: [],
+  },
+}
+
+/** A feature the two-tap rule covers: the screen that offers its entry action, from Home. */
+export interface Feature {
+  id: string
+  shell: Shell
+  target: Target
+  /** Most taps from Home to reach the target (header controls and hub rows count). */
+  maxTaps: number
+}
+export const FEATURES: readonly Feature[] = [
+  { id: 'scan', shell: 'consumer', target: flow('scan'), maxTaps: 1 },
+  { id: 'send', shell: 'consumer', target: flow('send'), maxTaps: 2 },
+  { id: 'history', shell: 'consumer', target: view('history'), maxTaps: 1 },
+  { id: 'notifications', shell: 'consumer', target: view('notifications'), maxTaps: 1 },
+  { id: 'about', shell: 'consumer', target: view('about'), maxTaps: 2 },
+  { id: 'logout', shell: 'consumer', target: flow('logout'), maxTaps: 2 },
+  { id: 'charge', shell: 'pos', target: flow('charge'), maxTaps: 1 },
+  { id: 'salesHistory', shell: 'pos', target: view('history'), maxTaps: 2 },
+  { id: 'paySupplier', shell: 'pos', target: flow('paySupplier'), maxTaps: 2 },
+  { id: 'notifications', shell: 'pos', target: view('notifications'), maxTaps: 1 },
+  { id: 'about', shell: 'pos', target: view('about'), maxTaps: 2 },
+  { id: 'logout', shell: 'pos', target: flow('logout'), maxTaps: 2 },
+]
+
+// ---- reading the registry against content/homes.yaml
+
+export type HomeContent = ShellHomeContent
+export type HubEntry = NonNullable<HomeContent['hubs'][keyof HomeContent['hubs']]>[number]
+export type HubRow = Extract<HubEntry, { row: RowId }>
+
+/** The home of an account (its shell's tiles and hubs), when that shell has one. */
+export function homeOf(homes: HomesContent, shell: Shell, personaId: string): HomeContent | undefined {
+  switch (shell) {
+    case 'consumer':
+      return homes.consumer
+    case 'pos':
+      return homes.pos
+    case 'studio':
+      return homes.studio
+    case 'trade':
+      return personaId === 'firm' ? homes.trade?.firm : homes.trade?.supplier
+  }
+}
+
+/** The tiles of a Home whose target is registered, in order. */
+export function registeredTiles(
+  home: HomeContent,
+): { tile: TileId; target: Target; entry: HomeContent['tiles'][number] }[] {
+  const out: { tile: TileId; target: Target; entry: HomeContent['tiles'][number] }[] = []
+  for (const entry of home.tiles) {
+    const target = TILES[entry.tile]
+    if (target) out.push({ tile: entry.tile, target, entry })
+  }
+  return out
+}
+
+/** The rows of a hub whose target is registered, in order (sections are not built yet). */
+export function registeredRows(home: HomeContent, hubId: string): { row: RowId; target: Target; entry: HubRow }[] {
+  const out: { row: RowId; target: Target; entry: HubRow }[] = []
+  const entries = (home.hubs as Record<string, HomeContent['hubs'][keyof HomeContent['hubs']]>)[hubId] ?? []
+  for (const entry of entries) {
+    if (!('row' in entry)) continue
+    const target = ROWS[entry.row]
+    if (target) out.push({ row: entry.row, target, entry })
+  }
+  return out
+}
+
+/** Screen ids a persisted stack may hold (`home`, `hub:<id>`); anything else is dropped on restore. */
+export function isPersistedScreenId(id: string): boolean {
+  if (id === 'home') return true
+  return id.startsWith('hub:') && Object.hasOwn(HUBS, id.slice(4))
+}
+
+/**
+ * Taps from Home to every registered target of a shell: header controls (avatar, bell), tiles,
+ * hub rows, a view's rows and a detail's buttons each count one tap. A target that offers a flow
+ * is the flow itself.
+ */
+export function tapsFromHome(homes: HomesContent, shell: Shell, personaId: string): Map<string, number> {
+  const taps = new Map<string, number>()
+  const home = homeOf(homes, shell, personaId)
+  if (!home) return taps
+  const queue: { target: Target; taps: number }[] = []
+  const see = (target: Target, n: number) => {
+    const key = targetKey(target)
+    if (taps.has(key)) return
+    taps.set(key, n)
+    queue.push({ target, taps: n })
+  }
+  see(BELL, 1)
+  see(hub(home.avatar as HubId), 1)
+  for (const t of registeredTiles(home)) see(t.target, 1)
+  while (queue.length > 0) {
+    const { target, taps: n } = queue.shift() as { target: Target; taps: number }
+    if (target.kind === 'hub') for (const r of registeredRows(home, target.id)) see(r.target, n + 1)
+    if (target.kind === 'view') for (const d of VIEWS[target.id].details) see({ kind: 'detail', id: d }, n + 1)
+    if (target.kind === 'detail') {
+      for (const f of DETAILS[target.id].flows) see(flow(f), n + 1)
+      for (const d of DETAILS[target.id].related) see({ kind: 'detail', id: d }, n + 1)
+    }
+  }
+  return taps
+}
