@@ -9,6 +9,7 @@ export function StatusBar({ tone }: { tone: 'light' | 'navy' | 'navy800' }) {
   if (!statusBar) return null
   return (
     <div
+      data-testid="status-bar"
       className={`flex h-11 shrink-0 items-center px-5 font-display text-[15px] font-semibold tnum ${
         tone === 'light'
           ? 'bg-bg text-navy-900'

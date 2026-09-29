@@ -102,3 +102,87 @@ export async function expectCleanVisibleCopy(page: Page): Promise<void> {
   await expect(page.locator('[data-testid="gate-continue"]')).toHaveCount(0)
   expect(await visibleFindings(page)).toEqual([])
 }
+
+// ---- the phone runtime
+
+/** Every e2e run uses the manual clock and a fixed start date: 25 September 2026, 12:15 in Ljubljana. */
+export const APP_QUERY = '?clock=manual&epoch=2026-09-25'
+
+/** Opens a route with the manual clock (`#/stage`, `#/phone`, …). */
+export async function openApp(page: Page, hash = '#/', query = APP_QUERY): Promise<void> {
+  await page.goto(`./${query}${hash}`)
+  await page.locator('#root > *').first().waitFor()
+  // The stage and phone mode load on demand: wait until the page itself stands.
+  if (/^#\/(stage|phone|pay)/.test(hash)) {
+    await page.locator('[data-testid="stage"], [data-testid="phone-mode"]').first().waitFor()
+  }
+}
+
+/** A phone by slot: "left" and "right" on the stage, "single" in phone mode. */
+export function slot(page: Page, which: 'left' | 'right' | 'single'): Locator {
+  return page.locator(`[data-slot="${which}"]`)
+}
+
+/** Logs the account a phone remembers in through the biometrics button of Welcome. */
+export async function biometricLogin(page: Page, which: 'left' | 'right' | 'single'): Promise<void> {
+  await slot(page, which).getByRole('button', { name: 'Log in with biometrics' }).click()
+  await expect(slot(page, which)).not.toHaveAttribute('data-persona', 'none')
+}
+
+interface PayBody {
+  actor: string
+  to: string
+  /** Hundredths. */
+  amount: number
+  /** What the sender is debited, hundredths (the review step's figure). */
+  debit: number
+  channel?: 'username' | 'qr'
+  note?: string
+  items?: { sku: string; name: string; qty: number; price: number }[]
+}
+
+let cmdCounter = 0
+
+/** A payment as the test hook of the manual clock sends it (the same command a review step sends). */
+export async function pay(page: Page, body: PayBody): Promise<void> {
+  const cmdId = `${(++cmdCounter + 0xe2e0000).toString(16).padStart(16, '0')}:review`
+  const result = await page.evaluate(
+    (b) => {
+      const hook = (window as unknown as { __bcps: { dispatch(c: unknown): { ok: boolean } } }).__bcps
+      return hook.dispatch({
+        type: 'pay',
+        actor: b.actor,
+        cmdId: b.cmdId,
+        to: b.to,
+        amount: b.amount,
+        channel: b.channel ?? 'username',
+        ...(b.note ? { note: b.note } : {}),
+        ...(b.items ? { items: b.items } : {}),
+        expect: { senderDebit: b.debit },
+      }).ok
+    },
+    { ...body, cmdId },
+  )
+  expect(result).toBe(true)
+}
+
+/** Ana pays the café 11.00 by QR for two flat whites and two croissants (fee 0.11 is the café's). */
+export const SALE: PayBody = {
+  actor: 'ana',
+  to: '@cafelipa',
+  amount: 1100,
+  debit: 1100,
+  channel: 'qr',
+  items: [
+    { sku: 'flat-white', name: 'Flat white', qty: 2, price: 330 },
+    { sku: 'croissant', name: 'Croissant', qty: 2, price: 220 },
+  ],
+}
+
+/** Ana sends Marko 16.50 with the note "Cinema" (total 16.67 with her 0.17 fee). */
+export const SEND: PayBody = { actor: 'ana', to: '@marko', amount: 1650, debit: 1667, note: 'Cinema' }
+
+/** Whether two boxes overlap. */
+export function overlaps(a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+}

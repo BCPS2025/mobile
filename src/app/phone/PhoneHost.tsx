@@ -115,6 +115,7 @@ export function PhoneHost({ slot, mode, width = 390, height = 700, statusBar = t
         {...(value.persona ? { 'data-phone': value.persona } : {})}
         aria-label={label}
         onPointerDownCapture={() => slot !== 'single' && app.actions.setLastUsed(slot)}
+        onFocusCapture={() => slot !== 'single' && app.actions.setLastUsed(slot)}
         className={`relative overflow-hidden bg-bg ${className}`}
         style={{ width, height }}
       >

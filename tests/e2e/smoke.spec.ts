@@ -1,6 +1,6 @@
-// Smoke test of the pages the app has between milestones A1 and A2 (start, about, the payment
-// code landing, not-found): online and offline after one load, no foreign requests, noindex,
-// clean visible copy (decision D16) and no enabled control that leads to the not-found route.
+// Smoke test of the pages (landing, About, the stage, phone mode, a payment link, not-found):
+// online and offline after one load, no foreign requests, noindex, clean visible copy (decision
+// D16) and no enabled control that leads to the not-found route.
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
@@ -8,6 +8,7 @@ import {
   expectCleanVisibleCopy,
   expectNoindex,
   open,
+  openApp,
   trackForeignRequests,
   visibleTextOf,
   waitForServiceWorker,
@@ -22,9 +23,10 @@ const PAY = '#/pay?v=1&to=@cafelipa&amount=11.00'
 const ROUTES: [hash: string, notFound: boolean][] = [
   ['#/', false],
   ['#/about', false],
+  ['#/stage', false],
+  ['#/phone', false],
   [PAY, false],
   ['#/pay', false],
-  ['#/stage', true],
   ['#/no-such-page', true],
 ]
 
@@ -40,7 +42,7 @@ test.describe('pages', () => {
   test('every route: clean copy, noindex, no foreign requests', async ({ page, baseURL }) => {
     const foreign = trackForeignRequests(page, baseURL as string)
     for (const [hash, notFound] of ROUTES) {
-      await open(page, hash)
+      await openApp(page, hash)
       await expectNoindex(page)
       await expect(page.locator('[data-testid="not-found"]')).toHaveCount(notFound ? 1 : 0)
       await collect(page)
@@ -49,12 +51,27 @@ test.describe('pages', () => {
     expect(foreign).toEqual([])
   })
 
-  test('the payment code landing reads the code', async ({ page }) => {
-    await open(page, PAY)
-    await expect(page.getByText('Café Lipa')).toBeVisible()
-    await expect(page.getByText('11.00 BCPS')).toBeVisible()
-    await open(page, '#/pay?v=1&to=nobody')
-    await expect(page.getByText("This payment code can't be read.")).toBeVisible()
+  test('a payment link opens phone mode on Welcome, and the landing offers the stage or the phone', async ({
+    page,
+  }) => {
+    await openApp(page, PAY)
+    await expect(page.locator('[data-slot="single"][data-persona="none"]')).toBeVisible()
+    await expect(page.locator('[data-screen="auth.welcome"]')).toBeVisible()
+    await openApp(page, '#/')
+    await expect(page.getByTestId('open-bcps')).toHaveAttribute('href', '#/stage')
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(page.getByTestId('open-bcps')).toHaveAttribute('href', '#/phone')
+    await page.setViewportSize({ width: 1024, height: 1366 })
+    await expect(page.getByTestId('open-bcps')).toHaveAttribute('href', '#/phone')
+    await page.setViewportSize({ width: 768, height: 700 })
+    await expect(page.getByTestId('open-bcps')).toHaveAttribute('href', '#/stage')
+  })
+
+  test('the landing page and About make no ledger and take no writer lock', async ({ page }) => {
+    await openApp(page, '#/')
+    await openApp(page, '#/about')
+    const keys = await page.evaluate(() => Object.keys(localStorage))
+    expect(keys.filter((k) => k.startsWith('bcps:state'))).toEqual([])
   })
 
   test('works offline after one load', async ({ page, context, baseURL }) => {
@@ -73,6 +90,12 @@ test.describe('pages', () => {
     expect(fonts.loaded).toBeGreaterThan(0)
     await open(page, '#/about')
     await collect(page)
+    // The stage and phone mode load on demand: their code is in the offline cache too.
+    await open(page, '#/stage')
+    await expect(page.locator('[data-screen="auth.welcome"]')).toHaveCount(2)
+    await collect(page)
+    await open(page, '#/phone')
+    await expect(page.locator('[data-screen="auth.welcome"]')).toBeVisible()
     await context.setOffline(false)
     expect(foreign).toEqual([])
   })
@@ -99,9 +122,9 @@ test.describe('pages', () => {
     const errors: string[] = []
     page.on('pageerror', (e) => errors.push(e.message))
     let clicked = 0
-    for (const hash of ['#/', '#/about', PAY]) {
+    for (const hash of ['#/', '#/about', PAY, '#/stage']) {
       const prepare = async () => {
-        await open(page, hash)
+        await openApp(page, hash)
         await page.reload()
         await page.locator('#root > *').first().waitFor()
       }

@@ -5,8 +5,6 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { expect, test } from '@playwright/test'
 
-const PAY = '#/pay?v=1&to=@cafelipa&amount=11.00'
-
 test.describe('single-file backup', () => {
   const single = resolve('dist-single/index.html')
 
@@ -20,8 +18,19 @@ test.describe('single-file backup', () => {
     await page.goto(`${pathToFileURL(single).href}#/`)
     await page.locator('#root > *').first().waitFor()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Pay and get paid in seconds.')
-    await page.goto(`${pathToFileURL(single).href}${PAY}`)
-    await expect(page.getByText('11.00 BCPS')).toBeVisible()
+    // Phone mode from file://: Welcome with its emblem, then Home after biometrics.
+    await page.goto(`${pathToFileURL(single).href}?clock=manual&epoch=2026-09-25#/phone`)
+    await expect(page.locator('[data-screen="auth.welcome"]')).toBeVisible()
+    const emblem = page.locator('[data-screen="auth.welcome"] img[alt="BCPS"]')
+    await expect(emblem).toBeVisible()
+    expect(await emblem.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+    await page.getByRole('button', { name: 'Log in with biometrics' }).click()
+    await expect(page.locator('[data-screen="c.home"]')).toBeVisible()
+    await expect(page.locator('[data-testid="balance-ana"]')).toContainText('247.50')
+    // The stage from file://: two phones.
+    await page.goto(`${pathToFileURL(single).href}?clock=manual&epoch=2026-09-25#/stage`)
+    await expect(page.locator('[data-slot="left"]')).toBeVisible()
+    await expect(page.locator('[data-slot="right"]')).toBeVisible()
     expect(foreign).toEqual([])
   })
 })

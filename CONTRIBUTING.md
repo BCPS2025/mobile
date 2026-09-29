@@ -74,6 +74,10 @@ Rules for code:
 - The end-to-end tests rely on these attributes, so keep them stable:
   - `data-phone="<persona>"` on each phone's root element;
   - `data-testid="balance-<personaId>"` around each balance amount;
-  - `data-testid="not-found"` on the not-found page.
+  - `data-testid="not-found"` on the not-found page;
+  - `data-slot="left|right|single"` and `data-persona="<id>"` (`none` on Welcome) on each phone, and
+    `data-screen="<id>"` on the root of every screen inside it;
+  - `window.__bcps` (`advance`, `now`, `dispatch`), present only with `?clock=manual`: the end-to-end
+    tests move the virtual clock and send a command through it.
 - Never put passwords, tokens or keys in the repository or in workflows. The deployment uses only
   the built-in `GITHUB_TOKEN`.

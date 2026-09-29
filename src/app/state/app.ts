@@ -65,9 +65,14 @@ export interface ToastState {
   line: string | null
   /** "On Marko Kovač's phone: @ana sent you 16.50 BCPS · Cinema". */
   text: string
+  /** The account that paid (when it is one of the accounts), so a toast never opens on its phone. */
+  payer: PersonaId | null
 }
 
 export type PageMode = 'stage' | 'phone' | 'none'
+
+/** The presenter panels: Settings, the Reset question and the shortcut list. */
+export type Overlay = 'settings' | 'reset' | 'keys'
 
 export interface Transient {
   /** Which page shows phones now: decides banner or toast for an arriving notification. */
@@ -82,6 +87,7 @@ export interface Transient {
   /** The phone Z zooms (the one used last), and the zoomed one. */
   lastUsed: StageKey
   zoom: StageKey | null
+  overlay: Overlay | null
 }
 
 const WELCOME: AuthScreenState = { screen: 'welcome' }
@@ -94,6 +100,7 @@ const freshTransient = (): Transient => ({
   resetToast: null,
   lastUsed: 'left',
   zoom: null,
+  overlay: null,
 })
 
 /** Toasts on screen at once. */
@@ -134,6 +141,7 @@ export interface AppActions {
   setMode(mode: PageMode): void
   setLastUsed(key: StageKey): void
   setZoom(key: StageKey | null): void
+  setOverlay(overlay: Overlay | null): void
   dismissBanner(persona: PersonaId): void
   dismissToast(id: string): void
   dismissResetToast(): void
@@ -211,6 +219,10 @@ export function createAppState(deps: AppDeps): AppState {
   // ---- notifications become banners (the account is on a phone) or toasts (it is not)
   let seq = 0
   const nameOf = (id: PersonaId) => personas.find((p) => p.id === id)?.displayName ?? id
+  const payerOf = (txId: string): PersonaId | null => {
+    const from = runtime.node.getState().txs[txId]?.from
+    return from !== undefined && personas.some((p) => p.id === from) ? from : null
+  }
   offs.push(attachEffects(runtime.node, bus, content))
   offs.push(
     bus.on('notification', (n) => {
@@ -251,6 +263,7 @@ export function createAppState(deps: AppDeps): AppState {
           title: n.title,
           line: n.line,
           text: fillTemplate(content.copy.phoneMode.toast, { name, what }),
+          payer: payerOf(n.txId),
         }
         transient.update((t) => ({
           ...t,
@@ -348,6 +361,9 @@ export function createAppState(deps: AppDeps): AppState {
     },
     setZoom(key) {
       transient.update((t) => (t.zoom === key ? t : { ...t, zoom: key }))
+    },
+    setOverlay(overlay) {
+      transient.update((t) => (t.overlay === overlay ? t : { ...t, overlay }))
     },
     dismissBanner(persona) {
       transient.update((t) => {

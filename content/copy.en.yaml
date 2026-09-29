@@ -8,7 +8,7 @@ boot:
   framed: This page can't be displayed inside another site.
 
 tape:
-  row: "{time} {from} → {to} · {amount} BCPS · {status} · fee {fee}"
+  row: "{time} {from} → {to} · {amount} BCPS · {status} · fee {fee} · {ref}"
   empty: No payments yet today
   status:
     pending: sending
@@ -232,7 +232,7 @@ stage:
   zoom: "Zoom {name}"
   zoomOut: Show both phones
   dateChip: Virtual time
-  accountMenu: "Switch account, {role}"
+  accountMenu: "{name}, switch account"
   toastFor: "On {name}'s phone"
   toastOpen: "Open {name}"
   counter: "Merchant payments {count} · fees {fees} BCPS ≈ €{eur} vs cards typically ≈ €{cardLow}–{cardHigh} plus additional charges"

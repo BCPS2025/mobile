@@ -2,7 +2,7 @@ import { content } from '@content/load'
 import { formatHundredths, formatMinor } from '@domain/money'
 import { approxEur } from '@domain/rate'
 import type { AccountId, Minor, Persona, Rate, SimTime, Tx } from '@domain/types'
-import { LJUBLJANA, formatTime, formatWeekday } from '@sim/tz'
+import { LJUBLJANA, formatTime, formatWeekday, zonedParts } from '@sim/tz'
 import { copy, fill, ui } from './copy'
 
 // Display helpers shared by the apps and the stage. Pure functions of state and copy.
@@ -110,8 +110,11 @@ export function maskEmail(email: string): string {
   return at < 0 ? email : `${email.slice(0, at)}@${MASKED_DOMAIN}`
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 /** "Fri 25 Sep · 12:15": the date chip of the stage (virtual clock, Ljubljana). */
 export function dateChipText(t: SimTime): string {
-  const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: LJUBLJANA }).format(t)
-  return `${formatWeekday(t, LJUBLJANA)} ${day} · ${formatTime(t, LJUBLJANA)}`
+  const { date } = zonedParts(t, LJUBLJANA)
+  const [, month = '1', day = '1'] = date.split('-')
+  return `${formatWeekday(t, LJUBLJANA)} ${Number(day)} ${MONTHS[Number(month) - 1] ?? ''} · ${formatTime(t, LJUBLJANA)}`
 }

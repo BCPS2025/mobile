@@ -24,7 +24,7 @@ export function Tile({
       type="button"
       data-tile={id}
       onClick={onPress}
-      className="relative flex aspect-[173/172] w-full flex-col items-center justify-center gap-3 border border-line-200 bg-surface p-3 text-center transition-colors duration-(--dur-press) active:border-navy-900 active:bg-line-100"
+      className="relative flex h-full min-h-0 w-full flex-col items-center justify-center gap-3 border border-line-200 bg-surface p-3 text-center transition-colors duration-(--dur-press) active:border-navy-900 active:bg-line-100"
     >
       <Icon size={36} strokeWidth={1.75} aria-hidden="true" className="text-navy-900" />
       <span>
@@ -44,7 +44,7 @@ export function Tile({
 export function TileGrid({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-      <div className="grid w-full max-w-[358px] grid-cols-2 gap-3">{children}</div>
+      <div className="grid h-full max-h-[358px] w-full max-w-[358px] grid-cols-2 grid-rows-2 gap-3">{children}</div>
     </div>
   )
 }

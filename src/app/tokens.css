@@ -207,6 +207,10 @@ button:disabled,
 .anim-fade {
   animation: bcps-fade var(--dur-fast) var(--ease-standard) both;
 }
+/* The receiving phone lights for a moment when a payment reaches it. */
+.anim-lit {
+  animation: bcps-lit 550ms var(--ease-standard) both;
+}
 
 /* Reduced motion: the operating system's setting, or Settings › Reduce motion (data-reduce-motion
    on <html>: "true" forces it, "false" turns it off even when the system asks for it). */

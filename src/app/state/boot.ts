@@ -1,5 +1,5 @@
 import { content } from '@content/load'
-import type { SimTime } from '@domain/types'
+import type { SimTime, UserCommand } from '@domain/types'
 import { resolveEpochDate } from '@sim/t0'
 import { openStorage } from '@store/persistence'
 import type { LockManagerLike } from '@store/writer-lock'
@@ -36,10 +36,12 @@ export function getAppState(win: Window = window): AppState {
   })
   if (manual) {
     // A hook for the end-to-end tests, present only with ?clock=manual: move the virtual clock
-    // forward (a code expires, a countdown runs out). Nothing logged, forward only.
-    ;(win as unknown as { __bcpsClock: unknown }).__bcpsClock = {
+    // forward (a code expires, a countdown runs out) and send a command as an account would
+    // (for example a payment for a phone that is not on screen). Nothing else.
+    ;(win as unknown as { __bcps: unknown }).__bcps = {
       advance: (ms: number) => created.runtime.node.advanceTo((created.runtime.node.now() + ms) as SimTime, 'timer'),
       now: () => created.runtime.node.now(),
+      dispatch: (cmd: UserCommand) => created.runtime.dispatch(cmd),
     }
   }
   app = created
