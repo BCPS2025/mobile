@@ -1,5 +1,17 @@
+import type { Content } from '@content/schema'
 import { sessionCounterOf } from '@domain/counter'
-import { available, balanceOf, feeContextFor, incoming, pendingTxs, quoteWith, selectParty } from '@domain/ledger'
+import {
+  available,
+  balanceOf,
+  entryOf,
+  feeContextFor,
+  feeContextOfSnapshot,
+  incoming,
+  isMerchant,
+  pendingTxs,
+  quoteWith,
+  selectParty,
+} from '@domain/ledger'
 import { asMinor } from '@domain/money'
 import type {
   AccountId,
@@ -9,11 +21,15 @@ import type {
   Party,
   PartyId,
   PayChannel,
+  PaymentRequest,
   PersonaId,
   SimTime,
   Tx,
+  TxItem,
 } from '@domain/types'
-import { localDateOf } from '@sim/tz'
+import { type IsoDate, addDays, localDateOf } from '@sim/tz'
+import { withinHours } from './hours'
+import { counterpartyOf } from './parties'
 
 // Pure selectors for useLedger. They return primitives or objects that are stable per state.
 
@@ -128,4 +144,183 @@ export function salesToday(
     gross += tx.amount
   }
   return { count, gross: asMinor(gross) }
+}
+
+// ---- payment codes (the café's POS code) and what the phone next to it can scan
+
+/**
+ * Whether a POS code is still good: a request of the POS channel, open, and younger than its
+ * validity. A code past its validity is expired by time (its status stays `open`).
+ */
+export const isPosRequestOpen = (r: PaymentRequest, now: SimTime, validityMs: number): boolean =>
+  r.channel === 'pos' && r.status === 'open' && now < r.createdAt + validityMs
+
+/** What a POS code is now: open, or why it can no longer be paid. */
+export type PosCodeState = 'open' | 'paid' | 'cancelled' | 'expired'
+
+/** The state of a POS code at `now`, or undefined for an id that is not a POS request. */
+export function posCodeState(
+  s: LedgerState,
+  requestId: string,
+  now: SimTime,
+  validityMs: number,
+): PosCodeState | undefined {
+  const r = entryOf(s.requests, requestId)
+  if (r?.channel !== 'pos') return undefined
+  if (r.status === 'paid') return 'paid'
+  if (r.status !== 'open') return 'cancelled'
+  return now < r.createdAt + validityMs ? 'open' : 'expired'
+}
+
+/** The merchant's open POS code (the newest, if there were ever two), or undefined. */
+export function openPosRequest(
+  s: LedgerState,
+  merchant: PersonaId,
+  now: SimTime,
+  validityMs: number,
+): PaymentRequest | undefined {
+  let found: PaymentRequest | undefined
+  for (const r of Object.values(s.requests)) {
+    if (r.requester !== merchant || !isPosRequestOpen(r, now, validityMs)) continue
+    if (!found || r.createdAt > found.createdAt) found = r
+  }
+  return found
+}
+
+/**
+ * The fee quote a payment against a request would get: the request's snapshot decides who pays
+ * and at what policy (null if it would be refused). Review steps put its `senderDebit` into `expect`.
+ */
+export function quoteForRequest(s: LedgerState, r: PaymentRequest): FeeQuote | null {
+  const q = quoteWith(s, feeContextOfSnapshot(s, r), r.amount)
+  return q.ok ? q.value : null
+}
+
+/** A payment code the phone can lock onto. */
+export interface ScanCandidate {
+  kind: 'pos'
+  requestId: string
+  /** The merchant that shows the code. */
+  merchant: PersonaId
+  amount: Minor
+  items: readonly TxItem[]
+  createdAt: SimTime
+  /** When the code stops working. */
+  expiresAt: SimTime
+}
+
+/**
+ * What a viewer's Scan can lock onto: the open code of the account shown on the other visible
+ * phone, when that account is a merchant (never the viewer's own code, and nothing in phone mode
+ * where no other phone is visible). More sources (the counter code) join this list later.
+ */
+export function scanCandidates(
+  s: LedgerState,
+  viewer: PersonaId,
+  visibleOther: PersonaId | null,
+  now: SimTime,
+  validityMs: number,
+): ScanCandidate[] {
+  if (visibleOther === null || visibleOther === viewer || !isMerchant(s, visibleOther)) return []
+  const r = openPosRequest(s, visibleOther, now, validityMs)
+  if (!r || (r.payer !== undefined && r.payer !== viewer)) return []
+  return [
+    {
+      kind: 'pos',
+      requestId: r.id,
+      merchant: visibleOther,
+      amount: r.amount,
+      items: r.items ?? [],
+      createdAt: r.createdAt,
+      expiresAt: (r.createdAt + validityMs) as SimTime,
+    },
+  ]
+}
+
+// ---- History and the payment detail
+
+export interface ActivityRow {
+  tx: Tx
+  /** The payment amount as this account sees it: minus for money it sent, plus for money it received. */
+  signed: Minor
+  direction: 'in' | 'out'
+  at: SimTime
+  pending: boolean
+}
+
+export interface ActivityGroup {
+  /** `today`, `yesterday` or the ISO date of an older day. */
+  key: 'today' | 'yesterday' | IsoDate
+  /** The local date of the group. */
+  date: IsoDate
+  rows: ActivityRow[]
+}
+
+/**
+ * An account's payments, newest first, grouped by local day: Today, Yesterday, then one group per
+ * older day. Seed rows and daily summary rows are included (a business's history shows them).
+ */
+export function activity(s: LedgerState, persona: PersonaId, now: SimTime, tz: string): ActivityGroup[] {
+  const today = localDateOf(now, tz)
+  const yesterday = addDays(today, -1)
+  const rows: ActivityRow[] = txsFor(s, persona).map((tx) => {
+    const out = tx.from === persona
+    return {
+      tx,
+      signed: asMinor(out ? -tx.amount : tx.amount),
+      direction: out ? 'out' : 'in',
+      at: tx.createdAt,
+      pending: tx.status === 'pending',
+    }
+  })
+  rows.sort((a, b) => b.at - a.at)
+  const groups: ActivityGroup[] = []
+  for (const row of rows) {
+    const date = localDateOf(row.at, tz)
+    const key = date === today ? 'today' : date === yesterday ? 'yesterday' : date
+    const last = groups[groups.length - 1]
+    if (last && last.date === date) last.rows.push(row)
+    else groups.push({ key, date, rows: [row] })
+  }
+  return groups
+}
+
+/** Everything the payment detail shows, from one account's point of view. */
+export interface TxDetail {
+  tx: Tx
+  /** Whether the viewer paid (`from`), was paid (`to`) or neither. */
+  role: 'from' | 'to' | 'other'
+  /** The payment amount, minus for money the viewer sent. */
+  signed: Minor
+  from: Party | undefined
+  to: Party | undefined
+  /** Who bears the fee (undefined for rows without one). */
+  feePaidBy: 'from' | 'to' | null
+  /** When it settled (undefined while pending). */
+  settledAt: SimTime | undefined
+  /** The payment was made outside the banks' opening hours of the viewer's country. */
+  outsideBankingHours: boolean
+  /** A sale as its merchant sees it (final, no chargebacks, card comparison). */
+  merchantSale: boolean
+}
+
+/** The payment detail of a transaction, or undefined for an unknown id. */
+export function txDetail(s: LedgerState, txId: string, viewer: PersonaId, content: Content): TxDetail | undefined {
+  const tx = entryOf(s.txs, txId)
+  if (!tx) return undefined
+  const role = tx.from === viewer ? 'from' : tx.to === viewer ? 'to' : 'other'
+  const country = content.personas.personas.find((p) => p.id === viewer)?.country ?? 'SI'
+  const hours = content.config.bankingHours[country]
+  const merchantSale = role === 'to' && tx.kind === 'purchase' && isMerchant(s, viewer)
+  return {
+    tx,
+    role,
+    signed: asMinor(role === 'from' ? -tx.amount : tx.amount),
+    from: counterpartyOf(s, tx.from, tx.party),
+    to: counterpartyOf(s, tx.to, tx.party),
+    feePaidBy: tx.fee.payer === 'sender' ? 'from' : tx.fee.payer === 'recipient' ? 'to' : null,
+    settledAt: tx.confirmedAt,
+    outsideBankingHours: !withinHours(tx.createdAt, hours),
+    merchantSale,
+  }
 }

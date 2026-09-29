@@ -26,6 +26,8 @@ fee:
   paidByYou: Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by you · total {total}
   lineYou: "{fee} BCPS (≈ €{eur}) · paid by you · total {total}"
   lineOther: "{fee} BCPS (≈ €{eur}) · paid by {name}"
+  transactionYou: "Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by you"
+  transactionBy: "Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by {name}"
   feeInfo: "A 1% fee on every payment, always shown before you pay. Conversion to EUR: 1.5%."
   cardInfo: Card-network merchant fees are commonly quoted at 1.5–3% or higher, depending on the contract, plus additional charges.
   infoLabel: More about this fee
@@ -214,7 +216,10 @@ login:
   continue: Continue
   sentTo: "Sent to {email}"
   mailChip: "From Mail · {code}"
-  resend: "Didn't get it? Send again"
+  codeTitle: Enter the code
+  resendPrompt: "Didn't get it?"
+  resendAction: Send again
+  codeBox: "Digit {n} of {total}"
   verify: Verify and log in
   codeLabel: Code
   emailFilled: "Email filled: {email}"
@@ -227,6 +232,85 @@ logout:
   body: To come back, choose your account and enter the code from Mail, or use biometrics.
   cancel: Cancel
   confirm: Log out
+
+# ---- People screens
+
+scan:
+  title: Scan
+  viewfinder: Scanning area
+  locked: "Locked · {name} ✓"
+  table: Table 4
+  lockedLine: "{table} · {amount} BCPS"
+  noCode: No payment code in view
+  hold: Hold the code inside the frame.
+  cantScan: "Can't scan?"
+  payByUsername: Pay by @username
+  reviewTitle: "Pay {name}?"
+  rowTo: To
+  rowItems: Items
+  pay: "Pay {amount} BCPS"
+
+send:
+  title: Send
+  toTitle: Who are you sending to?
+  amountTitle: How much?
+  noteTitle: Add a note?
+  reviewTitle: Check and send
+  rowTo: To
+  rowAmount: Amount
+  rowNote: Note
+  noNote: No note
+  send: "Send {amount} BCPS"
+
+receipt:
+  paid: PAID
+  sent: SENT
+  to: "to {name}"
+  reference: Reference
+  fee: Fee
+  feeLine: "{fee} BCPS · paid by {name}"
+  feeLineYou: "{fee} BCPS · paid by you"
+  time: Time
+
+history:
+  title: History
+  pending: PENDING
+  sale: Sale
+
+detail:
+  title: Payment
+  from: From
+  to: To
+  items: Items
+  note: Note
+  fee: Transaction fee
+  rate: Rate
+  status: Status
+  reference: Reference
+  sent: Sent
+  settled: Settled
+  settling: Settling…
+  outsideHours: Outside banking hours · settled anyway
+  verified: ✓ Verified
+  verifiedPerson: Verified identity
+  verifiedBusiness: Verified business
+  party: "{name} · {handle}"
+  toLine: "to {name} · ≈ €{eur}"
+  fromLine: "from {name} · ≈ €{eur}"
+  feeValue: "{fee} BCPS (≈ €{eur})"
+  paidBy: "paid by {name}"
+  paidByYou: paid by you
+  privacyPurchase: "Refunds are merchant-initiated. Only you and {name} see these details."
+  privacyPerson: "Only you and {name} see these details."
+  sendAgain: Send again
+  missing: This payment isn't available.
+
+profile:
+  identity: "ID card · {country} · verified"
+  who: "{name} · {handle}"
+  countries:
+    SI: Slovenia
+    KR: South Korea
 
 # ---- Stage, phone mode and presenter chrome
 

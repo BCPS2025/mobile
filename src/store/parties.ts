@@ -17,7 +17,7 @@ function fold(text: string): string {
 }
 
 /** The directory entry an account or handle names on a transaction leg (off-stage legs carry the handle). */
-function counterpartyOf(s: LedgerState, account: AccountId, party: string | undefined): Party | undefined {
+export function counterpartyOf(s: LedgerState, account: AccountId, party: string | undefined): Party | undefined {
   if (account === 'sys:offstage') return party === undefined ? undefined : partyByHandle(s, party)
   if (account.startsWith('sys:')) return undefined
   return entryOf(s.directory, account)
@@ -81,4 +81,10 @@ export function resolveParty(s: LedgerState, viewer: PersonaId, query: string, o
   const p = partyByHandle(s, q.toLowerCase())
   if (!p || p.id === viewer) return undefined
   return o.filter && !o.filter(p) ? undefined : p
+}
+
+/** Whether a typed handle ("@ana" or "ana") names the viewer's own account. */
+export function isSelf(s: LedgerState, viewer: PersonaId, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  return q !== '' && partyByHandle(s, q)?.id === viewer
 }
