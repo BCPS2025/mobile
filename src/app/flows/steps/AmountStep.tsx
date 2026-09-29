@@ -36,6 +36,46 @@ export interface AmountStepProps {
   children?: ReactNode
 }
 
+/** The key a keyboard event stands for ("7", ".", "del"), or null when it is not a keypad key. */
+export function keypadKeyOf(e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): string | null {
+  if (e.ctrlKey || e.metaKey || e.altKey) return null
+  if (/^[0-9]$/.test(e.key)) return e.key
+  if (e.key === '.' || e.key === ',') return '.'
+  if (e.key === 'Backspace' || e.key === 'Delete') return 'del'
+  return null
+}
+
+/** The 3 × 4 grid of keys (digits, ".", delete); `onNavy` for the café's navy Charge. */
+export function AmountKeys({
+  onPress,
+  locked = false,
+  onNavy = false,
+}: {
+  onPress: (key: string) => void
+  locked?: boolean
+  onNavy?: boolean
+}) {
+  return (
+    <div className={`grid grid-cols-3 gap-x-1 gap-y-1 pb-2 ${locked ? 'opacity-40' : ''}`}>
+      {KEYS.map((k) => (
+        <button
+          key={k}
+          type="button"
+          data-key={k}
+          aria-label={k === 'del' ? ui.common.deleteKey : k}
+          disabled={locked}
+          onClick={() => onPress(k)}
+          className={`flex h-12 items-center justify-center font-display text-[24px] font-medium tnum ${
+            onNavy ? 'text-white active:bg-navy-800' : 'text-navy-900 active:bg-line-100'
+          }`}
+        >
+          {k === 'del' ? <Delete size={26} strokeWidth={1.75} aria-hidden="true" /> : k}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 /** The keypad string for an amount ("16.50"), as [Max] fills it in. */
 const toValue = (m: Minor): string => formatMinor(m).replaceAll(',', '')
 
@@ -58,11 +98,9 @@ export function AmountStep(p: AmountStepProps) {
     p.onChange(keypadInput(p.value, key, p.maxMinor))
   }
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return
-    if (/^[0-9]$/.test(e.key)) press(e.key)
-    else if (e.key === '.' || e.key === ',') press('.')
-    else if (e.key === 'Backspace' || e.key === 'Delete') press('del')
-    else if (e.key === 'Enter' && e.target === e.currentTarget) p.onEnter?.()
+    const key = keypadKeyOf(e)
+    if (key !== null) press(key)
+    else if (e.key === 'Enter' && e.target === e.currentTarget && !e.ctrlKey && !e.metaKey && !e.altKey) p.onEnter?.()
     else return
     e.preventDefault()
   }
@@ -121,23 +159,7 @@ export function AmountStep(p: AmountStepProps) {
         </div>
       )}
       {p.children}
-      <div className={`grid grid-cols-3 gap-x-1 gap-y-1 pb-2 ${p.locked ? 'opacity-40' : ''}`}>
-        {KEYS.map((k) => (
-          <button
-            key={k}
-            type="button"
-            data-key={k}
-            aria-label={k === 'del' ? ui.common.deleteKey : k}
-            disabled={p.locked}
-            onClick={() => press(k)}
-            className={`flex h-12 items-center justify-center font-display text-[24px] font-medium tnum ${
-              onNavy ? 'text-white active:bg-navy-800' : 'text-navy-900 active:bg-line-100'
-            }`}
-          >
-            {k === 'del' ? <Delete size={26} strokeWidth={1.75} aria-hidden="true" /> : k}
-          </button>
-        ))}
-      </div>
+      <AmountKeys onPress={press} locked={p.locked === true} onNavy={onNavy} />
     </div>
   )
 }

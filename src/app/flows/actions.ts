@@ -113,7 +113,7 @@ export function createFlowApi<D>(app: AppState, who: Who, instanceId: string): F
       const d = f.draft as D
       const ctx = ctxOf(f)
       const commit = commitOf(i, step.id)
-      if (commit) return runCommit(app, who, api, f, commit, d, patch)
+      if (commit && (commit.when?.(d, ctx) ?? true)) return runCommit(app, who, api, f, commit, d, patch)
       if (step.onPrimary) return step.onPrimary(d, ctx, api)
       if (f.editing) return api.goto(i.steps.find((s) => s.kind === 'review')?.id ?? step.id)
       api.next()
@@ -141,7 +141,7 @@ function runCommit<D>(
   patch: (change: (f: FlowScreen) => FlowScreen) => void,
 ): void {
   const ctx = makeFlowCtx(app, who, f.params)
-  const cmd = commit.command(d, ctx, cmdIdFor(f.instanceId, commit.step))
+  const cmd = commit.command(d, ctx, cmdIdFor(f.instanceId, commit.cmdStep?.(d) ?? commit.step))
   if (!cmd) return
   const result = app.runtime.dispatch(cmd)
   if (!result.ok) {

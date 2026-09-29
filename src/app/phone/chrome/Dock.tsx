@@ -9,7 +9,7 @@ import { useReducedMotion } from '../../state/motion'
 // button while a payment is pending; a static tick with reduced motion). Green means money moves
 // (and the café's Charge); navy is every other primary; white on navy docks.
 
-export type ButtonTone = 'money' | 'navy' | 'white'
+export type ButtonTone = 'money' | 'navy' | 'white' | 'outline'
 
 export interface DockPrimary {
   label: string
@@ -52,6 +52,8 @@ const TONES: Record<ButtonTone, string> = {
   navy: 'bg-navy-900 text-white active:bg-navy-700 disabled:bg-line-200 disabled:text-grey-500',
   // White buttons sit on navy docks: disabled, they sink into the dock (navy-700, grey text).
   white: 'bg-white text-navy-900 active:bg-line-100 disabled:bg-navy-700 disabled:text-grey-400',
+  // A bordered button on a navy dock (the café's Cancel).
+  outline: 'border border-line-300 text-white active:bg-navy-800 disabled:opacity-40',
 }
 
 /** A button that is sending keeps its own colours, a little faded (the disabled colours would grey it out). */
@@ -59,6 +61,7 @@ const SENDING: Record<ButtonTone, string> = {
   money: 'bg-green-500 text-navy-900 opacity-80',
   navy: 'bg-navy-900 text-white opacity-80',
   white: 'bg-white text-navy-900 opacity-80',
+  outline: 'border border-line-300 text-white opacity-80',
 }
 
 /** The glyph shown inside a button while its payment is pending. */
@@ -71,7 +74,15 @@ function SendingGlyph() {
   )
 }
 
-export function DockButton({ primary, testId = 'dock-primary' }: { primary: DockPrimary; testId?: string }) {
+export function DockButton({
+  primary,
+  testId = 'dock-primary',
+  onNavy = false,
+}: {
+  primary: DockPrimary
+  testId?: string
+  onNavy?: boolean
+}) {
   const { label, tone, enabled = true, sending = false, keepLabel = false, onPress, icon } = primary
   return (
     <button
@@ -80,7 +91,9 @@ export function DockButton({ primary, testId = 'dock-primary' }: { primary: Dock
       aria-busy={sending || undefined}
       disabled={!enabled || sending}
       onClick={onPress}
-      className={`${BASE} ${sending ? SENDING[tone] : TONES[tone]}`}
+      className={`${BASE} ${sending ? SENDING[tone] : TONES[tone]} ${
+        onNavy && tone === 'money' && !sending ? 'disabled:bg-navy-700 disabled:text-grey-400' : ''
+      }`}
     >
       {sending ? (
         <SendingGlyph />
@@ -162,7 +175,7 @@ export function Dock({
               {secondary.label}
             </button>
           )}
-          {primary && <DockButton primary={primary} />}
+          {primary && <DockButton primary={primary} onNavy={navy} />}
         </div>
       )}
     </div>

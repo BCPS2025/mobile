@@ -170,7 +170,8 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
       { id: 'code', screen: 'pos.code', kind: 'waitFor' },
       { id: 'cancel', screen: 'pos.code.cancel', kind: 'confirm' },
     ],
-    commits: ['items', 'cancel'],
+    // Charge (items), [New code] on a code that ran out (code) and Cancel charge (cancel).
+    commits: ['items', 'code', 'cancel'],
     success: 'money',
     successScreen: 'pos.paid',
     followOns: ['charge'],

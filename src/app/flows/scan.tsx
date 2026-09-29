@@ -100,7 +100,7 @@ function ScanBody({ ctx }: StepProps<Draft>) {
               {fill(ui.scan.locked, { name: merchant.displayName })}
             </p>
             <p className="mt-4 font-body text-body font-semibold text-white tnum">
-              {fill(ui.scan.lockedLine, { table: ui.scan.table, amount })}
+              {fill(ui.scan.lockedLine, { table: ui.charge.table, amount })}
             </p>
           </>
         ) : (

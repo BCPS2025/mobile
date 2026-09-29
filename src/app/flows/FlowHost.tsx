@@ -78,7 +78,7 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
       id={step.screen}
       header={tone}
       body={navyBody ? 'navy' : 'light'}
-      title={impl.title(ctx)}
+      title={step.title?.(d, ctx) ?? impl.title(ctx)}
       businessName={app.persona(phone.persona)?.displayName ?? ''}
       onBack={nav.back}
       onHome={nav.home}

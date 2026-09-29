@@ -32,15 +32,17 @@ export interface PickPartyStepProps {
 
 /** What a row says: the first and the second line. */
 export function partyLines(p: Party, content: Content): { first: string; second: string; verified: boolean } {
+  const account = content.personas.personas.find((x) => x.handle === p.handle)
+  const verified = account?.verified ?? false
   if (p.kind === 'business') {
-    const place = content.personas.personas.find((x) => x.handle === p.handle)?.subtitle
+    const place = account?.subtitle
     return {
       first: p.displayName,
       second: place ? fill(ui.party.businessIn, { place }) : ui.party.business,
-      verified: p.onStage,
+      verified,
     }
   }
-  return { first: p.handle, second: p.displayName, verified: p.onStage }
+  return { first: p.handle, second: p.displayName, verified }
 }
 
 export function PickPartyStep(p: PickPartyStepProps) {

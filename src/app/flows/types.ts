@@ -55,7 +55,8 @@ export interface StepProps<D> {
 
 export interface PrimaryDef {
   label: string
-  tone: 'money' | 'navy' | 'white'
+  /** `outline` is a bordered button on a navy dock (the café's Cancel). */
+  tone: 'money' | 'navy' | 'white' | 'outline'
   enabled: boolean
 }
 
@@ -85,6 +86,8 @@ export interface StepDef<D> {
   onPrimary?(d: D, ctx: FlowCtx, api: FlowApi<D>): void
   /** Where Back goes when it is not the previous step; 'leave' pops the flow. */
   back?(d: D, ctx: FlowCtx, api: FlowApi<D>): 'default' | 'leave' | { step: string }
+  /** The task header title of this step when it differs from the flow's (the café's code and Cancel read "Payment code"). */
+  title?(d: D, ctx: FlowCtx): string
   /** Screen body colour (default light; Scan, Charge and Pay code are navy). */
   body?: 'light' | 'navy'
   /** The task header of this step when it differs from the flow's (Scan is navy, its review light). */
@@ -98,6 +101,14 @@ export interface StepDef<D> {
 /** A commit point: the step whose primary button dispatches this command. */
 export interface CommitDef<D> {
   step: string
+  /**
+   * The step id the command id is made from, when the flow may dispatch this commit more than once
+   * (the café's Charge makes a new code after a cancel or an expiry): every command id is used
+   * once. Default: `step`.
+   */
+  cmdStep?(d: D): string
+  /** Whether the step's primary button runs this commit now (default true); otherwise `onPrimary` runs. */
+  when?(d: D, ctx: FlowCtx): boolean
   /** The command, or null when the draft is not ready. `cmdId` is `${instanceId}:${stepId}`. */
   command(d: D, ctx: FlowCtx, cmdId: string): UserCommand | null
   /**

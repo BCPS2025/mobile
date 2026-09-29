@@ -5,6 +5,7 @@ import type { Minor } from '@domain/types'
 import { ui } from '../../copy'
 import { usePhoneNav } from '../nav'
 import { Dock, type DockSecondary } from './Dock'
+import { InfoRows } from './InfoRows'
 import { PhoneScreen } from './PhoneScreen'
 
 // The two success styles. Money moved (navy): an overline (PAID, RECEIVED, SENT …) in the
@@ -29,6 +30,8 @@ export interface SuccessScreenProps {
   amount?: { value: Minor; signed?: boolean }
   /** "≈ €10.00" under the amount. */
   eur?: string
+  /** A line under the amount in the same style ("from @ana · Ana Novak"). */
+  sub?: string
   /** "to Café Lipa" under the amount (money), or the headline (neutral). */
   title?: string
   /** One line under the title. */
@@ -36,6 +39,8 @@ export interface SuccessScreenProps {
   /** A green line ("Spendable now"). */
   highlight?: string
   lines?: SuccessLine[]
+  /** `plain`: rows under a hairline; `card`: rows in a bordered navy panel (the café's PAID). */
+  linesStyle?: 'plain' | 'card'
   doneLabel?: string
   /** [Done]. */
   onDone: () => void
@@ -92,6 +97,7 @@ export function SuccessScreen(p: SuccessScreenProps) {
             </p>
           )}
           {p.eur && <p className="font-body text-body text-line-300 tnum">{p.eur}</p>}
+          {p.sub && <p className="mt-1 font-body text-body text-line-300">{p.sub}</p>}
           {p.title && (
             <p
               className={`${p.amount ? 'mt-3 text-title' : 'mt-5 text-display-m'} font-display font-semibold text-white`}
@@ -106,19 +112,24 @@ export function SuccessScreen(p: SuccessScreenProps) {
           )}
           {p.highlight && <p className="mt-3 font-body text-body font-semibold text-green-500">{p.highlight}</p>}
         </div>
-        {p.lines && p.lines.length > 0 && (
-          <dl className="border-t border-navy-700 pt-1 pb-3">
-            {p.lines.map((l) => (
-              <div key={l.label} className="flex min-h-10 items-center justify-between gap-4">
-                <dt className="font-body text-body-s text-grey-400">{l.label}</dt>
-                <dd
-                  className={`text-right text-body-s text-white tnum ${l.mono ? 'font-mono text-mono' : 'font-body'}`}
-                >
-                  {l.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
+        {p.lines && p.lines.length > 0 && p.linesStyle === 'card' ? (
+          <InfoRows className="mb-3" rows={p.lines} />
+        ) : (
+          p.lines &&
+          p.lines.length > 0 && (
+            <dl className="border-t border-navy-700 pt-1 pb-3">
+              {p.lines.map((l) => (
+                <div key={l.label} className="flex min-h-10 items-center justify-between gap-4">
+                  <dt className="font-body text-body-s text-grey-400">{l.label}</dt>
+                  <dd
+                    className={`text-right text-body-s text-white tnum ${l.mono ? 'font-mono text-mono' : 'font-body'}`}
+                  >
+                    {l.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )
         )}
       </div>
     </PhoneScreen>

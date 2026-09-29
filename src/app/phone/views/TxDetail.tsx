@@ -180,7 +180,7 @@ export function TxDetailView({ params }: ScreenProps) {
           {from && <PartyRow label={ui.detail.from} party={from} verify={role !== 'from'} />}
           {to && !detail.merchantSale && <PartyRow label={ui.detail.to} party={to} verify={role !== 'to'} />}
           {tx.items && tx.items.length > 0 && <Row label={ui.detail.items}>{itemsText(tx.items)}</Row>}
-          {tx.note && <Row label={ui.detail.note}>{tx.note}</Row>}
+          {tx.note && !detail.merchantSale && <Row label={ui.detail.note}>{tx.note}</Row>}
           <Row
             label={ui.detail.fee}
             sub={

@@ -1,4 +1,6 @@
+import { chargeFlow } from '../flows/charge'
 import { logoutFlow } from '../flows/logout'
+import { paySupplierFlow } from '../flows/paySupplier'
 import { scanFlow } from '../flows/scan'
 import { sendFlow } from '../flows/send'
 import { CodeScreen } from './auth/CodeScreen'
@@ -8,6 +10,7 @@ import { AboutView } from './AboutView'
 import { HistoryView } from './views/HistoryView'
 import { IdentityCard } from './views/IdentityCard'
 import { NotificationsView } from './views/NotificationsView'
+import { ReceivedDetail } from './views/ReceivedDetail'
 import { TxDetailView } from './views/TxDetail'
 import { registerAuthScreen, registerDetail, registerFlow, registerHubHeader, registerView } from './implemented'
 
@@ -28,6 +31,9 @@ registerView('history', HistoryView)
 registerView('notifications', NotificationsView)
 registerHubHeader('identity', IdentityCard)
 registerDetail('tx', TxDetailView)
+registerDetail('received', ReceivedDetail)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)
+registerFlow(chargeFlow)
+registerFlow(paySupplierFlow)

@@ -6,7 +6,7 @@ import { resolveItems } from '@sim/seed'
 import { decodeCommand, encodeCommand } from '@store/log-codec'
 import { parseRecord, serializeRecord } from '@store/record'
 import { replay } from '@store/replay'
-import { feesSince, openPosRequest, posCodeState, quoteForRequest } from '@store/selectors'
+import { feesSince, latestPosRequest, openPosRequest, posCodeState, quoteForRequest } from '@store/selectors'
 import { type Headless, headless } from '../support/journey'
 import { recordOf } from '../support/records'
 import { content, m } from './helpers'
@@ -159,6 +159,21 @@ describe('request.create', () => {
     run(h, c)
     expect(h.node.dispatch(c)).toEqual({ ok: false, error: { code: 'duplicate' } })
     expect(Object.values(h.node.getState().requests).filter((r) => r.channel === 'pos')).toHaveLength(1)
+  })
+})
+
+describe('the newest code', () => {
+  it('is the last one made, in any state; none before the first', () => {
+    const h = fresh()
+    expect(latestPosRequest(h.node.getState(), 'cafe')).toBeUndefined()
+    run(h, charge())
+    const first = codeOf(h)
+    expect(latestPosRequest(h.node.getState(), 'cafe')?.id).toBe(first.id)
+    run(h, cancel(first.id))
+    expect(latestPosRequest(h.node.getState(), 'cafe')).toMatchObject({ id: first.id, status: 'cancelled' })
+    run(h, charge())
+    expect(latestPosRequest(h.node.getState(), 'cafe')?.id).toBe('R-000002')
+    expect(latestPosRequest(h.node.getState(), 'ana')).toBeUndefined()
   })
 })
 

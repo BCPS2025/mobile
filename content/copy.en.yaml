@@ -239,7 +239,6 @@ scan:
   title: Scan
   viewfinder: Scanning area
   locked: "Locked · {name} ✓"
-  table: Table 4
   lockedLine: "{table} · {amount} BCPS"
   noCode: No payment code in view
   hold: Hold the code inside the frame.
@@ -261,6 +260,53 @@ send:
   rowNote: Note
   noNote: No note
   send: "Send {amount} BCPS"
+
+# ---- Café screens
+
+charge:
+  title: Charge
+  table: Table 4
+  items: ITEMS
+  custom: Custom amount
+  hint: "{table} · tap an item again to add one more"
+  fromItems: Amount set from items
+  clear: Clear
+  charge: "Charge {amount} BCPS"
+  codeTitle: Payment code
+  codeLabel: Payment code
+  valid: "Valid for {time}"
+  tapToPay: Tap to pay
+  expired: This code expired. No money moved.
+  newCode: New code
+  cancel: Cancel
+  cancelTitle: Cancel this charge?
+  cancelBody: The code stops working. No money moves.
+  rowAmount: Amount
+  rowItems: Items
+  keep: Keep
+  cancelCharge: Cancel charge
+  paid: PAID
+  received: RECEIVED
+  quantity: "× {qty}"
+  from: "from {handle} · {name}"
+  fromName: "from {name}"
+  spendable: Spendable now
+  fee: Transaction fee
+  feeValue: "1% · {fee} BCPS (≈ €{eur})"
+  feeShort: Fee
+  feeShortValue: "{fee} BCPS"
+  reference: Reference
+  sale: Sale
+  fromNotification: "From notification · {time}"
+  newSale: New sale
+
+paySupplier:
+  title: Pay supplier
+  toTitle: Who are you paying?
+  amountTitle: How much?
+  noteTitle: Add a note?
+  reviewTitle: Check and pay
+  pay: "Pay {amount} BCPS"
 
 receipt:
   paid: PAID

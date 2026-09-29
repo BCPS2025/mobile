@@ -187,6 +187,16 @@ export function openPosRequest(
   return found
 }
 
+/** The merchant's newest POS code in any state (open, ran out, cancelled or paid), or undefined. */
+export function latestPosRequest(s: LedgerState, merchant: PersonaId): PaymentRequest | undefined {
+  let found: PaymentRequest | undefined
+  for (const r of Object.values(s.requests)) {
+    if (r.requester !== merchant || r.channel !== 'pos') continue
+    if (!found || r.createdAt > found.createdAt || (r.createdAt === found.createdAt && r.id > found.id)) found = r
+  }
+  return found
+}
+
 /**
  * The fee quote a payment against a request would get: the request's snapshot decides who pays
  * and at what policy (null if it would be refused). Review steps put its `senderDebit` into `expect`.
