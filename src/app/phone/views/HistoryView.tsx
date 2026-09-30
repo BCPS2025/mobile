@@ -26,6 +26,7 @@ export function HistoryView() {
   const node = useLedgerNode()
   const state = useLedger((s) => s)
   const account = app.persona(persona)
+  const bank = app.content.personas.personas.find((p) => p.id === persona)?.methods?.bank
   const groups = activity(state, persona, node.now(), tz)
   const screen = VIEWS.history.screen
   return (
@@ -49,7 +50,7 @@ export function HistoryView() {
                   <li key={row.tx.id}>
                     <ActivityRowView
                       row={row}
-                      text={rowText(row, state, persona, tz)}
+                      text={rowText(row, state, persona, tz, bank)}
                       onOpen={() => nav.open({ kind: 'detail', id: 'tx' }, { txId: row.tx.id })}
                     />
                   </li>

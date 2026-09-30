@@ -322,6 +322,11 @@ history:
   title: History
   pending: PENDING
   sale: Sale
+  dailySales: Daily sales
+  todaySoFar: Today so far
+  summaryLine: "{count} payments · net {net}"
+  cashOut: Cash out
+  cashOutLine: "{time} · to {bank}"
 
 detail:
   title: Payment

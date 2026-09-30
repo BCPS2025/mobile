@@ -212,7 +212,16 @@ export const UiCopySchema = z.looseObject({
     feeLineYou: S,
     time: S,
   }),
-  history: z.strictObject({ title: S, pending: S, sale: S }),
+  history: z.strictObject({
+    title: S,
+    pending: S,
+    sale: S,
+    dailySales: S,
+    todaySoFar: S,
+    summaryLine: S,
+    cashOut: S,
+    cashOutLine: S,
+  }),
   detail: z.strictObject({
     title: S,
     from: S,

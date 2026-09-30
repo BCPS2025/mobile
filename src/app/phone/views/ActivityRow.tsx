@@ -1,12 +1,12 @@
 import { Banknote, ChartColumn, CreditCard, Landmark, type LucideIcon, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { formatSignedMinor } from '@domain/money'
+import { formatMinor, formatSignedMinor } from '@domain/money'
 import type { LedgerState, PersonaId } from '@domain/types'
 import { formatTime } from '@sim/tz'
 import { counterpartyOf } from '@store/parties'
-import type { ActivityRow as Row } from '@store/selectors'
+import { type ActivityRow as Row, deltaFor } from '@store/selectors'
 import { fill, ui } from '../../copy'
-import { itemsText, partyLabel, txLabel } from '../../format'
+import { itemsText, partyLabel, shortBank, txLabel } from '../../format'
 import { PartyAvatar } from '../../kit/PartyAvatar'
 
 // One line of History: an avatar (or an icon square for top-ups, cash-outs and summaries), the
@@ -33,12 +33,36 @@ export interface RowText {
   openable: boolean
 }
 
-/** What a History row says about a payment, from one account's point of view. */
-export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string): RowText {
+/**
+ * What a History row says about a payment, from one account's point of view. `bank`: the
+ * account's bank account as shown ("SI56 •••• •••• 1934"), named on its cash-outs.
+ */
+export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string, bank?: string): RowText {
   const { tx } = row
   const time = formatTime(row.at, tz)
   const summary = tx.summary !== undefined
-  if (tx.seedMeta?.labelKey) {
+  const labelKey = tx.seedMeta?.labelKey
+  // A day's sales in one row: "Daily sales" over "48 payments · net 331.23" (net of the fees).
+  if (tx.summary && (labelKey === 'dailySales' || labelKey === 'todaySoFar')) {
+    return {
+      title: labelKey === 'dailySales' ? ui.history.dailySales : ui.history.todaySoFar,
+      sub: fill(ui.history.summaryLine, { count: tx.summary.count, net: formatMinor(deltaFor(tx, viewer)) }),
+      leading: tone(ChartColumn),
+      summary: true,
+      openable: false,
+    }
+  }
+  // Money to the bank (a cash-out or an automatic conversion): "Cash out" over "23:00 · to SI56 •••• 1934".
+  if (tx.kind === 'off-ramp' && tx.from === viewer) {
+    return {
+      title: ui.history.cashOut,
+      sub: bank ? fill(ui.history.cashOutLine, { time, bank: shortBank(bank) }) : time,
+      leading: tone(Banknote),
+      summary,
+      openable: true,
+    }
+  }
+  if (tx.seedMeta && labelKey) {
     const icon =
       tx.kind === 'on-ramp'
         ? tx.seedMeta.method === 'card'

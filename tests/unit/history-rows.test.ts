@@ -15,9 +15,10 @@ const items = resolveItems(content, 'cafe', [
 
 function rows(persona: string, node: ReturnType<typeof headless>['node']) {
   const s = node.getState()
+  const bank = content.personas.personas.find((p) => p.id === persona)?.methods?.bank
   return activity(s, persona, node.now(), TZ)
     .flatMap((g) => g.rows)
-    .map((row) => ({ row, text: rowText(row, s, persona, TZ) }))
+    .map((row) => ({ row, text: rowText(row, s, persona, TZ, bank) }))
 }
 
 describe('History rows', () => {
@@ -77,7 +78,27 @@ describe('History rows', () => {
     const list = rows('cafe', node)
     expect(list[0]?.text).toMatchObject({ title: '@ana · Table 4', sub: '12:15 · Sale', openable: true })
     const today = list.find((r) => r.row.tx.summary && r.row.tx.seedMeta?.labelKey === 'todaySoFar')
-    expect(today?.text).toMatchObject({ title: 'Today so far · 23 payments', summary: true, openable: false })
+    expect(today?.text).toMatchObject({
+      title: 'Today so far',
+      sub: '23 payments · net 110.27',
+      summary: true,
+      openable: false,
+    })
+    // Saturday: 48 payments for 334.58, net of the 1% fee 331.23.
+    const daily = list.find((r) => r.row.tx.seedMeta?.key === 'cafe-sat')
+    expect(daily?.text).toMatchObject({
+      title: 'Daily sales',
+      sub: '48 payments · net 331.23',
+      summary: true,
+      openable: false,
+    })
+    // Money to the bank, automatic or not, is a cash-out to the café's bank account.
+    const outs = list.filter((r) => r.row.tx.kind === 'off-ramp')
+    expect(outs.length).toBeGreaterThan(0)
+    for (const out of outs) {
+      expect(out.text.title).toBe('Cash out')
+      expect(out.text.sub).toMatch(/^\d\d:\d\d · to SI56 •••• 1934$/)
+    }
     const carried = list.find((r) => r.row.tx.seedMeta?.labelKey === 'carriedOver')
     expect(carried?.text.openable).toBe(false)
     expect(carried?.text.summary).toBe(false)

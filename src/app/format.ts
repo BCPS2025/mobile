@@ -48,6 +48,13 @@ export function dayTimeText(t: SimTime): string {
   return `${formatWeekday(t, LJUBLJANA)} ${formatTime(t, LJUBLJANA)}`
 }
 
+/** A bank account as a row names it: its first and last groups ("SI56 •••• •••• 1934" → "SI56 •••• 1934"). */
+export function shortBank(bank: string): string {
+  const parts = bank.trim().split(/\s+/)
+  if (parts.length < 3) return bank
+  return `${parts[0]} ${parts[1]} ${parts[parts.length - 1]}`
+}
+
 /** Row label from one account's point of view. */
 export function txLabel(tx: Tx, viewer: AccountId): string {
   const meta = tx.seedMeta
