@@ -1,5 +1,6 @@
 // Small helpers for the end-to-end specs. The hooks they rely on (data-phone, data-testid) are
 // part of the UI contract; see CONTRIBUTING.md.
+import AxeBuilder from '@axe-core/playwright'
 import { expect, type Locator, type Page } from '@playwright/test'
 import { checkInputs, formatFinding } from '../../scripts/banned-core'
 
@@ -185,4 +186,114 @@ export const SEND: PayBody = { actor: 'ana', to: '@marko', amount: 1650, debit: 
 /** Whether two boxes overlap. */
 export function overlaps(a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+}
+
+// ---- journeys shared by several specs
+
+/** The stage with Ana on the left and the café on the right, both logged in through biometrics. */
+export async function stageBoth(page: Page, hash = '#/stage'): Promise<void> {
+  await openApp(page, hash)
+  await biometricLogin(page, 'left')
+  await biometricLogin(page, 'right')
+  await expect(slot(page, 'right').locator('[data-screen="pos.home"]')).toBeVisible()
+}
+
+/** The café (right phone) charges Flat white ×2 and Croissant ×2 and shows the payment code. */
+export async function cafeShowsCode(page: Page): Promise<void> {
+  const cafe = slot(page, 'right')
+  await cafe.locator('[data-tile="charge"]').click()
+  await expect(cafe.locator('[data-screen="pos.charge"]')).toBeVisible()
+  for (const sku of ['flat-white', 'flat-white', 'croissant', 'croissant'])
+    await cafe.getByTestId(`item-${sku}`).click()
+  await cafe.getByRole('button', { name: 'Charge 11.00 BCPS' }).click()
+  await expect(cafe.locator('[data-screen="pos.code"]')).toBeVisible()
+}
+
+/** Ana (left phone) scans the café's code and stops on the review. */
+export async function anaScansToReview(page: Page): Promise<void> {
+  const ana = slot(page, 'left')
+  await ana.locator('[data-tile="scan"]').click()
+  await expect(ana.getByTestId('scan-status')).toContainText('Locked · Café Lipa')
+  await ana.getByRole('button', { name: 'Continue' }).click()
+  await expect(ana.locator('[data-screen="c.payCode.review"]')).toBeVisible()
+}
+
+/** Ana pays the café's code from the review; both phones end on their PAID screens. */
+export async function anaPaysCode(page: Page): Promise<void> {
+  await slot(page, 'left').getByRole('button', { name: 'Pay 11.00 BCPS' }).click()
+  await expect(slot(page, 'left').locator('[data-screen="c.payCode.success"]')).toBeVisible({ timeout: 5000 })
+  await expect(slot(page, 'right').locator('[data-screen="pos.paid"]')).toBeVisible({ timeout: 5000 })
+}
+
+/** The id of the screen a phone shows (its `data-screen`). */
+export async function screenOf(phoneLocator: Locator): Promise<string> {
+  return (await phoneLocator.locator('[data-screen]').first().getAttribute('data-screen')) ?? ''
+}
+
+// ---- what must never be on a page (decisions D16, D34)
+
+const FORBIDDEN_CONTROL_WORDS =
+  /\b(clock|start from|save state|open a state file|state file|presenter tools|create account|sign up|register)\b/i
+
+/**
+ * No control offers the dropped features (the Clock, Start from…, state files, presenter tools,
+ * Create account), no form, no field for an email, a password or a code, no autofill hint, no file
+ * picker and no download link exist on the page.
+ */
+export async function expectNoForbiddenControls(page: Page): Promise<void> {
+  const found = await page.evaluate((source) => {
+    const words = new RegExp(source, 'i')
+    const controls: string[] = []
+    for (const el of document.querySelectorAll(
+      'button, a[href], [role="button"], [role="switch"], [role="menuitem"], [role="tab"], [role="link"], [aria-label]',
+    )) {
+      const text = `${el.textContent ?? ''} ${el.getAttribute('aria-label') ?? ''}`.replace(/\s+/g, ' ').trim()
+      if (words.test(text)) controls.push(text.slice(0, 80))
+    }
+    return {
+      controls,
+      forms: document.querySelectorAll('form').length,
+      fields: document.querySelectorAll('input[type="email"], input[type="password"], input[type="file"]').length,
+      autofill: document.querySelectorAll(
+        '[autocomplete="email"], [autocomplete="one-time-code"], [autocomplete="username"], [autocomplete="current-password"], [autocomplete="new-password"]',
+      ).length,
+      downloads: document.querySelectorAll('a[download]').length,
+    }
+  }, FORBIDDEN_CONTROL_WORDS.source)
+  expect(found).toEqual({ controls: [], forms: 0, fields: 0, autofill: 0, downloads: 0 })
+}
+
+/** The `data-screen` of every element that shows the word PLANNED ('page' outside a phone). */
+export async function plannedScreens(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const out: string[] = []
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!/PLANNED/i.test(node.textContent ?? '')) continue
+      out.push(node.parentElement?.closest('[data-screen]')?.getAttribute('data-screen') ?? 'page')
+    }
+    return out
+  })
+}
+
+// ---- accessibility
+
+/**
+ * No serious or critical accessibility violation (axe) on what the page shows now, or inside
+ * `within` (a CSS selector). Moderate and minor findings are not part of the gate.
+ */
+export async function expectNoSeriousViolations(page: Page, where: string, within?: string): Promise<void> {
+  let axe = new AxeBuilder({ page })
+  if (within) axe = axe.include(within)
+  const { violations } = await axe.analyze()
+  const serious = violations
+    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+    .map(
+      (v) =>
+        `${v.id} (${v.impact}) ${v.help}: ${v.nodes
+          .map((n) => n.target.join(' '))
+          .slice(0, 4)
+          .join(' | ')}`,
+    )
+  expect(serious, `axe on ${where}`).toEqual([])
 }

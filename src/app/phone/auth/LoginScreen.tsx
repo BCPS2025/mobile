@@ -152,7 +152,11 @@ export function LoginScreen() {
                       {maskEmail(p.login.email)}
                     </span>
                   </span>
-                  <span className="shrink-0 font-body text-[11px] leading-[14px] font-semibold uppercase tracking-[0.12em] text-grey-400">
+                  <span
+                    className={`shrink-0 font-body text-[11px] leading-[14px] font-semibold uppercase tracking-[0.12em] ${
+                      selected ? 'text-muted-on-800' : 'text-grey-400'
+                    }`}
+                  >
                     {row.disabled ? ui.login.otherPhone : p.kind === 'person' ? ui.login.personal : ui.login.business}
                   </span>
                 </button>
