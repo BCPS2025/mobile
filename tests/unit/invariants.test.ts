@@ -140,6 +140,7 @@ describe('each invariant names a planted fault', () => {
       status: 'paid',
       payments: [lunchTx.id, lunchTx.id],
       sharedWith: [],
+      sharedAt: [],
       createdAt: t0,
       cmdId: '00000000000000a2:create',
     }
@@ -155,6 +156,7 @@ describe('each invariant names a planted fault', () => {
       ownShare: 0 as Minor,
       shares: [{ party: 'ana', amount: m('13.20'), requestId: 'r_seed_lunch' }],
       createdAt: t0,
+      cmdId: '00000000000000a3:split',
     }
     expect(numbers({ ...paidLunch, splits: { [split.id]: split } })).toEqual([8])
   })

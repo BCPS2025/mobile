@@ -30,11 +30,13 @@ import {
   cancelCodeCommand,
   chargeCommand,
   cmdIds,
+  linkCommand,
   lunchCommand,
   payCodeCommand,
   payCommand,
   posCodes,
   sequenceArb,
+  splitCommand,
 } from './arbitraries'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
@@ -139,6 +141,30 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
         if (cmd.type === 'request.decline' && cmd.reason !== undefined && [...cmd.reason].length > 40) {
           expect(r.ok).toBe(false)
         }
+        break
+      }
+      case 'link': {
+        const cmd = linkCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
+        if (!cmd) break
+        const r = rt.dispatch(cmd)
+        // A recipient named by id instead of a handle is never stored.
+        if (cmd.type === 'link.share' && !cmd.to.startsWith('@')) expect(r.ok).toBe(false)
+        if (r.ok) stats.accepted++
+        break
+      }
+      case 'split': {
+        const cmd = splitCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
+        if (!cmd) break
+        const r = rt.dispatch(cmd)
+        // People named by id instead of a handle, and a note the record cannot keep, are never stored.
+        if (cmd.type === 'split.create') {
+          const cleaned = cmd.note.replace(new RegExp(CONTROL, 'gu'), '').trim()
+          if (cmd.shares.some((sh) => !sh.party.startsWith('@')) || [...cleaned].length > 40 || cleaned.length === 0) {
+            expect(r.ok).toBe(false)
+          }
+        }
+        if (cmd.type === 'split.reask' && !cmd.party.startsWith('@')) expect(r.ok).toBe(false)
+        if (r.ok) stats.accepted++
         break
       }
       case 'advance':

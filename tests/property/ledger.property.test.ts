@@ -33,11 +33,13 @@ import {
   cancelCodeCommand,
   chargeCommand,
   cmdIds,
+  linkCommand,
   lunchCommand,
   payCodeCommand,
   payCommand,
   posCodes,
   sequenceArb,
+  splitCommand,
 } from './arbitraries'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
@@ -66,6 +68,12 @@ const stats = {
   declines: 0,
   requestCancels: 0,
   requestsPaid: 0,
+  linksMade: 0,
+  linksShared: 0,
+  linksPaid: 0,
+  splitsMade: 0,
+  splitsReasked: 0,
+  splitsCancelled: 0,
 }
 const countRefusal = (code: string) => stats.refused.set(code, (stats.refused.get(code) ?? 0) + 1)
 
@@ -249,6 +257,110 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         }
         break
       }
+      case 'link': {
+        const before = node.getState()
+        const cmd = linkCommand(content, before, step, ids.next({ kind: 'new' }))
+        if (!cmd) break
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(node.events().filter((e) => e.cmdId === cmd.cmdId)).toHaveLength(0)
+          expect(JSON.stringify(node.getState().links)).toBe(JSON.stringify(before.links))
+          break
+        }
+        const after = node.getState()
+        if (cmd.type === 'link.create') {
+          stats.linksMade++
+          expect(r.value.map((e) => e.type)).toEqual(['link.created'])
+          const link = (r.value[0] as Extract<LedgerEvent, { type: 'link.created' }>).link
+          expect(link).toMatchObject({
+            owner: cmd.actor,
+            amount: cmd.amount,
+            reusable: false,
+            policy: 'transfer',
+            feePayer: 'sender',
+            status: 'open',
+          })
+          expect(before.directory[cmd.actor]?.kind).toBe('person')
+        } else if (cmd.type === 'link.share') {
+          stats.linksShared++
+          expect(r.value.map((e) => e.type)).toEqual(['link.shared'])
+          const link = after.links[cmd.linkId]
+          expect(link?.owner).toBe(cmd.actor)
+          expect(link?.sharedWith).toHaveLength((before.links[cmd.linkId]?.sharedWith.length ?? -1) + 1)
+          expect(link?.sharedWith).not.toContain(cmd.actor)
+        } else if (cmd.type === 'pay') {
+          stats.linksPaid++
+          const tx = (r.value[0] as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx as Tx
+          expect(tx.channel).toBe('link')
+          expect(tx.fee.fee).toBe(onePercent(cmd.amount))
+          expect(tx.fee.payer).toBe('sender')
+          expect(tx.fee.senderDebit).toBe(cmd.expect.senderDebit)
+          expect(after.links[cmd.linkId ?? '']).toMatchObject({ status: 'paid', payments: [tx.id] })
+          expect(before.links[cmd.linkId ?? '']?.owner).not.toBe(cmd.actor)
+        }
+        break
+      }
+      case 'split': {
+        const before = node.getState()
+        const cmd = splitCommand(content, before, step, ids.next({ kind: 'new' }))
+        if (!cmd) break
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(node.events().filter((e) => e.cmdId === cmd.cmdId)).toHaveLength(0)
+          expect(JSON.stringify(node.getState().splits)).toBe(JSON.stringify(before.splits))
+          expect(JSON.stringify(node.getState().requests)).toBe(JSON.stringify(before.requests))
+          break
+        }
+        const after = node.getState()
+        if (cmd.type === 'split.create') {
+          stats.splitsMade++
+          const events = r.value
+          expect(events[0]?.type).toBe('split.created')
+          expect(events.slice(1).every((e) => e.type === 'request.created')).toBe(true)
+          const split = (events[0] as Extract<LedgerEvent, { type: 'split.created' }>).split
+          expect(events).toHaveLength(1 + cmd.shares.length)
+          const sum = cmd.shares.reduce((acc, sh) => acc + sh.amount, 0)
+          expect(sum).toBeLessThanOrEqual(cmd.total)
+          expect(split.ownShare).toBe(cmd.total - sum)
+          expect(split.owner).toBe(cmd.actor)
+          for (const sh of split.shares) {
+            expect(after.requests[sh.requestId]).toMatchObject({
+              status: 'open',
+              channel: 'split',
+              splitId: split.id,
+              payer: sh.party,
+              amount: sh.amount,
+              feePayer: 'sender',
+            })
+            expect(after.directory[sh.party]?.kind).toBe('person')
+            expect(sh.party).not.toBe(cmd.actor)
+          }
+          if (cmd.sourceTxId !== undefined) {
+            expect(before.txs[cmd.sourceTxId]?.from).toBe(cmd.actor)
+            expect(before.txs[cmd.sourceTxId]?.refundedBy).toBeUndefined()
+          }
+        } else if (cmd.type === 'split.reask') {
+          stats.splitsReasked++
+          expect(r.value.map((e) => e.type)).toEqual(['request.created', 'split.share-updated'])
+          const updated = r.value[1] as Extract<LedgerEvent, { type: 'split.share-updated' }>
+          const oldShare = before.splits[cmd.splitId]?.shares.find((sh) => sh.party === updated.party)
+          expect(['declined', 'cancelled']).toContain(before.requests[oldShare?.requestId ?? '']?.status)
+          expect(after.requests[updated.requestId]?.status).toBe('open')
+          expect(after.splits[cmd.splitId]?.shares.find((sh) => sh.party === updated.party)?.requestId).toBe(
+            updated.requestId,
+          )
+        } else if (cmd.type === 'split.cancel') {
+          stats.splitsCancelled++
+          const open = (before.splits[cmd.splitId]?.shares ?? [])
+            .filter((sh) => before.requests[sh.requestId]?.status === 'open')
+            .map((sh) => sh.requestId)
+          expect(r.value.map((e) => (e.type === 'request.status' ? e.requestId : e.type))).toEqual(open)
+          for (const id of open) expect(after.requests[id]?.status).toBe('cancelled')
+        }
+        break
+      }
       case 'advance':
         node.clock.advance(step.ms)
         break
@@ -373,6 +485,13 @@ describe('ledger properties over random A1 command sequences', () => {
     expect(stats.declines).toBeGreaterThan(0)
     expect(stats.requestCancels).toBeGreaterThan(0)
     expect(stats.requestsPaid).toBeGreaterThan(0)
+    // Payment links and splits.
+    expect(stats.linksMade).toBeGreaterThan(0)
+    expect(stats.linksShared).toBeGreaterThan(0)
+    expect(stats.linksPaid).toBeGreaterThan(0)
+    expect(stats.splitsMade).toBeGreaterThan(0)
+    expect(stats.splitsReasked).toBeGreaterThan(0)
+    expect(stats.splitsCancelled).toBeGreaterThan(0)
     expect(stats.jumpsRefused).toBeGreaterThan(0)
     expect(stats.jumps).toBeGreaterThan(stats.jumpsRefused)
   })

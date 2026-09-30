@@ -195,6 +195,8 @@ export interface PaymentUri {
   amount?: Minor
   ref?: string
   req?: string
+  /** A payment link of the recipient (the link's id in the browser that made it). */
+  link?: string
 }
 
 export interface AutoConvertSettings {
@@ -273,7 +275,9 @@ export interface PaymentLink {
   feePayer: FeePayer
   status: 'open' | 'paid' | 'closed'
   payments: string[]
+  /** People the owner sent the link to, in order, and when (same length). */
   sharedWith: PartyId[]
+  sharedAt: SimTime[]
   createdAt: SimTime
   cmdId: string
 }
@@ -287,7 +291,12 @@ export interface Split {
   ownShare: Minor
   shares: { party: PartyId; amount: Minor; requestId: string }[]
   createdAt: SimTime
+  /** The creating user command. */
+  cmdId: string
 }
+
+/** Most people a bill can be split with (the record keeps at most this many shares). */
+export const MAX_SPLIT_SHARES = 10
 
 export interface Plan {
   id: string
@@ -468,7 +477,35 @@ export type RequestCreateBody = PosCodeBody | PersonRequestBody
 export type RequestCancelBody = { type: 'request.cancel'; requestId: string }
 /** The payer turns an open request down, with an optional reason; no money moves. */
 export type RequestDeclineBody = { type: 'request.decline'; requestId: string; reason?: string }
-export type UserCommandBody = PayCommandBody | RequestCreateBody | RequestCancelBody | RequestDeclineBody
+/** A person makes a payment link for one amount that one person can pay (single use). */
+export type LinkCreateBody = { type: 'link.create'; amount: Minor; note?: string }
+/** The owner sends an open link to one person, in the app. */
+export type LinkShareBody = { type: 'link.share'; linkId: string; to: Handle }
+/**
+ * A person asks others to pay their shares of a bill: one request per share, created together
+ * with the split. `sourceTxId` is the outgoing payment being split (none for an entered amount).
+ */
+export type SplitCreateBody = {
+  type: 'split.create'
+  sourceTxId?: string
+  total: Minor
+  note: string
+  shares: { party: Handle; amount: Minor }[]
+}
+/** The owner asks again for a share whose request was declined or cancelled. */
+export type SplitReaskBody = { type: 'split.reask'; splitId: string; party: Handle }
+/** The owner cancels every share that is still open. */
+export type SplitCancelBody = { type: 'split.cancel'; splitId: string }
+export type UserCommandBody =
+  | PayCommandBody
+  | RequestCreateBody
+  | RequestCancelBody
+  | RequestDeclineBody
+  | LinkCreateBody
+  | LinkShareBody
+  | SplitCreateBody
+  | SplitReaskBody
+  | SplitCancelBody
 /** A user command: `cmdId` is `${flowInstanceId}:${stepId}`; `actor` is a persona id. */
 export type UserCommand = UserCommandBody & { cmdId: string; actor: PersonaId }
 export type PayCommand = PayCommandBody & { cmdId: string; actor: PersonaId }
@@ -495,6 +532,12 @@ export type LedgerEventBody =
       reason?: string
     }
   | { type: 'link.status'; linkId: string; status: 'paid' | 'closed'; txId?: string }
+  | { type: 'link.created'; link: PaymentLink }
+  | { type: 'link.shared'; linkId: string; to: PartyId }
+  /** Ordered before the split's `request.created` events, one per share. */
+  | { type: 'split.created'; split: Split }
+  /** A share now points at a new request (ask again). */
+  | { type: 'split.share-updated'; splitId: string; party: PartyId; requestId: string }
 /** `cmdId` is set on events a user command produced; scheduler work has none. */
 export type LedgerEvent = { seq: number; at: SimTime; cmdId?: string } & LedgerEventBody
 export type LedgerEventType = LedgerEvent['type']

@@ -8,14 +8,17 @@
 import fc from 'fast-check'
 import type { Content } from '@content/schema'
 import { mustParseMinor } from '@domain/money'
+import { feeContextOfSnapshot, quoteWith } from '@domain/ledger'
 import type {
   Handle,
   LedgerState,
   Minor,
   PayChannel,
   PayCommand,
+  PaymentLink,
   PaymentRequest,
   PersonaId,
+  Split,
   TxItem,
   UserCommand,
 } from '@domain/types'
@@ -126,6 +129,31 @@ export interface AnswerStep {
   reason: string | null
 }
 
+/** A payment link: made, sent to someone, or paid (by its owner too, and by people who were not sent it). */
+export interface LinkStep {
+  kind: 'link'
+  op: 'create' | 'share' | 'pay'
+  actor: number
+  other: number
+  amount: AmountPick
+  note: string | null
+  which: number
+  expect: ExpectPick
+}
+
+/** A bill split: made from an outgoing payment or an entered amount, asked again, or cancelled. */
+export interface SplitStep {
+  kind: 'split'
+  op: 'create' | 'reask' | 'cancel'
+  actor: number
+  source: 'pick' | 'none' | 'bogus'
+  total: AmountPick
+  parties: number[]
+  shares: 'equal' | 'custom' | 'over'
+  note: string | null
+  which: number
+}
+
 export type Step =
   | PayStep
   | ChargeStep
@@ -133,6 +161,8 @@ export type Step =
   | PayCodeStep
   | AskStep
   | AnswerStep
+  | LinkStep
+  | SplitStep
   /** The Lunch request exactly as Ana would pay it (so the paid-request paths are reached). */
   | { kind: 'pay-lunch'; expect: ExpectPick }
   /** Time passes on the clock without the timer firing (a late or throttled timer). */
@@ -363,6 +393,48 @@ export function answerStepArb(): fc.Arbitrary<AnswerStep> {
   })
 }
 
+export function linkStepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<LinkStep> {
+  return fc.record({
+    kind: fc.constant('link' as const),
+    op: fc.constantFrom<LinkStep['op']>('create', 'create', 'share', 'share', 'pay', 'pay'),
+    actor: fc.oneof(
+      { weight: 5, arbitrary: fc.constantFrom(0, 1) },
+      { weight: 1, arbitrary: fc.nat(actorsOf(content).length - 1) },
+    ),
+    other: fc.oneof(
+      { weight: 5, arbitrary: fc.constantFrom(0, 1) },
+      { weight: 1, arbitrary: fc.nat(recipientCount(content, opts.runtime === true) - 1) },
+    ),
+    amount: fc.oneof(
+      { weight: 4, arbitrary: fc.integer({ min: 1, max: 3000 }).map((value) => ({ kind: 'small' as const, value })) },
+      { weight: 1, arbitrary: amountArb },
+    ),
+    note: noteArb(opts.runtime === true),
+    which: fc.nat(30),
+    expect: fc.constantFrom<ExpectPick>('right', 'right', 'right', 'right', 'off-by-one'),
+  })
+}
+
+export function splitStepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<SplitStep> {
+  return fc.record({
+    kind: fc.constant('split' as const),
+    op: fc.constantFrom<SplitStep['op']>('create', 'create', 'create', 'reask', 'reask', 'cancel'),
+    actor: fc.oneof(
+      { weight: 5, arbitrary: fc.constantFrom(0, 1) },
+      { weight: 1, arbitrary: fc.nat(actorsOf(content).length - 1) },
+    ),
+    source: fc.constantFrom<SplitStep['source']>('pick', 'pick', 'none', 'bogus'),
+    total: fc.oneof(
+      { weight: 4, arbitrary: fc.integer({ min: 1, max: 3000 }).map((value) => ({ kind: 'small' as const, value })) },
+      { weight: 1, arbitrary: amountArb },
+    ),
+    parties: fc.array(fc.nat(recipientCount(content, opts.runtime === true) - 1), { minLength: 0, maxLength: 3 }),
+    shares: fc.constantFrom<SplitStep['shares']>('equal', 'equal', 'equal', 'custom', 'over'),
+    note: noteArb(opts.runtime === true),
+    which: fc.nat(30),
+  })
+}
+
 export interface StepOptions {
   /** Runtime-level properties: Reset and Undo, and commands the runtime must refuse as not storable. */
   runtime?: boolean
@@ -381,6 +453,8 @@ export function stepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<
     { weight: 3, arbitrary: payCodeStepArb(content) },
     { weight: 4, arbitrary: askStepArb(content, opts) },
     { weight: 5, arbitrary: answerStepArb() },
+    { weight: 4, arbitrary: linkStepArb(content, opts) },
+    { weight: 5, arbitrary: splitStepArb(content, opts) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 5000 }).map((ms) => ({ kind: 'advance', ms })) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 3000 }).map((ms) => ({ kind: 'fire', ms })) },
     { weight: 1, arbitrary: fc.constant({ kind: 'catch-up' }) },
@@ -593,7 +667,17 @@ export const personRequests = (s: LedgerState): PaymentRequest[] =>
  * `other` is someone else.
  */
 export function answerCommand(content: Content, s: LedgerState, step: AnswerStep, cmdId: string): UserCommand | null {
-  const all = personRequests(s)
+  const everything = personRequests(s)
+  // Mostly a request that is still open, so answers are accepted often; sometimes any.
+  const open = everything.filter((r) => r.status === 'open')
+  const openShares = open.filter((r) => r.channel === 'split')
+  // Every third answer goes to a split share, so splits see declines and cancels (ask again).
+  const all =
+    step.which % 3 === 0 && openShares.length > 0
+      ? openShares
+      : open.length > 0 && step.which % 4 !== 0
+        ? open
+        : everything
   const request = all[step.which % Math.max(all.length, 1)]
   if (!request) return null
   const names = actorsOf(content)
@@ -631,6 +715,94 @@ export function answerCommand(content: Content, s: LedgerState, step: AnswerStep
       }
     }
   }
+}
+
+export const linksInOrder = (s: LedgerState): PaymentLink[] =>
+  Object.values(s.links).sort((a, b) => (a.id < b.id ? -1 : 1))
+export const splitsInOrder = (s: LedgerState): Split[] => Object.values(s.splits).sort((a, b) => (a.id < b.id ? -1 : 1))
+
+/** The command of a link step against `s`, or null when the ledger has no link to work on. */
+export function linkCommand(content: Content, s: LedgerState, step: LinkStep, cmdId: string): UserCommand | null {
+  const actor = actorsOf(content)[step.actor] as PersonaId
+  if (step.op === 'create') {
+    const cmd: UserCommand = { type: 'link.create', actor, cmdId, amount: step.amount.value as Minor }
+    if (step.note !== null) cmd.note = step.note
+    return cmd
+  }
+  const all = linksInOrder(s)
+  const link = all[step.which % Math.max(all.length, 1)]
+  if (!link) return null
+  if (step.op === 'share') {
+    // Mostly the owner sends it; sometimes someone else tries.
+    const by = step.which % 5 === 0 ? actor : link.owner
+    return { type: 'link.share', actor: by, cmdId, linkId: link.id, to: handlesOf(content)[step.other] as Handle }
+  }
+  const to = s.directory[link.owner]?.handle as Handle
+  const q = quoteWith(s, feeContextOfSnapshot(s, link), link.amount)
+  const right = q.ok ? q.value.senderDebit : link.amount
+  return {
+    type: 'pay',
+    actor,
+    cmdId,
+    to,
+    amount: link.amount,
+    channel: 'link',
+    linkId: link.id,
+    expect: { senderDebit: (step.expect === 'off-by-one' ? right + 1 : right) as Minor },
+  }
+}
+
+/** The command of a split step against `s`, or null when the ledger has no split to work on. */
+export function splitCommand(content: Content, s: LedgerState, step: SplitStep, cmdId: string): UserCommand | null {
+  const names = actorsOf(content)
+  if (step.op !== 'create') {
+    const everything = splitsInOrder(s)
+    // Mostly a split the command can act on (one with a share to ask again, or one still open).
+    const status = (sp: Split) => sp.shares.map((sh) => s.requests[sh.requestId]?.status)
+    const actionable = everything.filter((sp) =>
+      step.op === 'reask'
+        ? status(sp).some((x) => x === 'declined' || x === 'cancelled')
+        : status(sp).some((x) => x === 'open'),
+    )
+    const all = actionable.length > 0 && step.which % 6 !== 0 ? actionable : everything
+    const split = all[step.which % Math.max(all.length, 1)]
+    if (!split) return null
+    // Mostly the owner; sometimes someone else tries.
+    const by = (step.which % 5 === 0 ? names[step.actor] : split.owner) as PersonaId
+    if (step.op === 'cancel') return { type: 'split.cancel', actor: by, cmdId, splitId: split.id }
+    const share = split.shares[step.which % Math.max(split.shares.length, 1)]
+    const party = (share ? s.directory[share.party]?.handle : undefined) ?? ('@nobody' as Handle)
+    return { type: 'split.reask', actor: by, cmdId, splitId: split.id, party }
+  }
+  const actor = names[step.actor] as PersonaId
+  let sourceTxId: string | undefined
+  let total = step.total.value
+  if (step.source === 'bogus') sourceTxId = 'BC-NOTHNG'
+  else if (step.source === 'pick') {
+    const outgoing = s.txOrder.map((id) => s.txs[id]).filter((t) => t?.from === actor)
+    const tx = outgoing[step.which % Math.max(outgoing.length, 1)]
+    if (tx) {
+      sourceTxId = tx.id
+      total = tx.amount
+    }
+  }
+  const handles = step.parties.map((i) => handlesOf(content)[i] as Handle)
+  const n = handles.length
+  const each = step.shares === 'over' ? total : Math.max(0, Math.floor(total / (n + 1)))
+  const shares = handles.map((party, i) => ({
+    party,
+    amount: (step.shares === 'custom' ? Math.max(0, Math.floor((total * (i + 1)) / (n * 3 + 1))) : each) as Minor,
+  }))
+  const cmd: UserCommand = {
+    type: 'split.create',
+    actor,
+    cmdId,
+    total: total as Minor,
+    note: step.note ?? 'Split',
+    shares,
+  }
+  if (sourceTxId !== undefined) cmd.sourceTxId = sourceTxId
+  return cmd
 }
 
 /** The Lunch request as the payer's review step shows it. */

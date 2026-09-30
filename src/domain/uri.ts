@@ -2,6 +2,7 @@ import { formatHundredths, parseMinor } from './money'
 import type { Handle, Minor, PaymentUri, Result } from './types'
 
 // Payment links and QR payloads: <base>#/pay?v=1&to=@cafelipa&amount=11.00&req=r_1
+// (a person's payment link names its id with link=L-000001 instead of req).
 // Pure: the caller supplies the base URL (see paymentBaseUrl).
 
 const HANDLE = /^@[a-z0-9_]{2,30}$/
@@ -24,6 +25,7 @@ export function encodePaymentUri(u: PaymentUri, baseUrl: string): string {
   if (u.amount !== undefined) parts.push(`amount=${amountParam(u.amount)}`)
   if (u.ref !== undefined) parts.push(`ref=${encodeURIComponent(u.ref)}`)
   if (u.req !== undefined) parts.push(`req=${encodeURIComponent(u.req)}`)
+  if (u.link !== undefined) parts.push(`link=${encodeURIComponent(u.link)}`)
   return `${base}${PAY_MARKER}${parts.join('&')}`
 }
 
@@ -60,6 +62,8 @@ export function parsePaymentUri(raw: string): Result<PaymentUri, PaymentUriError
   if (ref !== undefined) out.ref = ref
   const req = params.get('req')
   if (req !== undefined) out.req = req
+  const link = params.get('link')
+  if (link !== undefined) out.link = link
   return { ok: true, value: out }
 }
 

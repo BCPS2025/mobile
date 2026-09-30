@@ -182,6 +182,10 @@ export function invariants(s: LedgerState): string[] {
         bad(17, `link ${link.id} was charged with another fee payer or policy than its snapshot`)
       }
     }
+    if (link.sharedAt.length !== link.sharedWith.length || new Set(link.sharedWith).size !== link.sharedWith.length) {
+      bad(7, `link ${link.id} lists its shares inconsistently`)
+    }
+    if (link.sharedWith.includes(link.owner)) bad(7, `link ${link.id} is shared with its owner`)
     if (!link.reusable && link.payments.length > 1)
       bad(7, `single-use link ${link.id} is paid ${link.payments.length} times`)
     if (!link.reusable && (link.status === 'paid') !== (link.payments.length === 1)) {
@@ -189,13 +193,38 @@ export function invariants(s: LedgerState): string[] {
     }
   }
 
-  // ---- splits (8)
+  // ---- splits (8). A split's requests are created right after the split itself, so a share
+  // whose request is not there yet is skipped; every request that is there matches its share.
   for (const split of Object.values(s.splits)) {
     const paid = sumBy(
       split.shares.filter((sh) => s.requests[sh.requestId]?.status === 'paid'),
       (sh) => sh.amount,
     )
     if (paid > split.total) bad(8, `split ${split.id} has ${paid} paid of ${split.total}`)
+    if (sumBy(split.shares, (sh) => sh.amount) + split.ownShare !== split.total) {
+      bad(8, `split ${split.id} shares and its own share do not add up to the total`)
+    }
+    if (new Set(split.shares.map((sh) => sh.party)).size !== split.shares.length) {
+      bad(8, `split ${split.id} lists a person twice`)
+    }
+    for (const sh of split.shares) {
+      const req = s.requests[sh.requestId]
+      if (!req) continue
+      if (
+        req.channel !== 'split' ||
+        req.splitId !== split.id ||
+        req.requester !== split.owner ||
+        req.payer !== sh.party ||
+        req.amount !== sh.amount
+      ) {
+        bad(8, `split ${split.id} share of ${sh.party} does not match its request ${req.id}`)
+      }
+    }
+  }
+  for (const req of Object.values(s.requests)) {
+    if (req.channel === 'split' && (req.splitId === undefined || !s.splits[req.splitId])) {
+      bad(8, `request ${req.id} belongs to an unknown split`)
+    }
   }
 
   // ---- subscriptions (9)

@@ -318,6 +318,7 @@ describe('E10: pay validates requests and links', () => {
       status: 'open',
       payments: [],
       sharedWith: [],
+      sharedAt: [],
       createdAt: seed.t0,
       cmdId: '00000000000000aa:create',
       ...over,

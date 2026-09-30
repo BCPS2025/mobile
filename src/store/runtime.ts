@@ -408,6 +408,22 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
     return note !== undefined ? ({ ...rest, note } as UserCommand) : (rest as UserCommand)
   }
 
+  /** Whether an amount in a command is not a whole number of hundredths (the node refuses it as invalid-amount). */
+  function hasBadAmount(cmd: UserCommand): boolean {
+    const bad = (n: unknown) => !Number.isSafeInteger(n)
+    switch (cmd.type) {
+      case 'pay':
+        return bad(cmd.amount) || bad(cmd.expect?.senderDebit)
+      case 'request.create':
+      case 'link.create':
+        return bad(cmd.amount)
+      case 'split.create':
+        return bad(cmd.total) || !Array.isArray(cmd.shares) || cmd.shares.some((sh) => bad(sh?.amount))
+      default:
+        return false
+    }
+  }
+
   /**
    * Whether a command can be saved and replayed as it is: its stored form passes the file rules
    * and decodes back to the same command (items from the recipient's catalogue at catalogue
@@ -416,9 +432,7 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
    * the domain error (`invalid-amount`, `quote-changed`, `invalid-state`).
    */
   function storable(cmd: UserCommand): boolean {
-    if (cmd.type === 'pay') {
-      if (!Number.isSafeInteger(cmd.amount) || !Number.isSafeInteger(cmd.expect?.senderDebit)) return true
-    } else if (cmd.type === 'request.create' && !Number.isSafeInteger(cmd.amount)) return true
+    if (hasBadAmount(cmd)) return true
     const s = node.getState()
     const wire = encodeCommand(s, cmd)
     if (!wire.ok) return wire.error === 'unknown-ref'

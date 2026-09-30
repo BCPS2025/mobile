@@ -1,6 +1,6 @@
 {
   "stateVersion": 2,
-  "reason": "People can now ask each other for money and decline a request; payments follow the channel of what they pay. Logs of earlier commands replay to the same balances.",
+  "reason": "People can now make single-use payment links and send them, and split a bill into requests; a payment address can carry a link. Logs of earlier commands replay to the same balances.",
   "inputs": {
     "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
     "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
@@ -10,19 +10,19 @@
     "src/domain/counter.ts": "f2096f6068d560be59b665231f82003cf6bca322978541cabddddf5ff685fb7b",
     "src/domain/fees.ts": "8f03ed588123bb7d49b1a608d5105eb6f38fe7584ebc435dec35f2250d0dc282",
     "src/domain/ids.ts": "c887635c96980d661642b2a910b2a199bf6ae7eba139caea656469b2aac31b28",
-    "src/domain/invariants.ts": "cbacdc73d6f3702a1c413785d0eed4fc51bae4d42cd7b5ea74134b173e2d7e96",
-    "src/domain/ledger.ts": "28181aa74f196e7600ef48834e15e550d8d7ca2070fdd964ffdd09f96e0a51ab",
+    "src/domain/invariants.ts": "4d08b5e54213239410dca86fd10b8deb98207664ab5d120b1710f595560e0cae",
+    "src/domain/ledger.ts": "eae294259964d041b2176e424a4692890ac20c29832161fc003033eca7b115d0",
     "src/domain/money.ts": "fcd5ee3f2028e6bcbb90f46f2eab8d6d388e0b76f0c6da7206aaff4c7620a671",
     "src/domain/rate.ts": "43a207247e91eb6c9ffe29c3d3f25f0ebca069366ebdaf87d8cb06a462eacdfb",
-    "src/domain/types.ts": "00c99a8fdafe051200d8bd9f14a513308d11ea5f4bb38259795f17ae78e24f9a",
-    "src/domain/uri.ts": "6bdaa9f900485176344fd1313ebf2cf9bb8d0ba07d4fea2099bcef82b9b267cc",
+    "src/domain/types.ts": "8be63139812ae6af72e9df76b1fe8684123b8ff8b37e12d215f3e7f7db4f21fe",
+    "src/domain/uri.ts": "57410dd923caeb8e06ba645b58524e55d8cf63bd63e391528ce8e8dc9d128cf1",
     "src/sim/clock.ts": "045ccec1197d916f83fba7c7015672ab33353a04ef6cfb851d580934989b25ae",
     "src/sim/scheduler.ts": "1f766ee5a0a006b12e36dc1c2cc92e232b186d2b72bc256d5f67671d63af6346",
     "src/sim/seed.ts": "aeee9b40089ba0f501515e429d9e33aeb500b5fe4595e6d9d1ede21851facecc",
     "src/sim/t0.ts": "8ec76304bd00501e35c0c98c4b0ddb741f8681522e2f672b95dba98cb6c400c8",
     "src/sim/tz.ts": "69164a4b8eb1affbcbaba847d89483a52898e73511ecfc215deec0fb0db849b8",
     "src/sim/validate-content.ts": "99fb423c2db7f76d6fe97093605c2615e52368ca2325d198015a8c50de5440d9",
-    "src/store/log-codec.ts": "1364b87702a6cb901f0916c6b3f83a924af63ffc68514fa11c51cf01f9b47142",
+    "src/store/log-codec.ts": "fb22abfb2d83f4c204595bf37cbdd9459a5195ca92c5e427c145e476dbae4a25",
     "src/store/replay.ts": "15e915ee327962faf02af9e2ee4e4ffff0baf516b0d7ba93a7afd72b4f9417c2"
   }
 }

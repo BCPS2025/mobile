@@ -1,5 +1,5 @@
 import { maxSendable, quoteFee } from './fees'
-import { nextRefSeq, requestId as requestIdOf, txRef } from './ids'
+import { linkId as linkIdOf, nextRefSeq, requestId as requestIdOf, splitId as splitIdOf, txRef } from './ids'
 import { asMinor } from './money'
 import type {
   AccountId,
@@ -15,6 +15,8 @@ import type {
   Handle,
   LedgerEvent,
   LedgerState,
+  LinkCreateBody,
+  LinkShareBody,
   Minor,
   Party,
   PartyId,
@@ -32,10 +34,15 @@ import type {
   RequestDeclineBody,
   Result,
   SimTime,
+  Split,
+  SplitCancelBody,
+  SplitCreateBody,
+  SplitReaskBody,
   Tx,
   TxItem,
   TxKind,
 } from './types'
+import { MAX_SPLIT_SHARES } from './types'
 
 // decide: validate a command against state and return events (no mutation).
 // evolve: apply one event to state, returning a new state (no mutation); a replay draft
@@ -374,6 +381,178 @@ function decideRequestDecline(s: LedgerState, c: RequestDeclineCommand): Result<
   return { ok: true, value: [event] }
 }
 
+type LinkCreateCommand = LinkCreateBody & { cmdId: string; actor: PersonaId }
+type LinkShareCommand = LinkShareBody & { cmdId: string; actor: PersonaId }
+type SplitCreateCommand = SplitCreateBody & { cmdId: string; actor: PersonaId }
+type SplitReaskCommand = SplitReaskBody & { cmdId: string; actor: PersonaId }
+type SplitCancelCommand = SplitCancelBody & { cmdId: string; actor: PersonaId }
+
+/**
+ * A person makes a link for one amount that one person can pay. It is single use, priced as a
+ * transfer, and the person who pays the link pays the 1 % on top.
+ */
+function decideLinkCreate(s: LedgerState, c: LinkCreateCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
+  const actor: PersonaId = c.actor
+  if (entryOf(s.directory, actor)?.kind !== 'person') return err('not-allowed')
+  if (!positiveInt(c.amount)) return err('invalid-amount')
+  const max = s.config.limits.consumerMax
+  if (c.amount > max) return err('invalid-amount', { max })
+  const link: PaymentLink = {
+    id: linkIdOf(s.counters.linkSeq + 1),
+    owner: actor,
+    amount: c.amount,
+    reusable: false,
+    policy: 'transfer',
+    feePayer: 'sender',
+    status: 'open',
+    payments: [],
+    sharedWith: [],
+    sharedAt: [],
+    createdAt: ctx.now,
+    cmdId: c.cmdId,
+  }
+  if (c.note !== undefined) link.note = c.note
+  return { ok: true, value: [{ type: 'link.created', cmdId: c.cmdId, link }] }
+}
+
+/** The owner sends an open link to one person (not themselves), once. */
+function decideLinkShare(s: LedgerState, c: LinkShareCommand): Result<PendingEvent[], DomainError> {
+  const link = entryOf(s.links, c.linkId)
+  if (!link) return err('invalid-state')
+  if (link.owner !== c.actor) return err('not-allowed')
+  if (link.status !== 'open') return err('invalid-state', { status: link.status })
+  const to = typeof c.to === 'string' ? selectParty(s, c.to) : undefined
+  if (!to) return err('unknown-recipient', { handle: String(c.to) })
+  if (to.id === link.owner) return err('self-payment')
+  if (link.sharedWith.includes(to.id)) return err('invalid-state', { status: 'shared' })
+  return { ok: true, value: [{ type: 'link.shared', cmdId: c.cmdId, linkId: link.id, to: to.id }] }
+}
+
+/** Outgoing payments a bill can be split from: what the actor paid for something. */
+const SPLITTABLE: ReadonlySet<TxKind> = new Set<TxKind>(['transfer', 'purchase', 'subscription-charge'])
+
+/** A request for one share of a split: a transfer the payer pays, with the sender paying the fee. */
+function shareRequest(
+  s: LedgerState,
+  split: { id: string; owner: PersonaId; note: string },
+  party: PartyId,
+  amount: Minor,
+  seq: number,
+  now: SimTime,
+  cmdId: string,
+): PaymentRequest {
+  return {
+    id: requestIdOf(s.counters.requestSeq + seq),
+    requester: split.owner,
+    payer: party,
+    amount,
+    note: split.note,
+    channel: 'split',
+    splitId: split.id,
+    feePayer: 'sender',
+    policy: 'transfer',
+    status: 'open',
+    createdAt: now,
+    cmdId,
+  }
+}
+
+function decideSplitCreate(s: LedgerState, c: SplitCreateCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
+  const actor: PersonaId = c.actor
+  if (entryOf(s.directory, actor)?.kind !== 'person') return err('not-allowed')
+  if (!positiveInt(c.total)) return err('invalid-amount')
+  const max = s.config.limits.consumerMax
+  if (c.total > max) return err('invalid-amount', { max })
+  if (!validNote(s, c.note)) return err('invalid-state')
+  if (!Array.isArray(c.shares) || c.shares.length === 0 || c.shares.length > MAX_SPLIT_SHARES) {
+    return err('invalid-state')
+  }
+  let source: Tx | undefined
+  if (c.sourceTxId !== undefined) {
+    source = entryOf(s.txs, c.sourceTxId)
+    if (!source) return err('invalid-state')
+    if (source.from !== actor) return err('not-allowed')
+    if (!SPLITTABLE.has(source.kind)) return err('invalid-state')
+    if (source.refundedBy !== undefined) return err('invalid-state', { status: 'refunded' })
+    const sourceId = source.id
+    if (Object.values(s.splits).some((sp) => sp.sourceTxId === sourceId))
+      return err('invalid-state', { status: 'split' })
+  }
+  const parties = new Set<PartyId>()
+  const shares: { party: PartyId; amount: Minor }[] = []
+  let sum = 0
+  for (const sh of c.shares) {
+    if (!positiveInt(sh?.amount)) return err('invalid-amount')
+    const party = typeof sh.party === 'string' ? selectParty(s, sh.party) : undefined
+    if (!party) return err('unknown-recipient', { handle: String(sh.party) })
+    if (party.id === actor) return err('self-payment')
+    if (party.kind !== 'person') return err('not-allowed')
+    if (parties.has(party.id)) return err('invalid-state')
+    parties.add(party.id)
+    shares.push({ party: party.id, amount: sh.amount })
+    sum += sh.amount
+  }
+  if (sum > c.total) return err('invalid-amount', { max: c.total })
+  const id = splitIdOf(s.counters.splitSeq + 1)
+  const owner = { id, owner: actor, note: c.note }
+  const requests = shares.map((sh, i) => shareRequest(s, owner, sh.party, sh.amount, 1 + i, ctx.now, c.cmdId))
+  const split: Split = {
+    id,
+    owner: actor,
+    total: c.total,
+    note: c.note,
+    ownShare: asMinor(c.total - sum),
+    shares: requests.map((r) => ({ party: r.payer as PartyId, amount: r.amount, requestId: r.id })),
+    createdAt: ctx.now,
+    cmdId: c.cmdId,
+  }
+  if (source) split.sourceTxId = source.id
+  return {
+    ok: true,
+    value: [
+      { type: 'split.created', cmdId: c.cmdId, split },
+      ...requests.map((request): PendingEvent => ({ type: 'request.created', cmdId: c.cmdId, request })),
+    ],
+  }
+}
+
+/** The owner asks again for a share whose request was declined or cancelled: a new request replaces it. */
+function decideSplitReask(s: LedgerState, c: SplitReaskCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
+  const split = entryOf(s.splits, c.splitId)
+  if (!split) return err('invalid-state')
+  if (split.owner !== c.actor) return err('not-allowed')
+  const party = typeof c.party === 'string' ? selectParty(s, c.party) : undefined
+  if (!party) return err('unknown-recipient', { handle: String(c.party) })
+  const share = split.shares.find((sh) => sh.party === party.id)
+  if (!share) return err('invalid-state')
+  const old = entryOf(s.requests, share.requestId)
+  if (!old) return err('invalid-state')
+  if (old.status !== 'declined' && old.status !== 'cancelled') return err('invalid-state', { status: old.status })
+  const request = shareRequest(s, split, share.party, share.amount, 1, ctx.now, c.cmdId)
+  return {
+    ok: true,
+    value: [
+      { type: 'request.created', cmdId: c.cmdId, request },
+      { type: 'split.share-updated', cmdId: c.cmdId, splitId: split.id, party: share.party, requestId: request.id },
+    ],
+  }
+}
+
+/** The owner cancels every share that is still open, in one batch. */
+function decideSplitCancel(s: LedgerState, c: SplitCancelCommand): Result<PendingEvent[], DomainError> {
+  const split = entryOf(s.splits, c.splitId)
+  if (!split) return err('invalid-state')
+  if (split.owner !== c.actor) return err('not-allowed')
+  const open = split.shares.filter((sh) => entryOf(s.requests, sh.requestId)?.status === 'open')
+  if (open.length === 0) return err('invalid-state')
+  return {
+    ok: true,
+    value: open.map(
+      (sh): PendingEvent => ({ type: 'request.status', cmdId: c.cmdId, requestId: sh.requestId, status: 'cancelled' }),
+    ),
+  }
+}
+
 /** Free text as the record can keep it: a non-empty string within the note limit. */
 function validNote(s: LedgerState, text: unknown): boolean {
   return typeof text === 'string' && text.length > 0 && [...text].length <= s.config.limits.noteMaxChars
@@ -391,6 +570,19 @@ export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<Pendi
       return decideRequestCancel(s, c)
     case 'request.decline':
       return decideRequestDecline(s, c)
+    case 'link.create':
+      return decideLinkCreate(s, c, ctx)
+    case 'link.share':
+      return decideLinkShare(s, c)
+    case 'split.create':
+      return decideSplitCreate(s, c, ctx)
+    case 'split.reask':
+      return decideSplitReask(s, c, ctx)
+    case 'split.cancel':
+      return decideSplitCancel(s, c)
+    default:
+      // A command type this build does not know (the record format refuses these before decide).
+      return err('not-allowed')
   }
 }
 
@@ -460,7 +652,7 @@ export function decideDue(s: LedgerState, item: DueItem): PendingEvent[] {
 // balance, a transaction, a request) are replaced, never mutated, so states share entries safely.
 
 /** Record-valued slices of the state that events write into. */
-type ContainerKey = 'balances' | 'txs' | 'txOrder' | 'pending' | 'requests' | 'links' | 'seenCmdIds'
+type ContainerKey = 'balances' | 'txs' | 'txOrder' | 'pending' | 'requests' | 'links' | 'splits' | 'seenCmdIds'
 
 interface Writer {
   s: LedgerState
@@ -567,6 +759,35 @@ function apply(w: Writer, e: LedgerEvent): void {
       own(w, 'links')[link.id] = { ...link, status: e.status, payments }
       return
     }
+    case 'link.created': {
+      setEntry(own(w, 'links'), e.link.id, e.link)
+      s.counters = { ...s.counters, linkSeq: s.counters.linkSeq + 1 }
+      return
+    }
+    case 'link.shared': {
+      const link = entryOf(s.links, e.linkId)
+      if (!link) return
+      own(w, 'links')[link.id] = {
+        ...link,
+        sharedWith: [...link.sharedWith, e.to],
+        sharedAt: [...link.sharedAt, e.at],
+      }
+      return
+    }
+    case 'split.created': {
+      setEntry(own(w, 'splits'), e.split.id, e.split)
+      s.counters = { ...s.counters, splitSeq: s.counters.splitSeq + 1 }
+      return
+    }
+    case 'split.share-updated': {
+      const split = entryOf(s.splits, e.splitId)
+      if (!split) return
+      own(w, 'splits')[split.id] = {
+        ...split,
+        shares: split.shares.map((sh) => (sh.party === e.party ? { ...sh, requestId: e.requestId } : sh)),
+      }
+      return
+    }
     default:
       assertNever(e)
   }
@@ -604,6 +825,7 @@ export function beginDraft(s: LedgerState): LedgerDraft {
     pending: [...s.pending],
     requests: { ...s.requests },
     links: { ...s.links },
+    splits: { ...s.splits },
     seenCmdIds: { ...s.seenCmdIds },
   }
   const impl: DraftImpl = { w: { s: copy, owned: 'all' }, done: false }

@@ -33,8 +33,12 @@ export const WARN_RATIO = 0.8
 
 // ---- shapes (the JSON form; persona-keyed maps are plain objects here and Maps after parsing)
 
-/** How a log names an entity: the command that created it, or its key in seed.yaml. */
-export type Ref = { cmdId: string } | { seedRow: string }
+/**
+ * How a log names an entity: the command that created it, or its key in seed.yaml. A command that
+ * created several of them (a split makes one request per share) names the k-th, in creation order,
+ * with `n` (left out for the first).
+ */
+export type Ref = { cmdId: string; n?: number } | { seedRow: string }
 
 export interface WireItem {
   sku: string
@@ -58,6 +62,17 @@ export type WireCommand =
   | { type: 'request.create'; channel: 'username'; payer: Handle; amount: string; note?: string }
   | { type: 'request.cancel'; requestRef: Ref }
   | { type: 'request.decline'; requestRef: Ref; reason?: string }
+  | { type: 'link.create'; amount: string; note?: string }
+  | { type: 'link.share'; linkRef: Ref; to: Handle }
+  | {
+      type: 'split.create'
+      sourceRef?: Ref
+      total: string
+      note: string
+      shares: { party: Handle; amount: string }[]
+    }
+  | { type: 'split.reask'; splitRef: Ref; party: Handle }
+  | { type: 'split.cancel'; splitRef: Ref }
 
 type WirePay = Extract<WireCommand, { type: 'pay' }>
 
@@ -68,6 +83,11 @@ export const USER_COMMAND_TYPES: ReadonlySet<string> = new Set<WireCommandType>(
   'request.create',
   'request.cancel',
   'request.decline',
+  'link.create',
+  'link.share',
+  'split.create',
+  'split.reask',
+  'split.cancel',
 ])
 
 export interface CommandEntry {
@@ -399,11 +419,14 @@ function at(v: unknown, path: string): At {
 }
 
 function ref(v: unknown, path: string): Ref {
-  const o = obj(v, path, [], ['cmdId', 'seedRow'])
-  const keys = Object.keys(o)
-  if (keys.length !== 1) refuse('shape', path)
-  if (o.cmdId !== undefined) return { cmdId: str(o.cmdId, `${path}.cmdId`, CMD_ID) }
-  return { seedRow: str(o.seedRow, `${path}.seedRow`, SEED_KEY) }
+  const o = obj(v, path, [], ['cmdId', 'seedRow', 'n'])
+  if (o.seedRow !== undefined) {
+    if (Object.keys(o).length !== 1) refuse('shape', path)
+    return { seedRow: str(o.seedRow, `${path}.seedRow`, SEED_KEY) }
+  }
+  const out: Ref = { cmdId: str(o.cmdId, `${path}.cmdId`, CMD_ID) }
+  if (o.n !== undefined) out.n = int(o.n, `${path}.n`, 1, LIMITS.shares)
+  return out
 }
 
 function wireItems(v: unknown, path: string): WireItem[] {
@@ -469,6 +492,49 @@ function command(v: unknown, path: string): WireCommand {
       const out: WireCommand = { type: 'request.decline', requestRef: ref(o.requestRef, `${path}.requestRef`) }
       if (o.reason !== undefined) out.reason = text(o.reason, `${path}.reason`, LIMITS.note)
       return out
+    }
+    case 'link.create': {
+      const o = obj(v, path, ['type', 'amount'], ['note'])
+      const out: WireCommand = { type: 'link.create', amount: str(o.amount, `${path}.amount`, AMOUNT) }
+      if (o.note !== undefined) out.note = text(o.note, `${path}.note`, LIMITS.note)
+      return out
+    }
+    case 'link.share': {
+      const o = obj(v, path, ['type', 'linkRef', 'to'])
+      return {
+        type: 'link.share',
+        linkRef: ref(o.linkRef, `${path}.linkRef`),
+        to: str(o.to, `${path}.to`, HANDLE) as Handle,
+      }
+    }
+    case 'split.create': {
+      const o = obj(v, path, ['type', 'total', 'note', 'shares'], ['sourceRef'])
+      const shares = arr(o.shares, `${path}.shares`, LIMITS.shares).map((sh, i) => {
+        const p = `${path}.shares[${i}]`
+        const so = obj(sh, p, ['party', 'amount'])
+        return { party: str(so.party, `${p}.party`, HANDLE) as Handle, amount: str(so.amount, `${p}.amount`, AMOUNT) }
+      })
+      if (shares.length === 0) refuse('shape', `${path}.shares`)
+      const out: WireCommand = {
+        type: 'split.create',
+        total: str(o.total, `${path}.total`, AMOUNT),
+        note: text(o.note, `${path}.note`, LIMITS.note),
+        shares,
+      }
+      if (o.sourceRef !== undefined) out.sourceRef = ref(o.sourceRef, `${path}.sourceRef`)
+      return out
+    }
+    case 'split.reask': {
+      const o = obj(v, path, ['type', 'splitRef', 'party'])
+      return {
+        type: 'split.reask',
+        splitRef: ref(o.splitRef, `${path}.splitRef`),
+        party: str(o.party, `${path}.party`, HANDLE) as Handle,
+      }
+    }
+    case 'split.cancel': {
+      const o = obj(v, path, ['type', 'splitRef'])
+      return { type: 'split.cancel', splitRef: ref(o.splitRef, `${path}.splitRef`) }
     }
   }
 }
