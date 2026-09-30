@@ -83,3 +83,67 @@ test('each persona keeps its own stack while accounts switch', async ({ page }) 
   await page.getByTestId('account-ana').click()
   await expect(page.locator('[data-screen="shared.about"]')).toBeVisible()
 })
+
+test.describe('the café: every live tile, hub row, view, detail and the first step of every flow', () => {
+  const hasBackAndHome = async (page: import('@playwright/test').Page) => {
+    await expect(page.getByTestId('nav-back')).toBeVisible()
+    await expect(page.getByTestId('nav-home')).toBeVisible()
+  }
+
+  test('Back and Home are on every screen below Home, and Back pops one screen', async ({ page }) => {
+    await openApp(page, '#/phone/cafe')
+    const home = page.locator('[data-screen="pos.home"]')
+    await expect(home).toBeVisible()
+
+    // Charge: the items, then the code and its Cancel question; Back leaves one step at a time.
+    await page.locator('[data-tile="charge"]').click()
+    await expect(page.locator('[data-screen="pos.charge"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('item-espresso').click()
+    await page.getByRole('button', { name: 'Charge 2.20 BCPS' }).click()
+    await expect(page.locator('[data-screen="pos.code"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('nav-back').click()
+    await expect(page.locator('[data-screen="pos.code.cancel"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('nav-back').click()
+    await expect(page.locator('[data-screen="pos.code"]')).toBeVisible()
+    await page.getByTestId('nav-home').click()
+    await expect(home).toBeVisible()
+
+    // Sales › All payments › a payment, and back out.
+    await page.locator('[data-tile="sales"]').click()
+    await expect(page.locator('[data-screen="pos.sales.hub"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('row-allPayments').click()
+    const history = page.locator('[data-screen="biz.history"]')
+    await expect(history).toBeVisible()
+    await hasBackAndHome(page)
+    await history.locator('button[data-testid^="tx-BC-"]').first().click()
+    await expect(page.locator('[data-screen="shared.tx"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('nav-back').click()
+    await expect(history).toBeVisible()
+    await page.getByTestId('nav-back').click()
+    await expect(page.locator('[data-screen="pos.sales.hub"]')).toBeVisible()
+    await page.getByTestId('nav-home').click()
+
+    // Pay › Pay supplier (opens on its review) and back.
+    await page.locator('[data-tile="pay"]').click()
+    await expect(page.locator('[data-screen="pos.pay"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('row-paySupplier').click()
+    await expect(page.locator('[data-screen="biz.send.review"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('nav-back').click()
+    await expect(page.locator('[data-screen="pos.pay"]')).toBeVisible()
+    await page.getByTestId('nav-home').click()
+
+    // The bell.
+    await page.getByTestId('bell').click()
+    await expect(page.locator('[data-screen="shared.notifications"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('nav-back').click()
+    await expect(home).toBeVisible()
+  })
+})

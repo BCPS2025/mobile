@@ -33,4 +33,28 @@ test.describe('single-file backup', () => {
     await expect(page.locator('[data-slot="right"]')).toBeVisible()
     expect(foreign).toEqual([])
   })
+
+  test('the café journey runs from file://: a code, a scan, PAID; the QR never points at a local file', async ({
+    page,
+  }) => {
+    test.skip(!existsSync(single), 'dist-single/index.html not built (npx vite build --mode single)')
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await page.goto(`${pathToFileURL(single).href}?clock=manual&epoch=2026-09-25#/stage`)
+    const left = page.locator('[data-slot="left"]')
+    const right = page.locator('[data-slot="right"]')
+    await left.getByRole('button', { name: 'Log in with biometrics' }).click()
+    await right.getByRole('button', { name: 'Log in with biometrics' }).click()
+    await right.locator('[data-tile="charge"]').click()
+    await right.getByTestId('item-espresso').click()
+    await right.getByRole('button', { name: 'Charge 2.20 BCPS' }).click()
+    const payload = await right.locator('[data-screen="pos.code"] [data-payload]').getAttribute('data-payload')
+    expect(payload).toMatch(/^https:\/\/.+#\/pay\?v=1&to=@cafelipa&amount=2\.20&req=R-000001$/)
+    expect(payload?.startsWith('file:')).toBe(false)
+    await left.locator('[data-tile="scan"]').click()
+    await expect(left.getByTestId('scan-status')).toHaveText('Locked · Café Lipa ✓')
+    await left.getByRole('button', { name: 'Continue' }).click()
+    await left.getByRole('button', { name: 'Pay 2.20 BCPS' }).click()
+    await expect(right.locator('[data-screen="pos.paid"]')).toBeVisible({ timeout: 5000 })
+    await expect(right.locator('[data-screen="pos.paid"]')).toContainText('+2.20')
+  })
 })
