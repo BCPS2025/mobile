@@ -153,7 +153,7 @@ export function LoginScreen() {
                     </span>
                   </span>
                   <span
-                    className={`shrink-0 font-body text-[11px] leading-[14px] font-semibold uppercase tracking-[0.12em] ${
+                    className={`shrink-0 font-body text-[11px] leading-[14px] font-semibold tracking-[0.12em] ${
                       selected ? 'text-muted-on-800' : 'text-grey-400'
                     }`}
                   >
