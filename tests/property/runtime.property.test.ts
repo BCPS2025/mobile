@@ -25,6 +25,8 @@ import {
   EPOCHS,
   type PayStep,
   type Step,
+  answerCommand,
+  askCommand,
   cancelCodeCommand,
   chargeCommand,
   cmdIds,
@@ -111,6 +113,32 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
       case 'pay-code': {
         const cmd = payCodeCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
         if (cmd) rt.dispatch(cmd)
+        break
+      }
+      case 'ask': {
+        const cmd = askCommand(content, step, ids.next({ kind: 'new' }))
+        const r = rt.dispatch(cmd)
+        // A payer named by id instead of a handle, or a note the record cannot keep, is never stored.
+        if (cmd.type === 'request.create' && cmd.channel === 'username' && !cmd.payer.startsWith('@')) {
+          expect(r.ok).toBe(false)
+        }
+        if (r.ok) {
+          stats.accepted++
+          const made = Object.values(rt.node.getState().requests).at(-1)
+          if (made?.note !== undefined) {
+            expect(made.note).not.toMatch(CONTROL)
+            expect(made.note.length).toBeLessThanOrEqual(40)
+          }
+        }
+        break
+      }
+      case 'answer': {
+        const cmd = answerCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
+        if (!cmd) break
+        const r = rt.dispatch(cmd)
+        if (cmd.type === 'request.decline' && cmd.reason !== undefined && [...cmd.reason].length > 40) {
+          expect(r.ok).toBe(false)
+        }
         break
       }
       case 'advance':

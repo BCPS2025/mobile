@@ -28,6 +28,8 @@ import { content } from '../unit/helpers'
 import {
   EPOCHS,
   type Step,
+  answerCommand,
+  askCommand,
   cancelCodeCommand,
   chargeCommand,
   cmdIds,
@@ -60,6 +62,10 @@ const stats = {
   cancels: 0,
   codesPaid: 0,
   codesRefused: new Map<string, number>(),
+  asks: 0,
+  declines: 0,
+  requestCancels: 0,
+  requestsPaid: 0,
 }
 const countRefusal = (code: string) => stats.refused.set(code, (stats.refused.get(code) ?? 0) + 1)
 
@@ -181,6 +187,68 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         expect(node.getState().requests[cmd.requestId ?? '']).toMatchObject({ status: 'paid', txId: tx.id })
         break
       }
+      case 'ask': {
+        const cmd = askCommand(content, step, ids.next({ kind: 'new' }))
+        const before = node.getState()
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(node.events().filter((e) => e.cmdId === cmd.cmdId)).toHaveLength(0)
+          expect(node.log().some((l) => 'cmd' in l && l.cmd === cmd)).toBe(false)
+          expect(node.getState().counters.requestSeq).toBe(before.counters.requestSeq)
+          break
+        }
+        stats.asks++
+        expect(r.value).toHaveLength(1)
+        const request = (r.value[0] as Extract<LedgerEvent, { type: 'request.created' }>).request
+        expect(request).toMatchObject({
+          requester: cmd.actor,
+          channel: 'username',
+          status: 'open',
+          feePayer: 'sender',
+          policy: 'transfer',
+        })
+        expect(request.amount).toBe(cmd.type === 'request.create' ? cmd.amount : Number.NaN)
+        // Between people only: a person asks a person other than themselves.
+        expect(before.directory[cmd.actor]?.kind).toBe('person')
+        expect(before.directory[request.payer ?? '']?.kind).toBe('person')
+        expect(request.payer).not.toBe(cmd.actor)
+        break
+      }
+      case 'answer': {
+        const cmd = answerCommand(content, node.getState(), step, ids.next({ kind: 'new' }))
+        if (!cmd) break
+        const before = node.getState()
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(node.events().filter((e) => e.cmdId === cmd.cmdId)).toHaveLength(0)
+          expect(JSON.stringify(node.getState().requests)).toBe(JSON.stringify(before.requests))
+          break
+        }
+        if (cmd.type === 'pay') {
+          stats.requestsPaid++
+          const tx = (r.value[0] as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx as Tx
+          expect(tx.fee.fee).toBe(onePercent(cmd.amount))
+          expect(tx.fee.senderDebit).toBe(cmd.expect.senderDebit)
+          expect(tx.fee.payer).toBe(before.requests[cmd.requestId ?? '']?.feePayer)
+        } else if (cmd.type === 'request.decline' || cmd.type === 'request.cancel') {
+          expect(r.value).toHaveLength(1)
+          const e = r.value[0] as Extract<LedgerEvent, { type: 'request.status' }>
+          expect(e.type).toBe('request.status')
+          if (cmd.type === 'request.decline') {
+            stats.declines++
+            expect(e.status).toBe('declined')
+            expect(before.requests[cmd.requestId]?.payer).toBe(cmd.actor)
+          } else {
+            stats.requestCancels++
+            expect(e.status).toBe('cancelled')
+            expect(before.requests[cmd.requestId]?.requester).toBe(cmd.actor)
+          }
+          expect(before.requests[cmd.requestId]?.status).toBe('open')
+        }
+        break
+      }
       case 'advance':
         node.clock.advance(step.ms)
         break
@@ -300,6 +368,11 @@ describe('ledger properties over random A1 command sequences', () => {
     for (const why of ['invalid-state:paid', 'invalid-state:cancelled', 'invalid-state:expired']) {
       expect(stats.codesRefused.get(why) ?? 0, why).toBeGreaterThan(0)
     }
+    // Requests between people: asked, declined, cancelled and paid.
+    expect(stats.asks).toBeGreaterThan(0)
+    expect(stats.declines).toBeGreaterThan(0)
+    expect(stats.requestCancels).toBeGreaterThan(0)
+    expect(stats.requestsPaid).toBeGreaterThan(0)
     expect(stats.jumpsRefused).toBeGreaterThan(0)
     expect(stats.jumps).toBeGreaterThan(stats.jumpsRefused)
   })

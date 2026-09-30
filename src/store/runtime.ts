@@ -389,11 +389,23 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
     return undoSlot !== null
   }
 
+  /** Free text the way the record keeps it: control characters stripped, trimmed, dropped when empty. */
+  function cleanText(text: string): string | undefined {
+    const clean = stripControl(text).trim()
+    return clean.length > 0 ? clean : undefined
+  }
+
   function cleanNote(cmd: UserCommand): UserCommand {
-    if (cmd.type === 'request.cancel' || cmd.note === undefined) return cmd
-    const note = stripControl(cmd.note).trim()
+    if (cmd.type === 'request.decline') {
+      if (cmd.reason === undefined) return cmd
+      const { reason: _drop, ...rest } = cmd
+      const reason = cleanText(cmd.reason)
+      return reason !== undefined ? { ...rest, reason } : rest
+    }
+    if (cmd.type === 'request.cancel' || !('note' in cmd) || cmd.note === undefined) return cmd
     const { note: _drop, ...rest } = cmd
-    return note.length > 0 ? { ...rest, note } : (rest as UserCommand)
+    const note = cleanText(cmd.note)
+    return note !== undefined ? ({ ...rest, note } as UserCommand) : (rest as UserCommand)
   }
 
   /**

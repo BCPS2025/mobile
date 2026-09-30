@@ -24,9 +24,12 @@ import type {
   PaymentRequest,
   PendingEvent,
   PersonaId,
+  PersonRequestBody,
+  PosCodeBody,
   Posting,
   RequestCancelBody,
   RequestCreateBody,
+  RequestDeclineBody,
   Result,
   SimTime,
   Tx,
@@ -232,8 +235,9 @@ function decidePay(s: LedgerState, c: PayCommand, ctx: DecideCtx): Result<Pendin
   const tx: Tx = {
     id: nextTxId(s),
     kind: kindOfPolicy(fee.policyId),
-    // A payment of a POS code is a QR payment, whatever channel the caller named.
-    channel: request?.channel === 'pos' ? 'qr' : c.channel,
+    // The channel follows what is paid: a POS code is a QR payment, other requests are request
+    // payments and a link is a link payment, whatever channel the caller named.
+    channel: request ? (request.channel === 'pos' ? 'qr' : 'request') : link ? 'link' : c.channel,
     status: 'pending',
     from,
     to: toAccount,
@@ -261,16 +265,24 @@ export function isPosCodeExpired(s: LedgerState, r: PaymentRequest, now: SimTime
 }
 
 type RequestCreateCommand = RequestCreateBody & { cmdId: string; actor: PersonaId }
+type PosCodeCommand = PosCodeBody & { cmdId: string; actor: PersonaId }
+type PersonRequestCommand = PersonRequestBody & { cmdId: string; actor: PersonaId }
 type RequestCancelCommand = RequestCancelBody & { cmdId: string; actor: PersonaId }
+type RequestDeclineCommand = RequestDeclineBody & { cmdId: string; actor: PersonaId }
 
 function decideRequestCreate(
   s: LedgerState,
   c: RequestCreateCommand,
   ctx: DecideCtx,
 ): Result<PendingEvent[], DomainError> {
+  if (c.channel === 'pos') return decidePosCode(s, c, ctx)
+  if (c.channel === 'username') return decidePersonRequest(s, c, ctx)
+  return err('invalid-state')
+}
+
+function decidePosCode(s: LedgerState, c: PosCodeCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
   const actor: PersonaId = c.actor
   // Only a merchant shows payment codes; the café's is the only one the screens offer.
-  if (c.channel !== 'pos') return err('invalid-state')
   if (!isMerchant(s, actor)) return err('not-allowed')
   if (!positiveInt(c.amount)) return err('invalid-amount')
   const max = s.config.limits.consumerMax
@@ -307,12 +319,64 @@ function decideRequestCreate(
   return { ok: true, value: [...replaced, { type: 'request.created', cmdId: c.cmdId, request }] }
 }
 
+/**
+ * A person asks another person for money. People only: a business is not asked this way (it pays
+ * by invoice), so a business payer, or a business asking, is `not-allowed`. The payer pays the
+ * fee when paying, so the snapshot is `transfer` with the sender paying.
+ */
+function decidePersonRequest(
+  s: LedgerState,
+  c: PersonRequestCommand,
+  ctx: DecideCtx,
+): Result<PendingEvent[], DomainError> {
+  const actor: PersonaId = c.actor
+  if (entryOf(s.directory, actor)?.kind !== 'person') return err('not-allowed')
+  if (!positiveInt(c.amount)) return err('invalid-amount')
+  const max = s.config.limits.consumerMax
+  if (c.amount > max) return err('invalid-amount', { max })
+  const payer = typeof c.payer === 'string' ? selectParty(s, c.payer) : undefined
+  if (!payer) return err('unknown-recipient', { handle: String(c.payer) })
+  if (payer.id === actor) return err('self-payment')
+  if (payer.kind !== 'person') return err('not-allowed')
+  const request: PaymentRequest = {
+    id: requestIdOf(s.counters.requestSeq + 1),
+    requester: actor,
+    payer: payer.id,
+    amount: c.amount,
+    channel: 'username',
+    feePayer: 'sender',
+    policy: 'transfer',
+    status: 'open',
+    createdAt: ctx.now,
+    cmdId: c.cmdId,
+  }
+  if (c.note !== undefined) request.note = c.note
+  return { ok: true, value: [{ type: 'request.created', cmdId: c.cmdId, request }] }
+}
+
 function decideRequestCancel(s: LedgerState, c: RequestCancelCommand): Result<PendingEvent[], DomainError> {
   const request = entryOf(s.requests, c.requestId)
   if (!request) return err('invalid-state')
   if (request.requester !== c.actor) return err('not-allowed')
   if (request.status !== 'open') return err('invalid-state', { status: request.status })
   return { ok: true, value: [{ type: 'request.status', cmdId: c.cmdId, requestId: request.id, status: 'cancelled' }] }
+}
+
+/** The payer turns an open request down. Only the payer can (a code has none), and only while it is open. */
+function decideRequestDecline(s: LedgerState, c: RequestDeclineCommand): Result<PendingEvent[], DomainError> {
+  const request = entryOf(s.requests, c.requestId)
+  if (!request) return err('invalid-state')
+  if (request.payer !== c.actor) return err('not-allowed')
+  if (request.status !== 'open') return err('invalid-state', { status: request.status })
+  if (c.reason !== undefined && !validNote(s, c.reason)) return err('invalid-state')
+  const event: PendingEvent = { type: 'request.status', cmdId: c.cmdId, requestId: request.id, status: 'declined' }
+  if (c.reason !== undefined) event.reason = c.reason
+  return { ok: true, value: [event] }
+}
+
+/** Free text as the record can keep it: a non-empty string within the note limit. */
+function validNote(s: LedgerState, text: unknown): boolean {
+  return typeof text === 'string' && text.length > 0 && [...text].length <= s.config.limits.noteMaxChars
 }
 
 export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
@@ -325,6 +389,8 @@ export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<Pendi
       return decideRequestCreate(s, c, ctx)
     case 'request.cancel':
       return decideRequestCancel(s, c)
+    case 'request.decline':
+      return decideRequestDecline(s, c)
   }
 }
 

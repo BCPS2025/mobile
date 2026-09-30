@@ -140,6 +140,18 @@ export function invariants(s: LedgerState): string[] {
     }
   }
 
+  // A request between people, a split share or an invoice names a payer other than its requester,
+  // and the payer pays the 1 % on top (the transfer snapshot).
+  for (const req of Object.values(s.requests)) {
+    if (req.channel === 'pos') continue
+    if (req.payer === undefined || req.payer === req.requester) {
+      bad(7, `request ${req.id} names no payer other than its requester`)
+    }
+    if (req.policy !== 'transfer' || req.feePayer !== 'sender') {
+      bad(17, `request ${req.id} does not use the transfer policy with the sender paying`)
+    }
+  }
+
   // A merchant has at most one good payment code: of its open codes, every one but the newest had
   // run out when the next was made (codes that ran out keep the status open). A code has no payer
   // and the merchant policy.

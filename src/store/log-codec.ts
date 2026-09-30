@@ -50,6 +50,16 @@ export function encodeCommand(s: LedgerState, c: UserCommand): Result<WireComman
       return { ok: true, value: out }
     }
     case 'request.create': {
+      if (c.channel === 'username') {
+        const out: WireCommand = {
+          type: 'request.create',
+          channel: 'username',
+          payer: c.payer,
+          amount: minorString(c.amount),
+        }
+        if (c.note !== undefined) out.note = c.note
+        return { ok: true, value: out }
+      }
       const out: WireCommand = { type: 'request.create', channel: c.channel, amount: minorString(c.amount) }
       if (c.note !== undefined) out.note = c.note
       if (c.items !== undefined) {
@@ -62,6 +72,13 @@ export function encodeCommand(s: LedgerState, c: UserCommand): Result<WireComman
       const r = refOf(entryOf(s.requests, c.requestId))
       if (!r) return { ok: false, error: 'unknown-ref' }
       return { ok: true, value: { type: 'request.cancel', requestRef: r } }
+    }
+    case 'request.decline': {
+      const r = refOf(entryOf(s.requests, c.requestId))
+      if (!r) return { ok: false, error: 'unknown-ref' }
+      const out: WireCommand = { type: 'request.decline', requestRef: r }
+      if (c.reason !== undefined) out.reason = c.reason
+      return { ok: true, value: out }
     }
   }
 }
@@ -121,6 +138,18 @@ export function decodeCommand(
     case 'request.create': {
       const amount = parseMinor(w.amount)
       if (!amount.ok) return { ok: false, error: 'bad-amount' }
+      if (w.channel === 'username') {
+        const person: UserCommand = {
+          type: 'request.create',
+          actor: e.actor,
+          cmdId: e.cmdId,
+          channel: 'username',
+          payer: w.payer,
+          amount: amount.value,
+        }
+        if (w.note !== undefined) person.note = w.note
+        return { ok: true, value: person }
+      }
       const out: UserCommand = {
         type: 'request.create',
         actor: e.actor,
@@ -142,6 +171,13 @@ export function decodeCommand(
       const id = resolveRef(s.requests, w.requestRef)
       if (id === null) return { ok: false, error: 'unknown-ref' }
       return { ok: true, value: { type: 'request.cancel', actor: e.actor, cmdId: e.cmdId, requestId: id } }
+    }
+    case 'request.decline': {
+      const id = resolveRef(s.requests, w.requestRef)
+      if (id === null) return { ok: false, error: 'unknown-ref' }
+      const out: UserCommand = { type: 'request.decline', actor: e.actor, cmdId: e.cmdId, requestId: id }
+      if (w.reason !== undefined) out.reason = w.reason
+      return { ok: true, value: out }
     }
   }
 }

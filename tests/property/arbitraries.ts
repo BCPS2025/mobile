@@ -104,11 +104,35 @@ export interface PayCodeStep {
   expect: ExpectPick
 }
 
+/** A person asks someone (mostly a person, sometimes a business, themselves or an unknown handle) for money. */
+export interface AskStep {
+  kind: 'ask'
+  actor: number
+  payer: number
+  amount: AmountPick
+  note: string | null
+}
+
+/**
+ * An answer to one of the ledger's requests (by index into the requests in id order): the payer
+ * declines or pays it, or the requester cancels it; `by: 'other'` lets someone else try.
+ */
+export interface AnswerStep {
+  kind: 'answer'
+  how: 'decline' | 'cancel' | 'pay'
+  by: 'right' | 'other'
+  which: number
+  expect: ExpectPick
+  reason: string | null
+}
+
 export type Step =
   | PayStep
   | ChargeStep
   | CancelCodeStep
   | PayCodeStep
+  | AskStep
+  | AnswerStep
   /** The Lunch request exactly as Ana would pay it (so the paid-request paths are reached). */
   | { kind: 'pay-lunch'; expect: ExpectPick }
   /** Time passes on the clock without the timer firing (a late or throttled timer). */
@@ -305,6 +329,40 @@ export function payCodeStepArb(content: Content): fc.Arbitrary<PayCodeStep> {
   })
 }
 
+export function askStepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<AskStep> {
+  return fc.record({
+    kind: fc.constant('ask' as const),
+    actor: fc.oneof(
+      { weight: 5, arbitrary: fc.constantFrom(0, 1) }, // Ana, Marko
+      { weight: 1, arbitrary: fc.nat(actorsOf(content).length - 1) },
+    ),
+    payer: fc.oneof(
+      { weight: 5, arbitrary: fc.constantFrom(0, 1) },
+      { weight: 1, arbitrary: fc.nat(recipientCount(content, opts.runtime === true) - 1) },
+    ),
+    amount: fc.oneof(
+      { weight: 4, arbitrary: fc.integer({ min: 1, max: 3000 }).map((value) => ({ kind: 'small' as const, value })) },
+      { weight: 1, arbitrary: amountArb },
+    ),
+    note: noteArb(opts.runtime === true),
+  })
+}
+
+export function answerStepArb(): fc.Arbitrary<AnswerStep> {
+  return fc.record({
+    kind: fc.constant('answer' as const),
+    how: fc.constantFrom<AnswerStep['how']>('pay', 'pay', 'decline', 'decline', 'cancel'),
+    by: fc.constantFrom<AnswerStep['by']>('right', 'right', 'right', 'other'),
+    which: fc.nat(30),
+    expect: fc.constantFrom<ExpectPick>('right', 'right', 'right', 'right', 'off-by-one'),
+    reason: fc.oneof(
+      { weight: 2, arbitrary: fc.constant(null) },
+      { weight: 2, arbitrary: fc.constantFrom('Wrong amount', 'Not ordered', 'Already paid', 'Other') },
+      { weight: 1, arbitrary: fc.constantFrom('', 'y'.repeat(41)) },
+    ),
+  })
+}
+
 export interface StepOptions {
   /** Runtime-level properties: Reset and Undo, and commands the runtime must refuse as not storable. */
   runtime?: boolean
@@ -321,6 +379,8 @@ export function stepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<
     { weight: 3, arbitrary: chargeStepArb(opts) },
     { weight: 1, arbitrary: cancelCodeStepArb },
     { weight: 3, arbitrary: payCodeStepArb(content) },
+    { weight: 4, arbitrary: askStepArb(content, opts) },
+    { weight: 5, arbitrary: answerStepArb() },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 5000 }).map((ms) => ({ kind: 'advance', ms })) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 3000 }).map((ms) => ({ kind: 'fire', ms })) },
     { weight: 1, arbitrary: fc.constant({ kind: 'catch-up' }) },
@@ -502,6 +562,74 @@ export function payCodeCommand(content: Content, s: LedgerState, step: PayCodeSt
     requestId: code.id,
     ...(code.note ? { note: code.note } : {}),
     expect: { senderDebit: (step.expect === 'off-by-one' ? right + 1 : right) as Minor },
+  }
+}
+
+/** The command of an ask step. */
+export function askCommand(content: Content, step: AskStep, cmdId: string): UserCommand {
+  const actor = actorsOf(content)[step.actor] as PersonaId
+  const payer = handlesOf(content)[step.payer] as Handle
+  const cmd: UserCommand = {
+    type: 'request.create',
+    actor,
+    cmdId,
+    channel: 'username',
+    payer,
+    amount: step.amount.value as Minor,
+  }
+  if (step.note !== null) cmd.note = step.note
+  return cmd
+}
+
+/** Requests that are between people (not payment codes), oldest first. */
+export const personRequests = (s: LedgerState): PaymentRequest[] =>
+  Object.values(s.requests)
+    .filter((r) => r.channel !== 'pos')
+    .sort((a, b) => (a.id < b.id ? -1 : 1))
+
+/**
+ * The command of an answer step against `s`, or null when the ledger has no request to answer.
+ * `right` is the party the rule names (the payer to decline or pay, the requester to cancel);
+ * `other` is someone else.
+ */
+export function answerCommand(content: Content, s: LedgerState, step: AnswerStep, cmdId: string): UserCommand | null {
+  const all = personRequests(s)
+  const request = all[step.which % Math.max(all.length, 1)]
+  if (!request) return null
+  const names = actorsOf(content)
+  const rightActor = step.how === 'cancel' ? request.requester : request.payer
+  const other = names.find((a) => a !== rightActor && a !== request.requester && a !== request.payer) ?? 'nobody'
+  // An off-stage payer cannot act; the requester answers in their place.
+  const actor = (
+    step.by === 'right' && rightActor !== undefined && names.includes(rightActor) ? rightActor : other
+  ) as PersonaId
+  switch (step.how) {
+    case 'cancel':
+      return { type: 'request.cancel', actor, cmdId, requestId: request.id }
+    case 'decline':
+      return {
+        type: 'request.decline',
+        actor,
+        cmdId,
+        requestId: request.id,
+        ...(step.reason !== null ? { reason: step.reason } : {}),
+      }
+    case 'pay': {
+      const to = s.directory[request.requester]?.handle as Handle
+      const q = quoteForRequest(s, request)
+      const right = q ? q.senderDebit : request.amount
+      return {
+        type: 'pay',
+        actor,
+        cmdId,
+        to,
+        amount: request.amount,
+        channel: 'request',
+        requestId: request.id,
+        ...(request.note ? { note: request.note } : {}),
+        expect: { senderDebit: (step.expect === 'off-by-one' ? right + 1 : right) as Minor },
+      }
+    }
   }
 }
 

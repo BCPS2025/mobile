@@ -262,6 +262,17 @@ describe('each invariant names a planted fault', () => {
     expect(numbers({ ...paidLunch, ownership: { ...paidLunch.ownership, ana: ['aurora-wings'] } })).toEqual([16])
   })
 
+  it('[7][17] a request between people names another payer and uses the transfer snapshot', () => {
+    const req = seed.state.requests.r_seed_lunch
+    if (!req) throw new Error('request')
+    const put = (r: typeof req) => ({ ...seed.state, requests: { ...seed.state.requests, r_seed_lunch: r } })
+    expect(numbers(put({ ...req, payer: 'marko' }))).toEqual([7])
+    const { payer: _payer, ...noPayer } = req
+    expect(numbers(put(noPayer))).toEqual([7])
+    expect(numbers(put({ ...req, policy: 'merchant' }))).toEqual([17])
+    expect(numbers(put({ ...req, feePayer: 'recipient' }))).toEqual([17])
+  })
+
   it('[17] a paid request keeps the fee payer it was created with', () => {
     const req = paidLunch.requests.r_seed_lunch
     if (!req) throw new Error('request')

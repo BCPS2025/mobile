@@ -55,7 +55,9 @@ export type WireCommand =
       expect: { senderDebit: string }
     }
   | { type: 'request.create'; channel: 'pos'; amount: string; note?: string; items?: WireItem[] }
+  | { type: 'request.create'; channel: 'username'; payer: Handle; amount: string; note?: string }
   | { type: 'request.cancel'; requestRef: Ref }
+  | { type: 'request.decline'; requestRef: Ref; reason?: string }
 
 type WirePay = Extract<WireCommand, { type: 'pay' }>
 
@@ -65,6 +67,7 @@ export const USER_COMMAND_TYPES: ReadonlySet<string> = new Set<WireCommandType>(
   'pay',
   'request.create',
   'request.cancel',
+  'request.decline',
 ])
 
 export interface CommandEntry {
@@ -292,7 +295,7 @@ const HOSTILE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 const CONTROL = /[\p{Cc}\p{Cf}]/u
 const CONTROL_ALL = /[\p{Cc}\p{Cf}]/gu
 /** Free-text fields: control and format characters are stripped there instead of refused. */
-const FREE_TEXT = new Set(['note', 'label'])
+const FREE_TEXT = new Set(['note', 'label', 'reason'])
 const MAX_DEPTH = 12
 const MAX_NODES = 250_000
 const MAX_STRING = 256
@@ -435,9 +438,20 @@ function command(v: unknown, path: string): WireCommand {
       return out
     }
     case 'request.create': {
+      if ((v as Obj).channel === 'username') {
+        const o = obj(v, path, ['type', 'channel', 'payer', 'amount'], ['note'])
+        const out: WireCommand = {
+          type: 'request.create',
+          channel: 'username',
+          payer: str(o.payer, `${path}.payer`, HANDLE) as Handle,
+          amount: str(o.amount, `${path}.amount`, AMOUNT),
+        }
+        if (o.note !== undefined) out.note = text(o.note, `${path}.note`, LIMITS.note)
+        return out
+      }
       const o = obj(v, path, ['type', 'channel', 'amount'], ['note', 'items'])
       if (o.channel !== 'pos') refuse('shape', `${path}.channel`)
-      const out: Extract<WireCommand, { type: 'request.create' }> = {
+      const out: WireCommand = {
         type: 'request.create',
         channel: 'pos',
         amount: str(o.amount, `${path}.amount`, AMOUNT),
@@ -449,6 +463,12 @@ function command(v: unknown, path: string): WireCommand {
     case 'request.cancel': {
       const o = obj(v, path, ['type', 'requestRef'])
       return { type: 'request.cancel', requestRef: ref(o.requestRef, `${path}.requestRef`) }
+    }
+    case 'request.decline': {
+      const o = obj(v, path, ['type', 'requestRef'], ['reason'])
+      const out: WireCommand = { type: 'request.decline', requestRef: ref(o.requestRef, `${path}.requestRef`) }
+      if (o.reason !== undefined) out.reason = text(o.reason, `${path}.reason`, LIMITS.note)
+      return out
     }
   }
 }

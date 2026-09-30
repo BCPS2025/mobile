@@ -445,16 +445,30 @@ export type PayCommandBody = {
  * A merchant shows a payment code for one amount (the café's Charge). The fee payer and policy are
  * fixed here from the merchant's settings; the previous open code of the merchant is cancelled.
  */
-export type RequestCreateBody = {
+export type PosCodeBody = {
   type: 'request.create'
   channel: 'pos'
   amount: Minor
   items?: TxItem[]
   note?: string
 }
+/**
+ * A person asks another person for money. The payer pays the 1 % fee when paying (policy
+ * `transfer`, snapshot `sender`); nothing moves until they do.
+ */
+export type PersonRequestBody = {
+  type: 'request.create'
+  channel: 'username'
+  payer: Handle
+  amount: Minor
+  note?: string
+}
+export type RequestCreateBody = PosCodeBody | PersonRequestBody
 /** The requester withdraws an open request (its code stops working; no money moves). */
 export type RequestCancelBody = { type: 'request.cancel'; requestId: string }
-export type UserCommandBody = PayCommandBody | RequestCreateBody | RequestCancelBody
+/** The payer turns an open request down, with an optional reason; no money moves. */
+export type RequestDeclineBody = { type: 'request.decline'; requestId: string; reason?: string }
+export type UserCommandBody = PayCommandBody | RequestCreateBody | RequestCancelBody | RequestDeclineBody
 /** A user command: `cmdId` is `${flowInstanceId}:${stepId}`; `actor` is a persona id. */
 export type UserCommand = UserCommandBody & { cmdId: string; actor: PersonaId }
 export type PayCommand = PayCommandBody & { cmdId: string; actor: PersonaId }
