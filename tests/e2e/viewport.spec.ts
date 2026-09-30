@@ -2,7 +2,7 @@
 // 390 × 664 and 375 × 548. The phones never overflow the window, no toast covers a phone, and
 // every Home fits without scrolling.
 import { expect, test } from '@playwright/test'
-import { SEND, biometricLogin, openApp, overlaps, pay, slot } from './helpers'
+import { SALE, SEND, biometricLogin, openApp, overlaps, pay, slot } from './helpers'
 
 const STAGES: [w: number, h: number, minScale: number][] = [
   [1280, 720, 0.88],
@@ -72,6 +72,41 @@ for (const [w, h] of [
         })
         expect(overflow).toBeLessThanOrEqual(0)
       }
+    })
+  })
+}
+
+for (const [w, h] of [
+  [390, 664],
+  [375, 548],
+] as const) {
+  test.describe(`phone mode ${w} × ${h}: nothing covers a dock`, () => {
+    test.use({ viewport: { width: w, height: h } })
+
+    test('a banner and a toast over a flow step stay clear of the dock', async ({ page }) => {
+      await openApp(page, '#/phone/marko')
+      // Marko is on the amount step of Send: a keypad and a dock at the bottom.
+      await page.locator('[data-tile="payRequest"]').click()
+      await page.getByTestId('row-send').click()
+      await page.getByTestId('party-search').fill('@ana')
+      await page.getByRole('button', { name: 'Continue' }).click()
+      await expect(page.locator('[data-screen="c.send.amount"]')).toBeVisible()
+      // A payment to Marko: an informational banner. A payment to the café: a toast with [Switch].
+      await pay(page, SEND)
+      const banner = page.getByTestId('banner')
+      await expect(banner).toBeVisible()
+      await pay(page, SALE)
+      const toast = page.getByTestId('phone-toast')
+      await expect(toast).toBeVisible()
+      const dock = await slot(page, 'single').getByRole('button', { name: 'Continue' }).boundingBox()
+      const bannerBox = await banner.boundingBox()
+      const toastBox = await toast.boundingBox()
+      if (!dock || !bannerBox || !toastBox) throw new Error('missing boxes')
+      expect(overlaps(bannerBox, dock)).toBe(false)
+      expect(overlaps(toastBox, dock)).toBe(false)
+      // Both stand within the window.
+      expect(bannerBox.y + bannerBox.height).toBeLessThanOrEqual(h)
+      expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(h)
     })
   })
 }

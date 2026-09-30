@@ -269,3 +269,70 @@ test.describe('stage in a narrow window', () => {
     await expect(page).toHaveURL(/#\/phone$/)
   })
 })
+
+// ---- token travel: the direction, and none at all with reduced motion
+
+/** Samples the x position of the travelling token on every frame while `act` runs. */
+async function tokenPath(page: import('@playwright/test').Page, act: () => Promise<void>): Promise<number[]> {
+  await page.evaluate(() => {
+    const w = window as unknown as { __tokenX: number[]; __tokenStop: boolean }
+    w.__tokenX = []
+    w.__tokenStop = false
+    const tick = () => {
+      const token = document.querySelector('[data-testid="token"]')
+      if (token) w.__tokenX.push(token.getBoundingClientRect().x)
+      if (!w.__tokenStop) requestAnimationFrame(tick)
+    }
+    tick()
+  })
+  await act()
+  await page.waitForTimeout(1600) // the travel is over by 900 ms; the balances settle at 1,400 ms
+  return page.evaluate(() => {
+    const w = window as unknown as { __tokenX: number[]; __tokenStop: boolean }
+    w.__tokenStop = true
+    return w.__tokenX
+  })
+}
+
+test.describe('token travel', () => {
+  test.use({ viewport: { width: 1280, height: 720 } })
+
+  test('the token crosses from the payer to the receiver: left to right for the sale, right to left after a swap', async ({
+    page,
+  }) => {
+    await openApp(page, '#/stage')
+    await biometricLogin(page, 'left')
+    await biometricLogin(page, 'right')
+    const first = await tokenPath(page, () => pay(page, SALE))
+    expect(first.length).toBeGreaterThan(5)
+    expect(first.at(-1) ?? 0).toBeGreaterThan((first[0] ?? 0) + 150)
+    expect(first.every((x, i) => i === 0 || x >= (first[i - 1] ?? 0))).toBe(true)
+    await page.getByTestId('swap').click()
+    const second = await tokenPath(page, () => pay(page, { ...SALE, amount: 220, debit: 220, items: undefined }))
+    expect(second.length).toBeGreaterThan(5)
+    expect(second.at(-1) ?? 0).toBeLessThan((second[0] ?? 0) - 150)
+    expect(second.every((x, i) => i === 0 || x <= (second[i - 1] ?? 0))).toBe(true)
+  })
+
+  test('the F key toggles full screen', async ({ page }) => {
+    await openApp(page, '#/stage')
+    await page.keyboard.press('f')
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true)
+    await page.keyboard.press('F')
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(false)
+  })
+})
+
+test.describe('token travel with reduced motion', () => {
+  test.use({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' })
+
+  test('no token travels; the balances still settle', async ({ page }) => {
+    await openApp(page, '#/stage')
+    await biometricLogin(page, 'left')
+    await biometricLogin(page, 'right')
+    const path = await tokenPath(page, () => pay(page, SALE))
+    expect(path).toEqual([])
+    await expectBalance(page, 'ana', '236.50')
+    await expectBalance(page, 'cafe', '296.89')
+  })
+})
