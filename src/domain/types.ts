@@ -203,11 +203,14 @@ export interface PaymentUri {
   link?: string
 }
 
+/** When an account converts part of its balance to euros on its own (saved and shown; nothing runs). */
 export interface AutoConvertSettings {
   enabled: boolean
-  schedule: 'daily' | 'weekly' | 'custom'
+  /** Every day, Monday to Friday, or one day a week (`weekdays` holds the days: none, 1–5, or one). */
+  schedule: 'daily' | 'weekdays' | 'weekly'
   weekdays: number[]
-  atLocal: '18:00' | '21:00' | '23:00'
+  atLocal: '18:00' | '20:00' | '22:00' | '23:00'
+  /** Share of the balance, 10 to 100 in steps of 10. */
   sharePct: number
   onlyOnDaysWithSales: boolean
 }
@@ -518,6 +521,13 @@ export type SplitCancelBody = { type: 'split.cancel'; splitId: string }
 export type RampOnBody = { type: 'ramp.on'; method: 'card' | 'bank-transfer' | 'local-method'; eur: number }
 /** Convert BCPS to euros to the bank account on file; the converter pays 1.5 %. */
 export type RampOffBody = { type: 'ramp.off'; amount: Minor }
+/** A merchant returns a sale in full; no fee, and the original fee is not returned. */
+export type RefundBody = { type: 'refund'; txId: string }
+/** The fields of a business's settings a patch may change (`weekdays` follows the schedule). */
+export type AutoConvertPatch = Partial<Omit<AutoConvertSettings, 'weekdays'>>
+export type MerchantSettingsPatch = { feePayer?: FeePayer; autoConvert?: AutoConvertPatch }
+/** A business changes its settings: who pays the fee on new sales, and the auto-convert schedule. */
+export type MerchantSettingsBody = { type: 'merchant.settings'; patch: MerchantSettingsPatch }
 export type UserCommandBody =
   | PayCommandBody
   | RequestCreateBody
@@ -530,6 +540,8 @@ export type UserCommandBody =
   | SplitCancelBody
   | RampOnBody
   | RampOffBody
+  | RefundBody
+  | MerchantSettingsBody
 /** A user command: `cmdId` is `${flowInstanceId}:${stepId}`; `actor` is a persona id. */
 export type UserCommand = UserCommandBody & { cmdId: string; actor: PersonaId }
 export type PayCommand = PayCommandBody & { cmdId: string; actor: PersonaId }
@@ -564,6 +576,10 @@ export type LedgerEventBody =
   | { type: 'split.share-updated'; splitId: string; party: PartyId; requestId: string }
   /** A bank-transfer top-up was asked for; the money arrives at `ramp.arrivesAt`. */
   | { type: 'ramp.requested'; ramp: Ramp }
+  /** A refund takes away an item of a one-off product the buyer owned (ordered before the refund). */
+  | { type: 'ownership.revoked'; party: PartyId; sku: string }
+  /** The settings a business has from now on (the patch applied to what it had). */
+  | { type: 'merchant.settings'; persona: PersonaId; settings: MerchantSettings }
   /** A ramp is done: a card or local top-up and a cash-out complete when they are made (the ramp is new
    *  then), a bank transfer when it arrives (the ramp is the pending one, now completed). */
   | { type: 'ramp.completed'; ramp: Ramp }

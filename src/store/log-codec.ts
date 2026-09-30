@@ -157,6 +157,13 @@ export function encodeCommand(s: LedgerState, c: UserCommand): Result<WireComman
       return { ok: true, value: { type: 'ramp.on', method: c.method, eur: c.eur } }
     case 'ramp.off':
       return { ok: true, value: { type: 'ramp.off', amount: minorString(c.amount) } }
+    case 'refund': {
+      const r = txRefOf(s, c.txId)
+      if (!r) return { ok: false, error: 'unknown-ref' }
+      return { ok: true, value: { type: 'refund', txRef: r } }
+    }
+    case 'merchant.settings':
+      return { ok: true, value: { type: 'merchant.settings', patch: structuredClone(c.patch) } }
   }
 }
 
@@ -309,6 +316,16 @@ export function decodeCommand(
       if (!amount.ok) return { ok: false, error: 'bad-amount' }
       return { ok: true, value: { type: 'ramp.off', actor: e.actor, cmdId: e.cmdId, amount: amount.value } }
     }
+    case 'refund': {
+      const id = resolveTxRef(s, w.txRef)
+      if (id === null) return { ok: false, error: 'unknown-ref' }
+      return { ok: true, value: { type: 'refund', actor: e.actor, cmdId: e.cmdId, txId: id } }
+    }
+    case 'merchant.settings':
+      return {
+        ok: true,
+        value: { type: 'merchant.settings', actor: e.actor, cmdId: e.cmdId, patch: structuredClone(w.patch) },
+      }
   }
 }
 

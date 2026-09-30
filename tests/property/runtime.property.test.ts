@@ -36,13 +36,16 @@ import {
   payCommand,
   posCodes,
   rampCommand,
+  refundCommand,
   sequenceArb,
+  settingsCommand,
   splitCommand,
+  splitPrelude,
 } from './arbitraries'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
 const TIMEOUT = 600_000
-const RUNS = Number(process.env.FC_RUNS ?? 200)
+const RUNS = Number(process.env.FC_RUNS ?? 400)
 const SEED = process.env.FC_SEED === undefined ? undefined : Number(process.env.FC_SEED)
 
 // Cc and Cf characters, as the record format strips them from notes.
@@ -154,6 +157,8 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
         break
       }
       case 'split': {
+        const prelude = splitPrelude(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
+        if (prelude) rt.dispatch(prelude)
         const cmd = splitCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
         if (!cmd) break
         const r = rt.dispatch(cmd)
@@ -170,6 +175,18 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
       }
       case 'ramp': {
         const r = rt.dispatch(rampCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' })))
+        if (r.ok) stats.accepted++
+        break
+      }
+      case 'refund': {
+        const cmd = refundCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' }))
+        if (cmd && rt.dispatch(cmd).ok) stats.accepted++
+        break
+      }
+      case 'settings': {
+        const cmd = settingsCommand(content, step, ids.next({ kind: 'new' }))
+        const r = rt.dispatch(cmd)
+        // A patch the record format cannot hold (a time or schedule off the sheet) is never stored.
         if (r.ok) stats.accepted++
         break
       }
@@ -196,6 +213,12 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
         break
       case 'undo':
         if (rt.undo()) stats.undos++
+        break
+      case 'reset-undo':
+        stats.resets++
+        rt.reset({ epochDate: epoch })
+        expect(rt.undo()).toBe(true)
+        stats.undos++
         break
     }
   }

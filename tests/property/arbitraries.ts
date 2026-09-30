@@ -164,6 +164,34 @@ export interface RampStep {
   cash: { kind: 'amount'; amount: AmountPick } | { kind: 'all' } | { kind: 'min' } | { kind: 'below-min' }
 }
 
+/** A merchant refunds a payment (mostly a sale it received; sometimes anything, or someone else tries). */
+export interface RefundStep {
+  kind: 'refund'
+  by: 'right' | 'other'
+  actor: number
+  which: number
+  sales: boolean
+}
+
+/** A business changes its settings: valid patches and ones the sheet cannot make. */
+export interface SettingsStep {
+  kind: 'settings'
+  actor: number
+  patch:
+    | 'customer-pays'
+    | 'business-pays'
+    | 'share'
+    | 'time'
+    | 'schedule'
+    | 'switch'
+    | 'only-sales'
+    | 'bad-share'
+    | 'bad-time'
+    | 'bad-schedule'
+    | 'empty'
+  value: number
+}
+
 export type Step =
   | PayStep
   | ChargeStep
@@ -174,6 +202,8 @@ export type Step =
   | LinkStep
   | SplitStep
   | RampStep
+  | RefundStep
+  | SettingsStep
   /** The Lunch request exactly as Ana would pay it (so the paid-request paths are reached). */
   | { kind: 'pay-lunch'; expect: ExpectPick }
   /** Time passes on the clock without the timer firing (a late or throttled timer). */
@@ -188,6 +218,8 @@ export type Step =
   | { kind: 'jump-back'; ms: number }
   | { kind: 'reset' }
   | { kind: 'undo' }
+  /** Reset and at once Undo (the one moment Undo always works). */
+  | { kind: 'reset-undo' }
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -482,6 +514,40 @@ export function rampStepArb(content: Content): fc.Arbitrary<RampStep> {
   })
 }
 
+export function refundStepArb(content: Content): fc.Arbitrary<RefundStep> {
+  return fc.record({
+    kind: fc.constant('refund' as const),
+    by: fc.constantFrom<RefundStep['by']>('right', 'right', 'right', 'other'),
+    actor: fc.nat(actorsOf(content).length - 1),
+    which: fc.nat(200),
+    sales: fc.constantFrom(true, true, true, false),
+  })
+}
+
+export function settingsStepArb(content: Content): fc.Arbitrary<SettingsStep> {
+  return fc.record({
+    kind: fc.constant('settings' as const),
+    actor: fc.oneof(
+      { weight: 4, arbitrary: fc.constantFrom(2, 3) }, // café, studio
+      { weight: 2, arbitrary: fc.nat(actorsOf(content).length - 1) },
+    ),
+    patch: fc.constantFrom<SettingsStep['patch']>(
+      'customer-pays',
+      'business-pays',
+      'share',
+      'time',
+      'schedule',
+      'switch',
+      'only-sales',
+      'bad-share',
+      'bad-time',
+      'bad-schedule',
+      'empty',
+    ),
+    value: fc.nat(9),
+  })
+}
+
 export interface StepOptions {
   /** Runtime-level properties: Reset and Undo, and commands the runtime must refuse as not storable. */
   runtime?: boolean
@@ -503,6 +569,8 @@ export function stepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<
     { weight: 4, arbitrary: linkStepArb(content, opts) },
     { weight: 5, arbitrary: splitStepArb(content, opts) },
     { weight: 4, arbitrary: rampStepArb(content) },
+    { weight: 4, arbitrary: refundStepArb(content) },
+    { weight: 3, arbitrary: settingsStepArb(content) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 5000 }).map((ms) => ({ kind: 'advance', ms })) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 3000 }).map((ms) => ({ kind: 'fire', ms })) },
     { weight: 1, arbitrary: fc.constant({ kind: 'catch-up' }) },
@@ -523,6 +591,7 @@ export function stepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<
   if (opts.runtime) {
     arbs.push({ weight: 1, arbitrary: fc.constant({ kind: 'reset' }) })
     arbs.push({ weight: 1, arbitrary: fc.constant({ kind: 'undo' }) })
+    arbs.push({ weight: 1, arbitrary: fc.constant({ kind: 'reset-undo' }) })
   }
   return fc.oneof(...arbs)
 }
@@ -800,6 +869,24 @@ export function linkCommand(content: Content, s: LedgerState, step: LinkStep, cm
   }
 }
 
+/**
+ * Before some ask-again steps, the payer of an open share turns it down first (so there is a share
+ * to ask again): the decline command, or null when this step needs no prelude.
+ */
+export function splitPrelude(content: Content, s: LedgerState, step: SplitStep, cmdId: string): UserCommand | null {
+  if (step.op !== 'reask' || step.which % 2 !== 0) return null
+  const names = actorsOf(content)
+  for (const split of splitsInOrder(s)) {
+    for (const sh of split.shares) {
+      const request = s.requests[sh.requestId]
+      if (request?.status === 'open' && names.includes(sh.party)) {
+        return { type: 'request.decline', actor: sh.party, cmdId, requestId: request.id }
+      }
+    }
+  }
+  return null
+}
+
 /** The command of a split step against `s`, or null when the ledger has no split to work on. */
 export function splitCommand(content: Content, s: LedgerState, step: SplitStep, cmdId: string): UserCommand | null {
   const names = actorsOf(content)
@@ -851,6 +938,69 @@ export function splitCommand(content: Content, s: LedgerState, step: SplitStep, 
   }
   if (sourceTxId !== undefined) cmd.sourceTxId = sourceTxId
   return cmd
+}
+
+/** The command of a refund step against `s`, or null when the ledger has nothing to refund. */
+export function refundCommand(content: Content, s: LedgerState, step: RefundStep, cmdId: string): UserCommand | null {
+  const all = s.txOrder.map((id) => s.txs[id]).filter((t): t is NonNullable<typeof t> => t !== undefined)
+  const sales = all.filter(
+    (t) =>
+      (t.kind === 'purchase' || t.kind === 'subscription-charge') &&
+      t.summary === undefined &&
+      t.status === 'confirmed' &&
+      t.refundedBy === undefined,
+  )
+  const from = step.sales && sales.length > 0 ? sales : all
+  const tx = from[step.which % Math.max(from.length, 1)]
+  if (!tx) return null
+  const names = actorsOf(content)
+  const other = names[step.actor] as PersonaId
+  const actor = step.by === 'right' && !tx.to.startsWith('sys:') ? tx.to : other
+  return { type: 'refund', actor, cmdId, txId: tx.id }
+}
+
+/** The command of a settings step. */
+export function settingsCommand(content: Content, step: SettingsStep, cmdId: string): UserCommand {
+  const actor = actorsOf(content)[step.actor] as PersonaId
+  const times = ['18:00', '20:00', '22:00', '23:00']
+  const schedules = ['daily', 'weekdays', 'weekly']
+  let patch: unknown
+  switch (step.patch) {
+    case 'customer-pays':
+      patch = { feePayer: 'sender' }
+      break
+    case 'business-pays':
+      patch = { feePayer: 'recipient' }
+      break
+    case 'share':
+      patch = { autoConvert: { sharePct: ((step.value % 10) + 1) * 10 } }
+      break
+    case 'time':
+      patch = { autoConvert: { atLocal: times[step.value % 4] } }
+      break
+    case 'schedule':
+      patch = { autoConvert: { schedule: schedules[step.value % 3] } }
+      break
+    case 'switch':
+      patch = { autoConvert: { enabled: step.value % 2 === 0 } }
+      break
+    case 'only-sales':
+      patch = { autoConvert: { onlyOnDaysWithSales: step.value % 2 === 0 } }
+      break
+    case 'bad-share':
+      patch = { autoConvert: { sharePct: [5, 15, 0, 110, 55][step.value % 5] } }
+      break
+    case 'bad-time':
+      patch = { autoConvert: { atLocal: ['21:00', '07:00', '24:00'][step.value % 3] } }
+      break
+    case 'bad-schedule':
+      patch = { autoConvert: { schedule: 'custom' } }
+      break
+    case 'empty':
+      patch = step.value % 2 === 0 ? {} : { autoConvert: {} }
+      break
+  }
+  return { type: 'merchant.settings', actor, cmdId, patch } as UserCommand
 }
 
 /** The command of a ramp step against `s`. */

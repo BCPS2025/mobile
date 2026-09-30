@@ -11,6 +11,8 @@ import { asMinor } from './money'
 import { eurToMinor } from './rate'
 import type {
   AccountId,
+  AutoConvertPatch,
+  AutoConvertSettings,
   Balance,
   Command,
   DecideCtx,
@@ -26,6 +28,8 @@ import type {
   LedgerState,
   LinkCreateBody,
   LinkShareBody,
+  MerchantSettings,
+  MerchantSettingsBody,
   Minor,
   Party,
   PartyId,
@@ -41,6 +45,7 @@ import type {
   Ramp,
   RampOffBody,
   RampOnBody,
+  RefundBody,
   RequestCancelBody,
   RequestCreateBody,
   RequestDeclineBody,
@@ -679,6 +684,124 @@ function decideRampOff(s: LedgerState, c: RampOffCommand, ctx: DecideCtx): Resul
   }
 }
 
+type RefundCommand = RefundBody & { cmdId: string; actor: PersonaId }
+type MerchantSettingsCommand = MerchantSettingsBody & { cmdId: string; actor: PersonaId }
+
+/**
+ * A merchant returns a sale in full: the recipient of a named sale (a purchase at a merchant or
+ * checkout, or a subscription charge; never a daily summary row), once, with funds for the whole
+ * amount. No fee, and the fee of the sale is not given back. A one-off item the buyer owned is taken
+ * away first.
+ */
+function decideRefund(s: LedgerState, c: RefundCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
+  const original = entryOf(s.txs, c.txId)
+  if (!original) return err('invalid-state')
+  if (original.to !== c.actor) return err('not-allowed')
+  if (original.refundedBy !== undefined) return err('already-refunded')
+  const sale = original.kind === 'purchase' || original.kind === 'subscription-charge'
+  const named = original.from !== 'sys:offstage' || original.party !== undefined
+  if (!sale || original.summary !== undefined || !named) return err('invalid-state')
+  if (original.status !== 'confirmed') return err('invalid-state', { status: original.status })
+  const q = quoteFee(original.amount, s.config.fees.refund, s.config.rate, undefined, s.config.cardRange)
+  if (!q.ok) return err('invalid-amount')
+  const have = available(s, c.actor)
+  if (have < q.value.senderDebit) {
+    return err('insufficient-funds', { have, short: asMinor(q.value.senderDebit - have) })
+  }
+  const tx: Tx = {
+    id: nextTxId(s),
+    kind: 'refund',
+    channel: 'auto',
+    status: 'pending',
+    from: c.actor,
+    to: original.from,
+    amount: original.amount,
+    fee: q.value,
+    postings: postingsFor(c.actor, original.from, q.value, original.party),
+    createdAt: ctx.now,
+    dueAt: (ctx.now + s.config.settleMs) as SimTime,
+    links: { refundOf: original.id },
+    cmdId: c.cmdId,
+  }
+  if (original.party !== undefined) tx.party = original.party
+  if (original.note !== undefined) tx.note = original.note
+  if (original.items !== undefined) tx.items = original.items.map((it) => ({ ...it }))
+  const owned = entryOf(s.ownership, original.from) ?? []
+  const revoked: PendingEvent[] = (original.items ?? [])
+    .filter((it) => it.sku !== undefined && owned.includes(it.sku))
+    .map((it) => ({ type: 'ownership.revoked', cmdId: c.cmdId, party: original.from, sku: it.sku as string }))
+  // The item goes first, so a buyer never owns a one-off item whose purchase was refunded.
+  return { ok: true, value: [...revoked, { type: 'tx.submitted', cmdId: c.cmdId, tx }] }
+}
+
+const AUTO_CONVERT_TIMES: readonly string[] = ['18:00', '20:00', '22:00', '23:00']
+const AUTO_CONVERT_SCHEDULES: readonly string[] = ['daily', 'weekdays', 'weekly']
+const AUTO_CONVERT_KEYS: readonly string[] = ['enabled', 'schedule', 'atLocal', 'sharePct', 'onlyOnDaysWithSales']
+
+/** The settings after a valid auto-convert patch (the days follow the schedule), or null when a value is not allowed. */
+function patchAutoConvert(current: AutoConvertSettings, patch: AutoConvertPatch): AutoConvertSettings | null {
+  const next: AutoConvertSettings = { ...current, weekdays: [...current.weekdays] }
+  if (patch.enabled !== undefined) {
+    if (typeof patch.enabled !== 'boolean') return null
+    next.enabled = patch.enabled
+  }
+  if (patch.schedule !== undefined) {
+    if (!AUTO_CONVERT_SCHEDULES.includes(patch.schedule)) return null
+    next.schedule = patch.schedule
+  }
+  if (patch.atLocal !== undefined) {
+    if (!AUTO_CONVERT_TIMES.includes(patch.atLocal)) return null
+    next.atLocal = patch.atLocal
+  }
+  if (patch.sharePct !== undefined) {
+    const p = patch.sharePct
+    if (!Number.isSafeInteger(p) || p < 10 || p > 100 || p % 10 !== 0) return null
+    next.sharePct = p
+  }
+  if (patch.onlyOnDaysWithSales !== undefined) {
+    if (typeof patch.onlyOnDaysWithSales !== 'boolean') return null
+    next.onlyOnDaysWithSales = patch.onlyOnDaysWithSales
+  }
+  if (next.schedule === 'daily') next.weekdays = []
+  else if (next.schedule === 'weekdays') next.weekdays = [1, 2, 3, 4, 5]
+  else if (!(current.schedule === 'weekly' && current.weekdays.length === 1)) next.weekdays = [1]
+  return next
+}
+
+/**
+ * A business changes who pays the fee on sales (café and studio only; it applies to codes, links and
+ * mandates made afterwards, open ones keep their snapshot) and its auto-convert schedule. The
+ * schedule is saved and shown; nothing converts by itself.
+ */
+function decideMerchantSettings(s: LedgerState, c: MerchantSettingsCommand): Result<PendingEvent[], DomainError> {
+  const actor: PersonaId = c.actor
+  const current = entryOf(s.merchant, actor)
+  if (entryOf(s.directory, actor)?.kind !== 'business' || !current) return err('not-allowed')
+  const patch = c.patch
+  if (typeof patch !== 'object' || patch === null || Array.isArray(patch)) return err('invalid-state')
+  if (Object.keys(patch).some((k) => k !== 'feePayer' && k !== 'autoConvert')) return err('invalid-state')
+  if (patch.feePayer === undefined && patch.autoConvert === undefined) return err('invalid-state')
+  const settings: MerchantSettings = { ...current, autoConvert: { ...current.autoConvert } }
+  if (patch.feePayer !== undefined) {
+    if (!isMerchant(s, actor)) return err('not-allowed')
+    if (patch.feePayer !== 'sender' && patch.feePayer !== 'recipient') return err('invalid-state')
+    settings.feePayer = patch.feePayer
+  }
+  if (patch.autoConvert !== undefined) {
+    const a = patch.autoConvert
+    if (typeof a !== 'object' || a === null || Array.isArray(a)) return err('invalid-state')
+    if (Object.keys(a).length === 0 || Object.keys(a).some((k) => !AUTO_CONVERT_KEYS.includes(k))) {
+      return err('invalid-state')
+    }
+    // Only businesses with sales have the "only on days with sales" choice.
+    if (a.onlyOnDaysWithSales === true && !isMerchant(s, actor)) return err('not-allowed')
+    const next = patchAutoConvert(current.autoConvert, a)
+    if (!next) return err('invalid-state')
+    settings.autoConvert = next
+  }
+  return { ok: true, value: [{ type: 'merchant.settings', cmdId: c.cmdId, persona: actor, settings }] }
+}
+
 /** Free text as the record can keep it: a non-empty string within the note limit. */
 function validNote(s: LedgerState, text: unknown): boolean {
   return typeof text === 'string' && text.length > 0 && [...text].length <= s.config.limits.noteMaxChars
@@ -710,6 +833,10 @@ export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<Pendi
       return decideRampOn(s, c, ctx)
     case 'ramp.off':
       return decideRampOff(s, c, ctx)
+    case 'refund':
+      return decideRefund(s, c, ctx)
+    case 'merchant.settings':
+      return decideMerchantSettings(s, c)
     default:
       // A command type this build does not know (the record format refuses these before decide).
       return err('not-allowed')
@@ -836,6 +963,8 @@ type ContainerKey =
   | 'pending'
   | 'pendingRamps'
   | 'ramps'
+  | 'merchant'
+  | 'ownership'
   | 'requests'
   | 'links'
   | 'splits'
@@ -909,6 +1038,9 @@ function apply(w: Writer, e: LedgerEvent): void {
       const req =
         tx.links?.requestId !== undefined && tx.kind !== 'refund' ? entryOf(s.requests, tx.links.requestId) : undefined
       if (req) own(w, 'requests')[req.id] = { ...req, status: 'paid', txId: tx.id, closedAt: e.at }
+      const refunded =
+        tx.kind === 'refund' && tx.links?.refundOf !== undefined ? entryOf(s.txs, tx.links.refundOf) : undefined
+      if (refunded) own(w, 'txs')[refunded.id] = { ...refunded, refundedBy: tx.id }
       const link = tx.links?.linkId !== undefined ? entryOf(s.links, tx.links.linkId) : undefined
       if (link) {
         const paid: PaymentLink = { ...link, payments: [...link.payments, tx.id] }
@@ -975,6 +1107,17 @@ function apply(w: Writer, e: LedgerEvent): void {
       s.counters = { ...s.counters, splitSeq: s.counters.splitSeq + 1 }
       return
     }
+    case 'ownership.revoked': {
+      const owned = entryOf(s.ownership, e.party)
+      if (!owned) return
+      const at = owned.indexOf(e.sku)
+      if (at >= 0) setEntry(own(w, 'ownership'), e.party, [...owned.slice(0, at), ...owned.slice(at + 1)])
+      return
+    }
+    case 'merchant.settings': {
+      setEntry(own(w, 'merchant'), e.persona, e.settings)
+      return
+    }
     case 'ramp.requested': {
       setEntry(own(w, 'ramps'), e.ramp.id, e.ramp)
       s.counters = { ...s.counters, rampSeq: s.counters.rampSeq + 1 }
@@ -1038,6 +1181,8 @@ export function beginDraft(s: LedgerState): LedgerDraft {
     pending: [...s.pending],
     pendingRamps: [...s.pendingRamps],
     ramps: { ...s.ramps },
+    merchant: { ...s.merchant },
+    ownership: { ...s.ownership },
     requests: { ...s.requests },
     links: { ...s.links },
     splits: { ...s.splits },

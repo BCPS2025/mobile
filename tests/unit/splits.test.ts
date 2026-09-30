@@ -217,6 +217,18 @@ describe('split.create', () => {
     expect(refusal(h, create(h, equal, { sourceTxId: 'BC-NOPE00' }))).toEqual({ code: 'invalid-state' })
   })
 
+  it('a refund cannot be split, and neither can a payment that was refunded', () => {
+    const h = fresh()
+    run(h, { type: 'refund', actor: 'cafe', cmdId: id('refund'), txId: brunchOf(h.node.getState()).id })
+    expect(refusal(h, create(h, equal))).toEqual({ code: 'invalid-state', status: 'refunded' })
+    h.node.settleDue()
+    // The refund is Ana's incoming money, not something she paid.
+    const refund = Object.values(h.node.getState().txs).find((t) => t.kind === 'refund') as Tx
+    expect(refusal(h, create(h, equal, { sourceTxId: refund.id }))).toEqual({ code: 'not-allowed' })
+    // The café's own refund is outgoing money for the café, but not a bill it can split.
+    expect(refusal(h, create(h, equal, { sourceTxId: refund.id }, 'cafe'))).toEqual({ code: 'not-allowed' })
+  })
+
   it('a conversion cannot be split', () => {
     const h = fresh()
     const cash = Object.values(h.node.getState().txs).find((t) => t.seedMeta?.key === 'cafe-cashout-wed') as Tx

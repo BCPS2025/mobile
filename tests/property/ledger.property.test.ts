@@ -39,13 +39,16 @@ import {
   payCommand,
   posCodes,
   rampCommand,
+  refundCommand,
   sequenceArb,
+  settingsCommand,
   splitCommand,
+  splitPrelude,
 } from './arbitraries'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
 const TIMEOUT = 600_000
-const RUNS = Number(process.env.FC_RUNS ?? 250)
+const RUNS = Number(process.env.FC_RUNS ?? 600)
 const SEED = process.env.FC_SEED === undefined ? undefined : Number(process.env.FC_SEED)
 const params = (numRuns: number): fc.Parameters<unknown> => ({ numRuns, ...(SEED === undefined ? {} : { seed: SEED }) })
 
@@ -79,6 +82,9 @@ const stats = {
   topUpsRequested: 0,
   topUpsArrived: 0,
   cashOuts: 0,
+  refunds: 0,
+  ownershipRevoked: 0,
+  settingsSaved: 0,
 }
 const countRefusal = (code: string) => stats.refused.set(code, (stats.refused.get(code) ?? 0) + 1)
 
@@ -200,8 +206,10 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         const tx = (r.value[0] as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx
         expect(tx).toMatchObject({ kind: 'purchase', channel: 'qr' })
         expect(tx.fee.fee).toBe(onePercent(cmd.amount))
-        expect(tx.fee.payer).toBe('recipient')
-        expect(tx.fee.senderDebit).toBe(cmd.amount)
+        // The payer is the one the code was made with (the café's setting at that time).
+        const snapshot = node.getState().requests[cmd.requestId ?? '']?.feePayer
+        expect(tx.fee.payer).toBe(snapshot)
+        expect(tx.fee.senderDebit).toBe(snapshot === 'sender' ? cmd.amount + tx.fee.fee : cmd.amount)
         expect(node.getState().requests[cmd.requestId ?? '']).toMatchObject({ status: 'paid', txId: tx.id })
         break
       }
@@ -312,6 +320,8 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         break
       }
       case 'split': {
+        const prelude = splitPrelude(content, node.getState(), step, ids.next({ kind: 'new' }))
+        if (prelude) node.dispatch(prelude)
         const before = node.getState()
         const cmd = splitCommand(content, before, step, ids.next({ kind: 'new' }))
         if (!cmd) break
@@ -415,6 +425,67 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         }
         break
       }
+      case 'refund': {
+        const before = node.getState()
+        const cmd = refundCommand(content, before, step, ids.next({ kind: 'new' }))
+        if (cmd?.type !== 'refund') break
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(node.events().filter((e) => e.cmdId === cmd.cmdId)).toHaveLength(0)
+          break
+        }
+        stats.refunds++
+        const original = before.txs[cmd.txId] as Tx
+        const events = r.value
+        expect(events.at(-1)?.type).toBe('tx.submitted')
+        expect(events.slice(0, -1).every((e) => e.type === 'ownership.revoked')).toBe(true)
+        stats.ownershipRevoked += events.length - 1
+        const tx = (events.at(-1) as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx as Tx
+        expect(tx).toMatchObject({ kind: 'refund', from: cmd.actor, to: original.from, amount: original.amount })
+        expect(tx.fee.fee).toBe(0)
+        expect(tx.links).toEqual({ refundOf: original.id })
+        expect(original.to).toBe(cmd.actor)
+        expect(original.summary).toBeUndefined()
+        expect(['purchase', 'subscription-charge']).toContain(original.kind)
+        expect(original.refundedBy).toBeUndefined()
+        expect(node.getState().txs[original.id]?.refundedBy).toBe(tx.id)
+        break
+      }
+      case 'settings': {
+        const before = node.getState()
+        const cmd = settingsCommand(content, step, ids.next({ kind: 'new' }))
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(JSON.stringify(node.getState().merchant)).toBe(JSON.stringify(before.merchant))
+          break
+        }
+        stats.settingsSaved++
+        expect(r.value.map((e) => e.type)).toEqual(['merchant.settings'])
+        const after = node.getState().merchant
+        const persona = cmd.actor
+        expect(before.directory[persona]?.kind).toBe('business')
+        for (const other of Object.keys(after)) {
+          if (other !== persona) expect(after[other]).toEqual(before.merchant[other])
+        }
+        const a = after[persona]?.autoConvert
+        expect([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]).toContain(a?.sharePct)
+        expect(['18:00', '20:00', '22:00', '23:00']).toContain(a?.atLocal)
+        expect(a?.weekdays).toEqual(
+          a?.schedule === 'daily'
+            ? []
+            : a?.schedule === 'weekdays'
+              ? [1, 2, 3, 4, 5]
+              : a?.weekdays.length === 1
+                ? a.weekdays
+                : [],
+        )
+        if (cmd.type === 'merchant.settings' && cmd.patch.feePayer !== undefined) {
+          expect(before.directory[persona]?.merchant).toBe(true)
+        }
+        break
+      }
       case 'advance':
         node.clock.advance(step.ms)
         break
@@ -445,6 +516,7 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
       }
       case 'reset':
       case 'undo':
+      case 'reset-undo':
         break // runtime-level steps (tests/property/runtime.property.test.ts)
     }
   }
@@ -496,7 +568,7 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
 describe('ledger properties over random A1 command sequences', () => {
   it(`invariants after every event; live equals replay (${RUNS} sequences)`, { timeout: TIMEOUT }, () => {
     fc.assert(
-      fc.property(fc.constantFrom(...EPOCHS), sequenceArb(content), (epoch, steps) => {
+      fc.property(fc.constantFrom(...EPOCHS), sequenceArb(content, {}, 80), (epoch, steps) => {
         runSequence(epoch, steps)
       }),
       params(RUNS),
@@ -551,6 +623,9 @@ describe('ledger properties over random A1 command sequences', () => {
     expect(stats.topUpsRequested).toBeGreaterThan(0)
     expect(stats.topUpsArrived).toBeGreaterThan(0)
     expect(stats.cashOuts).toBeGreaterThan(0)
+    // Refunds (with the one-off item taken away) and settings.
+    expect(stats.refunds).toBeGreaterThan(0)
+    expect(stats.settingsSaved).toBeGreaterThan(0)
     expect(stats.jumpsRefused).toBeGreaterThan(0)
     expect(stats.jumps).toBeGreaterThan(stats.jumpsRefused)
   })

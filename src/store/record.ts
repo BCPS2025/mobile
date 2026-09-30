@@ -1,4 +1,4 @@
-import type { Handle, LedgerState, PayChannel, PersonaId } from '@domain/types'
+import type { AutoConvertPatch, FeePayer, Handle, LedgerState, PayChannel, PersonaId } from '@domain/types'
 import { type At, type IsoDate, LJUBLJANA, compareAt, weekdayOfDate } from '@sim/tz'
 import { CMD_ID } from './cmdIds'
 
@@ -75,6 +75,8 @@ export type WireCommand =
   | { type: 'split.cancel'; splitRef: Ref }
   | { type: 'ramp.on'; method: 'card' | 'bank-transfer' | 'local-method'; eur: number }
   | { type: 'ramp.off'; amount: string }
+  | { type: 'refund'; txRef: Ref }
+  | { type: 'merchant.settings'; patch: { feePayer?: FeePayer; autoConvert?: AutoConvertPatch } }
 
 type WirePay = Extract<WireCommand, { type: 'pay' }>
 
@@ -92,6 +94,8 @@ export const USER_COMMAND_TYPES: ReadonlySet<string> = new Set<WireCommandType>(
   'split.cancel',
   'ramp.on',
   'ramp.off',
+  'refund',
+  'merchant.settings',
 ])
 
 export interface CommandEntry {
@@ -402,6 +406,7 @@ const STATE_ID = /^[a-z][a-z0-9-]{0,31}$/
 const SCREEN = /^[a-z][A-Za-z0-9:._-]{0,63}$/
 const READ_ID = /^[A-Za-z0-9:._-]{1,64}$/
 const HASH = /^[0-9a-f]{16}$/
+const AUTO_TIME = /^(18|20|22|23):00$/
 const RAMP_METHODS: ReadonlySet<string> = new Set(['card', 'bank-transfer', 'local-method'])
 const PAY_CHANNELS: ReadonlySet<string> = new Set<PayChannel>(['username', 'qr', 'link', 'web-checkout', 'request'])
 
@@ -553,6 +558,43 @@ function command(v: unknown, path: string): WireCommand {
     case 'ramp.off': {
       const o = obj(v, path, ['type', 'amount'])
       return { type: 'ramp.off', amount: str(o.amount, `${path}.amount`, AMOUNT) }
+    }
+    case 'refund': {
+      const o = obj(v, path, ['type', 'txRef'])
+      return { type: 'refund', txRef: ref(o.txRef, `${path}.txRef`) }
+    }
+    case 'merchant.settings': {
+      const o = obj(v, path, ['type', 'patch'])
+      const p = obj(o.patch, `${path}.patch`, [], ['feePayer', 'autoConvert'])
+      const patch: { feePayer?: FeePayer; autoConvert?: AutoConvertPatch } = {}
+      if (p.feePayer !== undefined) {
+        if (p.feePayer !== 'sender' && p.feePayer !== 'recipient') refuse('shape', `${path}.patch.feePayer`)
+        patch.feePayer = p.feePayer as FeePayer
+      }
+      if (p.autoConvert !== undefined) {
+        const ap = `${path}.patch.autoConvert`
+        const a = obj(p.autoConvert, ap, [], ['enabled', 'schedule', 'atLocal', 'sharePct', 'onlyOnDaysWithSales'])
+        const out: AutoConvertPatch = {}
+        if (a.enabled !== undefined) {
+          if (typeof a.enabled !== 'boolean') refuse('shape', `${ap}.enabled`)
+          out.enabled = a.enabled as boolean
+        }
+        if (a.schedule !== undefined) {
+          if (a.schedule !== 'daily' && a.schedule !== 'weekdays' && a.schedule !== 'weekly') {
+            refuse('shape', `${ap}.schedule`)
+          }
+          out.schedule = a.schedule as 'daily' | 'weekdays' | 'weekly'
+        }
+        if (a.atLocal !== undefined)
+          out.atLocal = str(a.atLocal, `${ap}.atLocal`, AUTO_TIME) as AutoConvertPatch['atLocal']
+        if (a.sharePct !== undefined) out.sharePct = int(a.sharePct, `${ap}.sharePct`, 0, 1000)
+        if (a.onlyOnDaysWithSales !== undefined) {
+          if (typeof a.onlyOnDaysWithSales !== 'boolean') refuse('shape', `${ap}.onlyOnDaysWithSales`)
+          out.onlyOnDaysWithSales = a.onlyOnDaysWithSales as boolean
+        }
+        patch.autoConvert = out
+      }
+      return { type: 'merchant.settings', patch }
     }
   }
 }

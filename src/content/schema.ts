@@ -58,17 +58,20 @@ export const MerchantSettingsSchema = z.strictObject({
   autoConvert: z
     .strictObject({
       enabled: z.boolean(),
-      schedule: z.enum(['daily', 'weekly', 'custom']),
+      schedule: z.enum(['daily', 'weekdays', 'weekly']),
       weekdays: z.array(Weekday),
-      atLocal: z.enum(['18:00', '21:00', '23:00']),
+      atLocal: z.enum(['18:00', '20:00', '22:00', '23:00']),
       sharePct: Int.min(10).max(100).multipleOf(10),
       onlyOnDaysWithSales: z.boolean(),
     })
     .superRefine((a, ctx) => {
-      if (a.schedule !== 'daily' && a.weekdays.length === 0) {
-        ctx.addIssue({ code: 'custom', message: `a ${a.schedule} schedule needs at least one weekday` })
+      // The days follow the schedule: none every day, Monday to Friday, or one day a week.
+      const want = { daily: '', weekdays: '1,2,3,4,5' } as const
+      if (a.schedule === 'weekly') {
+        if (a.weekdays.length !== 1) ctx.addIssue({ code: 'custom', message: 'a weekly schedule names one weekday' })
+      } else if (a.weekdays.join(',') !== want[a.schedule]) {
+        ctx.addIssue({ code: 'custom', message: `a ${a.schedule} schedule has the days ${want[a.schedule] || 'none'}` })
       }
-      if (new Set(a.weekdays).size !== a.weekdays.length) ctx.addIssue({ code: 'custom', message: 'duplicate weekday' })
     }),
 })
 

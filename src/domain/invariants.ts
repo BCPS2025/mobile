@@ -261,6 +261,16 @@ export function invariants(s: LedgerState): string[] {
   }
   for (const tx of txs) {
     if (tx.refundedBy !== undefined && !refundsOf.has(tx.id)) bad(11, `tx ${tx.id} names a refund that does not exist`)
+    // A refund returns what was paid: reverse parties, no fee, of a sale.
+    const original = tx.kind === 'refund' && tx.links?.refundOf !== undefined ? s.txs[tx.links.refundOf] : undefined
+    if (tx.kind === 'refund' && tx.links?.refundOf === undefined) bad(11, `refund ${tx.id} names no payment`)
+    if (original) {
+      if (tx.from !== original.to || tx.to !== original.from) bad(11, `refund ${tx.id} does not reverse ${original.id}`)
+      if (tx.fee.fee !== 0) bad(11, `refund ${tx.id} carries a fee`)
+      if (original.kind !== 'purchase' && original.kind !== 'subscription-charge') {
+        bad(11, `refund ${tx.id} refunds something that is not a sale`)
+      }
+    }
   }
 
   // ---- ramps (12, 15)
