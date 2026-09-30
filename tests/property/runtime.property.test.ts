@@ -35,6 +35,7 @@ import {
   payCodeCommand,
   payCommand,
   posCodes,
+  rampCommand,
   sequenceArb,
   splitCommand,
 } from './arbitraries'
@@ -164,6 +165,11 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
           }
         }
         if (cmd.type === 'split.reask' && !cmd.party.startsWith('@')) expect(r.ok).toBe(false)
+        if (r.ok) stats.accepted++
+        break
+      }
+      case 'ramp': {
+        const r = rt.dispatch(rampCommand(content, rt.node.getState(), step, ids.next({ kind: 'new' })))
         if (r.ok) stats.accepted++
         break
       }

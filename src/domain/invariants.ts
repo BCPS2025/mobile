@@ -278,6 +278,31 @@ export function invariants(s: LedgerState): string[] {
       bad(12, `bank top-up ${ramp.id} completed before it arrived`)
     }
   }
+  for (const ramp of Object.values(s.ramps)) {
+    if (
+      ramp.status === 'pending' &&
+      (ramp.arrivesAt === undefined || ramp.method !== 'bank-transfer' || ramp.direction !== 'on')
+    ) {
+      bad(12, `pending ramp ${ramp.id} is not a bank-transfer top-up with an arrival time`)
+    }
+    const tx = txOf(ramp.txId)
+    if (ramp.status === 'completed' && tx) {
+      const kind = ramp.direction === 'on' ? 'on-ramp' : 'off-ramp'
+      const account = ramp.direction === 'on' ? tx.to : tx.from
+      if (tx.kind !== kind || account !== ramp.persona || tx.amount !== ramp.amount) {
+        bad(15, `ramp ${ramp.id} does not match its tx ${tx.id}`)
+      }
+      if (ramp.direction === 'off' && tx.fee.eurOut !== ramp.eur)
+        bad(15, `ramp ${ramp.id} pays out another amount than its tx`)
+    }
+  }
+  const pendingRampIds = Object.values(s.ramps)
+    .filter((r) => r.status === 'pending')
+    .sort((a, b) => (a.arrivesAt ?? 0) - (b.arrivesAt ?? 0) || (a.id < b.id ? -1 : 1))
+    .map((r) => r.id)
+  if (pendingRampIds.join(',') !== s.pendingRamps.join(',')) {
+    bad(15, 'the pending-ramp index does not list exactly the pending ramps in arrival order')
+  }
   const rampTxs = txs.filter((tx) => tx.rampId !== undefined)
   if (new Set(rampTxs.map((tx) => tx.rampId)).size !== rampTxs.length) bad(15, 'a ramp has more than one tx')
 

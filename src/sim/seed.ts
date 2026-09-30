@@ -79,6 +79,11 @@ export function simConfigFrom(content: Content): SimConfig {
     rate,
     fees,
     cardRange: { ...config.cardRange },
+    bankingHours: {
+      SI: { ...config.bankingHours.SI, days: [...config.bankingHours.SI.days] },
+      KR: { ...config.bankingHours.KR, days: [...config.bankingHours.KR.days] },
+    },
+    bankTransfer: { ...config.bankTransferTopUp },
     limits: {
       consumerMax: mustParseMinor(l.consumerMax),
       businessMax: mustParseMinor(l.businessMax),
@@ -178,6 +183,8 @@ export function directoryFrom(content: Content): {
       onStage: p.onStage,
     }
     if (p.shell === 'pos' || p.shell === 'studio') party.merchant = true
+    party.country = p.country
+    if (p.methods) party.methods = { card: p.methods.card !== undefined, bank: true }
     directory[p.id] = party
     handles[p.handle as Handle] = p.id
   }
@@ -339,6 +346,7 @@ export function buildSeed(content: Content, epochDate: IsoDate): SeedResult {
     balances,
     txs,
     txOrder,
+    pendingRamps: [],
     pending: [],
     directory,
     handles,

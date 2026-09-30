@@ -73,6 +73,8 @@ export type WireCommand =
     }
   | { type: 'split.reask'; splitRef: Ref; party: Handle }
   | { type: 'split.cancel'; splitRef: Ref }
+  | { type: 'ramp.on'; method: 'card' | 'bank-transfer' | 'local-method'; eur: number }
+  | { type: 'ramp.off'; amount: string }
 
 type WirePay = Extract<WireCommand, { type: 'pay' }>
 
@@ -88,6 +90,8 @@ export const USER_COMMAND_TYPES: ReadonlySet<string> = new Set<WireCommandType>(
   'split.create',
   'split.reask',
   'split.cancel',
+  'ramp.on',
+  'ramp.off',
 ])
 
 export interface CommandEntry {
@@ -398,6 +402,7 @@ const STATE_ID = /^[a-z][a-z0-9-]{0,31}$/
 const SCREEN = /^[a-z][A-Za-z0-9:._-]{0,63}$/
 const READ_ID = /^[A-Za-z0-9:._-]{1,64}$/
 const HASH = /^[0-9a-f]{16}$/
+const RAMP_METHODS: ReadonlySet<string> = new Set(['card', 'bank-transfer', 'local-method'])
 const PAY_CHANNELS: ReadonlySet<string> = new Set<PayChannel>(['username', 'qr', 'link', 'web-checkout', 'request'])
 
 function isoDate(v: unknown, path: string): IsoDate {
@@ -535,6 +540,19 @@ function command(v: unknown, path: string): WireCommand {
     case 'split.cancel': {
       const o = obj(v, path, ['type', 'splitRef'])
       return { type: 'split.cancel', splitRef: ref(o.splitRef, `${path}.splitRef`) }
+    }
+    case 'ramp.on': {
+      const o = obj(v, path, ['type', 'method', 'eur'])
+      if (typeof o.method !== 'string' || !RAMP_METHODS.has(o.method)) refuse('shape', `${path}.method`)
+      return {
+        type: 'ramp.on',
+        method: o.method as 'card' | 'bank-transfer' | 'local-method',
+        eur: int(o.eur, `${path}.eur`, 1, 10_000_000),
+      }
+    }
+    case 'ramp.off': {
+      const o = obj(v, path, ['type', 'amount'])
+      return { type: 'ramp.off', amount: str(o.amount, `${path}.amount`, AMOUNT) }
     }
   }
 }

@@ -12,6 +12,7 @@ import type {
   UserCommand,
 } from '@domain/types'
 import { type ClockStore, type Timers, createClock } from '@sim/clock'
+import { decideCtx } from '@sim/banking'
 import { runDue, timerDelay } from '@sim/scheduler'
 
 // One page, one ledger: every phone is a view over this single node.
@@ -216,7 +217,7 @@ export function createLedgerNode(opts: LedgerNodeOptions): LedgerNode {
     if (c.type === 'sys.run') return { ok: true, value: run(c.until, 'timer') }
     const now = clock.now()
     const caught = runInternal(now, 'catch-up')
-    const decided = decide(state, c, { now })
+    const decided = decide(state, c, decideCtx(state.config, now))
     if (!decided.ok) {
       afterBatch(caught)
       return decided

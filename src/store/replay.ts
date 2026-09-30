@@ -1,6 +1,7 @@
 import type { Content } from '@content/schema'
 import { applyToDraft, beginDraft, decide, finishDraft } from '@domain/ledger'
 import type { DomainError, LedgerEvent, LedgerState, PendingEvent, SimTime } from '@domain/types'
+import { decideCtx } from '@sim/banking'
 import { ITERATION_CAP, SchedulerCapError, runDue } from '@sim/scheduler'
 import { type At, type IsoDate, LJUBLJANA, instantOfAt } from '@sim/tz'
 import { type CodecError, decodeCommand } from './log-codec'
@@ -117,7 +118,7 @@ export function replay(input: ReplayInput): ReplayResult {
       }
       const cmd = decodeCommand(draft.state, input.content, entry)
       if (!cmd.ok) return { ok: false, error: { code: 'undecodable', index: i, error: cmd.error } }
-      const decided = decide(draft.state, cmd.value, { now: at })
+      const decided = decide(draft.state, cmd.value, decideCtx(draft.state.config, at))
       if (!decided.ok) return { ok: false, error: { code: 'refused', index: i, error: decided.error } }
       for (const p of decided.value) push(p, at)
       log.push({ at, actor: entry.actor, cmdId: entry.cmdId, cmd: cmd.value })

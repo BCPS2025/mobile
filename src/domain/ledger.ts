@@ -1,6 +1,14 @@
 import { maxSendable, quoteFee } from './fees'
-import { linkId as linkIdOf, nextRefSeq, requestId as requestIdOf, splitId as splitIdOf, txRef } from './ids'
+import {
+  linkId as linkIdOf,
+  nextRefSeq,
+  rampId as rampIdOf,
+  requestId as requestIdOf,
+  splitId as splitIdOf,
+  txRef,
+} from './ids'
 import { asMinor } from './money'
+import { eurToMinor } from './rate'
 import type {
   AccountId,
   Balance,
@@ -8,6 +16,7 @@ import type {
   DecideCtx,
   DomainError,
   DueItem,
+  EurCents,
   FeePayer,
   FeePolicy,
   FeePolicyId,
@@ -29,6 +38,9 @@ import type {
   PersonRequestBody,
   PosCodeBody,
   Posting,
+  Ramp,
+  RampOffBody,
+  RampOnBody,
   RequestCancelBody,
   RequestCreateBody,
   RequestDeclineBody,
@@ -553,6 +565,120 @@ function decideSplitCancel(s: LedgerState, c: SplitCancelCommand): Result<Pendin
   }
 }
 
+type RampOnCommand = RampOnBody & { cmdId: string; actor: PersonaId }
+type RampOffCommand = RampOffBody & { cmdId: string; actor: PersonaId }
+
+/** The on-ramp transaction of a ramp: money issued to the account, no fee, settling like a payment. */
+function onRampTx(s: LedgerState, ramp: Ramp, createdAt: SimTime, cmdId: string | undefined): Tx {
+  const q = quoteFee(ramp.amount, s.config.fees['on-ramp'], s.config.rate, undefined, s.config.cardRange)
+  if (!q.ok) throw new Error('on-ramp amount cannot be quoted')
+  const tx: Tx = {
+    id: nextTxId(s),
+    kind: 'on-ramp',
+    channel: 'auto',
+    status: 'pending',
+    from: 'sys:issuance',
+    to: ramp.persona,
+    amount: ramp.amount,
+    fee: q.value,
+    postings: postingsFor('sys:issuance', ramp.persona, q.value),
+    createdAt,
+    dueAt: (createdAt + s.config.settleMs) as SimTime,
+    rampId: ramp.id,
+  }
+  if (cmdId !== undefined) tx.cmdId = cmdId
+  return tx
+}
+
+/**
+ * Top up from a method on file, in whole euros at the reference rate (€50 gives 55.00 BCPS), no fee.
+ * A card or a local method pays in at once (a transaction that settles like a payment); a bank
+ * transfer is only requested, and the scheduler pays it in when it arrives.
+ */
+function decideRampOn(s: LedgerState, c: RampOnCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
+  const me = entryOf(s.directory, c.actor)
+  if (!me) return err('not-allowed')
+  if (c.method !== 'card' && c.method !== 'bank-transfer' && c.method !== 'local-method') return err('not-allowed')
+  if (c.method === 'card' && !me.methods?.card) return err('not-allowed')
+  if (c.method === 'bank-transfer' && !me.methods?.bank) return err('not-allowed')
+  if (!positiveInt(c.eur)) return err('invalid-amount')
+  const maxEur = me.kind === 'business' ? s.config.limits.topUpMaxEur.business : s.config.limits.topUpMaxEur.person
+  if (c.eur > maxEur) return err('invalid-amount', { maxEur })
+  const eur = (c.eur * 100) as EurCents
+  const ramp: Ramp = {
+    id: rampIdOf(s.counters.rampSeq + 1),
+    persona: c.actor,
+    direction: 'on',
+    method: c.method,
+    eur,
+    amount: eurToMinor(eur, s.config.rate),
+    fee: ZERO,
+    status: 'pending',
+    requestedAt: ctx.now,
+  }
+  if (c.method === 'bank-transfer') {
+    if (!ctx.bankArrival || !me.country) return err('not-allowed')
+    ramp.arrivesAt = ctx.bankArrival(me.country, ctx.now)
+    return { ok: true, value: [{ type: 'ramp.requested', cmdId: c.cmdId, ramp }] }
+  }
+  const tx = onRampTx(s, ramp, ctx.now, c.cmdId)
+  return {
+    ok: true,
+    value: [
+      { type: 'tx.submitted', cmdId: c.cmdId, tx },
+      { type: 'ramp.completed', cmdId: c.cmdId, ramp: { ...ramp, status: 'completed', txId: tx.id } },
+    ],
+  }
+}
+
+/**
+ * Convert BCPS to euros to the bank account on file. The converter pays 1.5 % out of the amount and
+ * the rest is paid out (110.00 gives ≈ €98.50); at least 1.10, and no more than is available
+ * (funds locked elsewhere are not the account's).
+ */
+function decideRampOff(s: LedgerState, c: RampOffCommand, ctx: DecideCtx): Result<PendingEvent[], DomainError> {
+  if (!entryOf(s.directory, c.actor)?.methods?.bank) return err('not-allowed')
+  if (!positiveInt(c.amount)) return err('invalid-amount')
+  const min = s.config.limits.cashOutMin
+  if (c.amount < min) return err('invalid-amount', { min })
+  const q = quoteFee(c.amount, s.config.fees['off-ramp'], s.config.rate, undefined, s.config.cardRange)
+  if (!q.ok || q.value.eurOut === undefined) return err('invalid-amount')
+  const have = available(s, c.actor)
+  if (have < c.amount) return err('insufficient-funds', { have, short: asMinor(c.amount - have) })
+  const ramp: Ramp = {
+    id: rampIdOf(s.counters.rampSeq + 1),
+    persona: c.actor,
+    direction: 'off',
+    eur: q.value.eurOut,
+    amount: c.amount,
+    fee: q.value.fee,
+    status: 'completed',
+    requestedAt: ctx.now,
+  }
+  const tx: Tx = {
+    id: nextTxId(s),
+    kind: 'off-ramp',
+    channel: 'auto',
+    status: 'pending',
+    from: c.actor,
+    to: 'sys:issuance',
+    amount: c.amount,
+    fee: q.value,
+    postings: postingsFor(c.actor, 'sys:issuance', q.value),
+    createdAt: ctx.now,
+    dueAt: (ctx.now + s.config.settleMs) as SimTime,
+    cmdId: c.cmdId,
+    rampId: ramp.id,
+  }
+  return {
+    ok: true,
+    value: [
+      { type: 'tx.submitted', cmdId: c.cmdId, tx },
+      { type: 'ramp.completed', cmdId: c.cmdId, ramp: { ...ramp, txId: tx.id } },
+    ],
+  }
+}
+
 /** Free text as the record can keep it: a non-empty string within the note limit. */
 function validNote(s: LedgerState, text: unknown): boolean {
   return typeof text === 'string' && text.length > 0 && [...text].length <= s.config.limits.noteMaxChars
@@ -580,6 +706,10 @@ export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<Pendi
       return decideSplitReask(s, c, ctx)
     case 'split.cancel':
       return decideSplitCancel(s, c)
+    case 'ramp.on':
+      return decideRampOn(s, c, ctx)
+    case 'ramp.off':
+      return decideRampOff(s, c, ctx)
     default:
       // A command type this build does not know (the record format refuses these before decide).
       return err('not-allowed')
@@ -588,12 +718,42 @@ export function decide(s: LedgerState, c: Command, ctx: DecideCtx): Result<Pendi
 
 // ---- scheduler work
 
-/** Every piece of due work, derived from state (only settling in milestone A1). */
+/** Every piece of due work, derived from state: settling payments and bank-transfer arrivals. */
 export function dueWork(s: LedgerState): DueItem[] {
-  return pendingTxs(s).map(settleItem)
+  return [...pendingTxs(s).map(settleItem), ...pendingRamps(s).map(arrivalItem)]
 }
 
 const settleItem = (tx: Tx): DueItem => ({ kind: 'settle', dueAt: tx.dueAt, persona: tx.from, entityId: tx.id })
+const arrivalItem = (r: Ramp): DueItem => ({
+  kind: 'ramp-arrival',
+  dueAt: r.arrivesAt as SimTime,
+  persona: r.persona,
+  entityId: r.id,
+})
+
+/** Pending bank-transfer top-ups in arrival order (from the index, not a scan of all ramps). */
+function pendingRamps(s: LedgerState): Ramp[] {
+  const out: Ramp[] = []
+  for (const id of s.pendingRamps) {
+    const r = entryOf(s.ramps, id)
+    if (r && r.status === 'pending' && r.arrivesAt !== undefined) out.push(r)
+  }
+  return out
+}
+
+/** The arrival order of two pending top-ups: when they arrive, then the ramp id. */
+function arrivalOrder(a: Ramp, b: Ramp): number {
+  return (a.arrivesAt ?? 0) - (b.arrivesAt ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+}
+
+/** The first pending top-up in arrival order. */
+function firstRamp(s: LedgerState): Ramp | undefined {
+  for (const id of s.pendingRamps) {
+    const r = entryOf(s.ramps, id)
+    if (r && r.status === 'pending' && r.arrivesAt !== undefined) return r
+  }
+  return undefined
+}
 
 /**
  * The settle order of two pending transactions: the scheduler's total order within the settle
@@ -622,13 +782,20 @@ function firstPending(s: LedgerState): Tx | undefined {
  * payments pending at once would otherwise replay in quadratic time).
  */
 export function dueHeads(s: LedgerState, until: SimTime): DueItem[] {
+  const out: DueItem[] = []
   const tx = firstPending(s)
-  return tx !== undefined && tx.dueAt <= until ? [settleItem(tx)] : []
+  if (tx !== undefined && tx.dueAt <= until) out.push(settleItem(tx))
+  const ramp = firstRamp(s)
+  if (ramp !== undefined && (ramp.arrivesAt as SimTime) <= until) out.push(arrivalItem(ramp))
+  return out
 }
 
 /** The earliest due time of any work (for arming a timer), or null when nothing is scheduled. */
 export function earliestDueAt(s: LedgerState): SimTime | null {
-  return firstPending(s)?.dueAt ?? null
+  const settle = firstPending(s)?.dueAt
+  const arrival = firstRamp(s)?.arrivesAt
+  if (settle === undefined) return arrival ?? null
+  return (arrival === undefined ? settle : Math.min(settle, arrival)) as SimTime
 }
 
 /** The events one due item produces now (empty when it no longer applies). */
@@ -637,6 +804,16 @@ export function decideDue(s: LedgerState, item: DueItem): PendingEvent[] {
     case 'settle': {
       const tx = entryOf(s.txs, item.entityId)
       return tx && tx.status === 'pending' ? [{ type: 'tx.confirmed', txId: tx.id }] : []
+    }
+    case 'ramp-arrival': {
+      // A bank transfer arrives: the money is issued to the account (created when it arrives).
+      const ramp = entryOf(s.ramps, item.entityId)
+      if (ramp?.status !== 'pending') return []
+      const tx = onRampTx(s, ramp, item.dueAt, undefined)
+      return [
+        { type: 'tx.submitted', tx },
+        { type: 'ramp.completed', ramp: { ...ramp, status: 'completed', txId: tx.id } },
+      ]
     }
     default:
       return []
@@ -652,7 +829,17 @@ export function decideDue(s: LedgerState, item: DueItem): PendingEvent[] {
 // balance, a transaction, a request) are replaced, never mutated, so states share entries safely.
 
 /** Record-valued slices of the state that events write into. */
-type ContainerKey = 'balances' | 'txs' | 'txOrder' | 'pending' | 'requests' | 'links' | 'splits' | 'seenCmdIds'
+type ContainerKey =
+  | 'balances'
+  | 'txs'
+  | 'txOrder'
+  | 'pending'
+  | 'pendingRamps'
+  | 'ramps'
+  | 'requests'
+  | 'links'
+  | 'splits'
+  | 'seenCmdIds'
 
 interface Writer {
   s: LedgerState
@@ -692,6 +879,15 @@ function insertPending(w: Writer, tx: Tx): void {
     else hi = mid
   }
   pending.splice(lo, 0, tx.id)
+}
+
+/** Adds a bank-transfer top-up to the arrival index at its place in arrival order. */
+function insertPendingRamp(w: Writer, ramp: Ramp): void {
+  const pending = own(w, 'pendingRamps')
+  const ramps = w.s.ramps
+  let at = pending.length
+  while (at > 0 && arrivalOrder(entryOf(ramps, pending[at - 1] as string) as Ramp, ramp) > 0) at -= 1
+  pending.splice(at, 0, ramp.id)
 }
 
 function assertNever(x: never): never {
@@ -779,6 +975,23 @@ function apply(w: Writer, e: LedgerEvent): void {
       s.counters = { ...s.counters, splitSeq: s.counters.splitSeq + 1 }
       return
     }
+    case 'ramp.requested': {
+      setEntry(own(w, 'ramps'), e.ramp.id, e.ramp)
+      s.counters = { ...s.counters, rampSeq: s.counters.rampSeq + 1 }
+      if (e.ramp.status === 'pending') insertPendingRamp(w, e.ramp)
+      return
+    }
+    case 'ramp.completed': {
+      const before = entryOf(s.ramps, e.ramp.id)
+      setEntry(own(w, 'ramps'), e.ramp.id, e.ramp)
+      if (!before) s.counters = { ...s.counters, rampSeq: s.counters.rampSeq + 1 }
+      else {
+        const pending = own(w, 'pendingRamps')
+        const at = pending.indexOf(e.ramp.id)
+        if (at >= 0) pending.splice(at, 1)
+      }
+      return
+    }
     case 'split.share-updated': {
       const split = entryOf(s.splits, e.splitId)
       if (!split) return
@@ -823,6 +1036,8 @@ export function beginDraft(s: LedgerState): LedgerDraft {
     txs: { ...s.txs },
     txOrder: [...s.txOrder],
     pending: [...s.pending],
+    pendingRamps: [...s.pendingRamps],
+    ramps: { ...s.ramps },
     requests: { ...s.requests },
     links: { ...s.links },
     splits: { ...s.splits },

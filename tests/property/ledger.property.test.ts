@@ -38,6 +38,7 @@ import {
   payCodeCommand,
   payCommand,
   posCodes,
+  rampCommand,
   sequenceArb,
   splitCommand,
 } from './arbitraries'
@@ -74,6 +75,10 @@ const stats = {
   splitsMade: 0,
   splitsReasked: 0,
   splitsCancelled: 0,
+  topUpsPaidIn: 0,
+  topUpsRequested: 0,
+  topUpsArrived: 0,
+  cashOuts: 0,
 }
 const countRefusal = (code: string) => stats.refused.set(code, (stats.refused.get(code) ?? 0) + 1)
 
@@ -92,6 +97,11 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
   const problems: string[] = []
   node.onEvent((e, s) => {
     stats.events++
+    // A bank transfer arrives at or after its time, whichever way the clock reached it.
+    if (e.type === 'ramp.completed' && e.ramp.method === 'bank-transfer') {
+      stats.topUpsArrived++
+      expect(e.at).toBeGreaterThanOrEqual(e.ramp.arrivesAt ?? Number.POSITIVE_INFINITY)
+    }
     const p = invariants(s)
     if (p.length > 0) problems.push(`after ${e.type} #${e.seq}: ${p.join('; ')}`)
   })
@@ -361,6 +371,50 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         }
         break
       }
+      case 'ramp': {
+        const before = node.getState()
+        const cmd = rampCommand(content, before, step, ids.next({ kind: 'new' }))
+        const r = node.dispatch(cmd)
+        if (!r.ok) {
+          countRefusal(r.error.code)
+          expect(node.events().filter((e) => e.cmdId === cmd.cmdId)).toHaveLength(0)
+          expect(JSON.stringify(node.getState().ramps)).toBe(JSON.stringify(before.ramps))
+          break
+        }
+        const party = before.directory[cmd.actor]
+        if (cmd.type === 'ramp.on') {
+          // A method that is on file, whole euros within the limit, no fee, 1.10 BCPS per euro.
+          if (cmd.method === 'card') expect(party?.methods?.card).toBe(true)
+          if (cmd.method === 'bank-transfer') expect(party?.methods?.bank).toBe(true)
+          expect(cmd.eur).toBeGreaterThanOrEqual(1)
+          expect(cmd.eur).toBeLessThanOrEqual(party?.kind === 'business' ? 100_000 : 10_000)
+          if (cmd.method === 'bank-transfer') {
+            stats.topUpsRequested++
+            expect(r.value.map((e) => e.type)).toEqual(['ramp.requested'])
+            const ramp = (r.value[0] as Extract<LedgerEvent, { type: 'ramp.requested' }>).ramp
+            expect(ramp.arrivesAt).toBeGreaterThan(node.now())
+            expect(ramp.amount).toBe(cmd.eur * 110)
+          } else {
+            stats.topUpsPaidIn++
+            expect(r.value.map((e) => e.type)).toEqual(['tx.submitted', 'ramp.completed'])
+            const tx = (r.value[0] as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx as Tx
+            expect(tx).toMatchObject({ kind: 'on-ramp', from: 'sys:issuance', to: cmd.actor, amount: cmd.eur * 110 })
+            expect(tx.fee.fee).toBe(0)
+          }
+        } else if (cmd.type === 'ramp.off') {
+          stats.cashOuts++
+          expect(party?.methods?.bank).toBe(true)
+          expect(cmd.amount).toBeGreaterThanOrEqual(before.config.limits.cashOutMin)
+          const tx = (r.value[0] as Extract<LedgerEvent, { type: 'tx.submitted' }>).tx as Tx
+          // D29: 1.5 % of the amount, round half-up; the euros are the remainder at 10 per 11.
+          const fee = Math.floor((cmd.amount * 150 * 2 + 10_000) / 20_000)
+          expect(tx.fee.fee).toBe(fee)
+          expect(tx.fee.recipientCredit).toBe(cmd.amount - fee)
+          expect(tx.fee.eurOut).toBe(Math.floor(((cmd.amount - fee) * 10 * 2 + 11) / 22))
+          expect(tx).toMatchObject({ kind: 'off-ramp', from: cmd.actor, to: 'sys:issuance' })
+        }
+        break
+      }
       case 'advance':
         node.clock.advance(step.ms)
         break
@@ -492,6 +546,11 @@ describe('ledger properties over random A1 command sequences', () => {
     expect(stats.splitsMade).toBeGreaterThan(0)
     expect(stats.splitsReasked).toBeGreaterThan(0)
     expect(stats.splitsCancelled).toBeGreaterThan(0)
+    // Top-ups (card or local paid in, bank transfers requested and arriving) and cash-outs.
+    expect(stats.topUpsPaidIn).toBeGreaterThan(0)
+    expect(stats.topUpsRequested).toBeGreaterThan(0)
+    expect(stats.topUpsArrived).toBeGreaterThan(0)
+    expect(stats.cashOuts).toBeGreaterThan(0)
     expect(stats.jumpsRefused).toBeGreaterThan(0)
     expect(stats.jumps).toBeGreaterThan(stats.jumpsRefused)
   })

@@ -243,7 +243,15 @@ describe('each invariant names a planted fault', () => {
       { ...paidLunch, ramps: { 'RP-000001': ramp({ txId: tx.id, arrivesAt: (tx.createdAt + 1) as SimTime }) } },
       tx,
     )
-    expect(numbers(s)).toEqual([12])
+    expect(numbers(s)).toContain(12)
+    // A pending ramp is a bank transfer with an arrival time.
+    expect(
+      numbers({
+        ...paidLunch,
+        ramps: { 'RP-000001': ramp({ status: 'pending', method: 'card' }) },
+        pendingRamps: ['RP-000001'],
+      }),
+    ).toContain(12)
   })
 
   it('[13] every balance resolves in the directory; handles are unique', () => {
@@ -258,6 +266,29 @@ describe('each invariant names a planted fault', () => {
       15,
     )
     expect(numbers({ ...paidLunch, ramps: { 'RP-000001': ramp({}) } })).toContain(15)
+  })
+
+  it('[15] a ramp matches its tx; the pending-ramp index lists exactly the pending ramps in arrival order', () => {
+    const tx = { ...lunchTx, rampId: 'RP-000001' }
+    const withRamp = (r: Ramp, pendingRamps: string[] = []) =>
+      setTx({ ...paidLunch, ramps: { [r.id]: r }, pendingRamps }, tx)
+    // The tx is a transfer, not the on-ramp the ramp says.
+    expect(numbers(withRamp(ramp({ txId: tx.id, arrivesAt: t0 })))).toContain(15)
+    const onRamp = { ...tx, kind: 'on-ramp' as const, to: 'ana', from: 'sys:issuance', amount: m('55.00') }
+    expect(
+      numbers(setTx({ ...paidLunch, ramps: { 'RP-000001': ramp({ txId: tx.id, arrivesAt: t0 }) } }, onRamp)),
+    ).not.toContain(15)
+    const pending = ramp({ status: 'pending', arrivesAt: (t0 + 1000) as SimTime })
+    expect(numbers({ ...paidLunch, ramps: { [pending.id]: pending }, pendingRamps: [pending.id] })).toEqual([])
+    expect(numbers({ ...paidLunch, ramps: { [pending.id]: pending }, pendingRamps: [] })).toEqual([15])
+    const second = { ...pending, id: 'RP-000002', arrivesAt: t0 }
+    expect(
+      numbers({
+        ...paidLunch,
+        ramps: { [pending.id]: pending, [second.id]: second },
+        pendingRamps: [pending.id, second.id],
+      }),
+    ).toEqual([15])
   })
 
   it('[16] an owned one-off item has an unrefunded purchase', () => {

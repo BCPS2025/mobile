@@ -8,7 +8,7 @@
 import fc from 'fast-check'
 import type { Content } from '@content/schema'
 import { mustParseMinor } from '@domain/money'
-import { feeContextOfSnapshot, quoteWith } from '@domain/ledger'
+import { available, feeContextOfSnapshot, quoteWith } from '@domain/ledger'
 import type {
   Handle,
   LedgerState,
@@ -154,6 +154,16 @@ export interface SplitStep {
   which: number
 }
 
+/** A top-up (card, bank transfer or local method, with method and amount as valid as not) or a cash-out. */
+export interface RampStep {
+  kind: 'ramp'
+  op: 'on' | 'off'
+  actor: number
+  method: 'card' | 'bank-transfer' | 'local-method' | 'cheque'
+  eur: number
+  cash: { kind: 'amount'; amount: AmountPick } | { kind: 'all' } | { kind: 'min' } | { kind: 'below-min' }
+}
+
 export type Step =
   | PayStep
   | ChargeStep
@@ -163,6 +173,7 @@ export type Step =
   | AnswerStep
   | LinkStep
   | SplitStep
+  | RampStep
   /** The Lunch request exactly as Ana would pay it (so the paid-request paths are reached). */
   | { kind: 'pay-lunch'; expect: ExpectPick }
   /** Time passes on the clock without the timer firing (a late or throttled timer). */
@@ -435,6 +446,42 @@ export function splitStepArb(content: Content, opts: StepOptions = {}): fc.Arbit
   })
 }
 
+export function rampStepArb(content: Content): fc.Arbitrary<RampStep> {
+  return fc.record({
+    kind: fc.constant('ramp' as const),
+    op: fc.constantFrom<RampStep['op']>('on', 'on', 'off', 'off'),
+    actor: fc.oneof(
+      { weight: 5, arbitrary: fc.nat(actorsOf(content).length - 2) },
+      { weight: 1, arbitrary: fc.constant(actorsOf(content).length - 1) }, // nobody
+    ),
+    method: fc.constantFrom<RampStep['method']>(
+      'card',
+      'card',
+      'bank-transfer',
+      'bank-transfer',
+      'local-method',
+      'cheque',
+    ),
+    eur: fc.oneof(
+      { weight: 6, arbitrary: fc.constantFrom(1, 5, 50, 250, 1000) },
+      { weight: 2, arbitrary: fc.constantFrom(10_000, 10_001, 100_000, 100_001) },
+      { weight: 1, arbitrary: fc.constantFrom(0, -3, 1.5, Number.NaN) },
+    ),
+    cash: fc.oneof(
+      {
+        weight: 5,
+        arbitrary: fc
+          .integer({ min: 1, max: 30_000 })
+          .map((value) => ({ kind: 'amount' as const, amount: { kind: 'small' as const, value } })),
+      },
+      { weight: 2, arbitrary: amountArb.map((amount) => ({ kind: 'amount' as const, amount })) },
+      { weight: 1, arbitrary: fc.constant({ kind: 'all' as const }) },
+      { weight: 1, arbitrary: fc.constant({ kind: 'min' as const }) },
+      { weight: 1, arbitrary: fc.constant({ kind: 'below-min' as const }) },
+    ),
+  })
+}
+
 export interface StepOptions {
   /** Runtime-level properties: Reset and Undo, and commands the runtime must refuse as not storable. */
   runtime?: boolean
@@ -455,6 +502,7 @@ export function stepArb(content: Content, opts: StepOptions = {}): fc.Arbitrary<
     { weight: 5, arbitrary: answerStepArb() },
     { weight: 4, arbitrary: linkStepArb(content, opts) },
     { weight: 5, arbitrary: splitStepArb(content, opts) },
+    { weight: 4, arbitrary: rampStepArb(content) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 5000 }).map((ms) => ({ kind: 'advance', ms })) },
     { weight: 3, arbitrary: fc.integer({ min: 0, max: 3000 }).map((ms) => ({ kind: 'fire', ms })) },
     { weight: 1, arbitrary: fc.constant({ kind: 'catch-up' }) },
@@ -803,6 +851,28 @@ export function splitCommand(content: Content, s: LedgerState, step: SplitStep, 
   }
   if (sourceTxId !== undefined) cmd.sourceTxId = sourceTxId
   return cmd
+}
+
+/** The command of a ramp step against `s`. */
+export function rampCommand(content: Content, s: LedgerState, step: RampStep, cmdId: string): UserCommand {
+  const actor = actorsOf(content)[step.actor] as PersonaId
+  if (step.op === 'on') return { type: 'ramp.on', actor, cmdId, method: step.method as never, eur: step.eur }
+  let amount = 0
+  switch (step.cash.kind) {
+    case 'amount':
+      amount = step.cash.amount.value
+      break
+    case 'all':
+      amount = available(s, actor)
+      break
+    case 'min':
+      amount = s.config.limits.cashOutMin
+      break
+    case 'below-min':
+      amount = s.config.limits.cashOutMin - 1
+      break
+  }
+  return { type: 'ramp.off', actor, cmdId, amount: amount as Minor }
 }
 
 /** The Lunch request as the payer's review step shows it. */

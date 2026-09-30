@@ -1,6 +1,6 @@
 {
   "stateVersion": 2,
-  "reason": "People can now make single-use payment links and send them, and split a bill into requests; a payment address can carry a link. Logs of earlier commands replay to the same balances.",
+  "reason": "Top-ups, cash-outs and bank-transfer arrivals are added to the engine, and accounts now record their country and the payment methods on file. Logs of earlier commands replay to the same balances.",
   "inputs": {
     "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
     "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
@@ -10,19 +10,20 @@
     "src/domain/counter.ts": "f2096f6068d560be59b665231f82003cf6bca322978541cabddddf5ff685fb7b",
     "src/domain/fees.ts": "8f03ed588123bb7d49b1a608d5105eb6f38fe7584ebc435dec35f2250d0dc282",
     "src/domain/ids.ts": "c887635c96980d661642b2a910b2a199bf6ae7eba139caea656469b2aac31b28",
-    "src/domain/invariants.ts": "4d08b5e54213239410dca86fd10b8deb98207664ab5d120b1710f595560e0cae",
-    "src/domain/ledger.ts": "eae294259964d041b2176e424a4692890ac20c29832161fc003033eca7b115d0",
+    "src/domain/invariants.ts": "706854f3dae7bd3e20d24263b195d9fd960c9712b65849fbde83d9826818e48f",
+    "src/domain/ledger.ts": "ac6e76b1c95ca38b908fb3111083c5eabf719d2564277292cfb6d34e0486e88f",
     "src/domain/money.ts": "fcd5ee3f2028e6bcbb90f46f2eab8d6d388e0b76f0c6da7206aaff4c7620a671",
     "src/domain/rate.ts": "43a207247e91eb6c9ffe29c3d3f25f0ebca069366ebdaf87d8cb06a462eacdfb",
-    "src/domain/types.ts": "8be63139812ae6af72e9df76b1fe8684123b8ff8b37e12d215f3e7f7db4f21fe",
+    "src/domain/types.ts": "7760548ee3333bdc6841b25b9bee7ca3f812c9240126caaf8e710e482df5fb7b",
     "src/domain/uri.ts": "57410dd923caeb8e06ba645b58524e55d8cf63bd63e391528ce8e8dc9d128cf1",
+    "src/sim/banking.ts": "492c2cf9e8d58ce2a2c884f191e43e317917e1c5f1fc31eac4ff8734331af84e",
     "src/sim/clock.ts": "045ccec1197d916f83fba7c7015672ab33353a04ef6cfb851d580934989b25ae",
     "src/sim/scheduler.ts": "1f766ee5a0a006b12e36dc1c2cc92e232b186d2b72bc256d5f67671d63af6346",
-    "src/sim/seed.ts": "aeee9b40089ba0f501515e429d9e33aeb500b5fe4595e6d9d1ede21851facecc",
+    "src/sim/seed.ts": "77215907d9929dcc76f18188ff64e96742681e4c4a7bdab885546fc747dafd7f",
     "src/sim/t0.ts": "8ec76304bd00501e35c0c98c4b0ddb741f8681522e2f672b95dba98cb6c400c8",
     "src/sim/tz.ts": "69164a4b8eb1affbcbaba847d89483a52898e73511ecfc215deec0fb0db849b8",
     "src/sim/validate-content.ts": "99fb423c2db7f76d6fe97093605c2615e52368ca2325d198015a8c50de5440d9",
-    "src/store/log-codec.ts": "fb22abfb2d83f4c204595bf37cbdd9459a5195ca92c5e427c145e476dbae4a25",
-    "src/store/replay.ts": "15e915ee327962faf02af9e2ee4e4ffff0baf516b0d7ba93a7afd72b4f9417c2"
+    "src/store/log-codec.ts": "13079b037386d21d79b569cb08dfbda7e2b06a41cbbe9cfb15e17fa9b69d40fb",
+    "src/store/replay.ts": "b3c46ef2625ea0d996c177876fcb41e2e04579165f38d1dfa207387098994d29"
   }
 }

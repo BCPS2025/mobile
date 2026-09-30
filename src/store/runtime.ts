@@ -416,7 +416,10 @@ export function createRuntime(deps: RuntimeDeps): Runtime {
         return bad(cmd.amount) || bad(cmd.expect?.senderDebit)
       case 'request.create':
       case 'link.create':
+      case 'ramp.off':
         return bad(cmd.amount)
+      case 'ramp.on':
+        return bad(cmd.eur)
       case 'split.create':
         return bad(cmd.total) || !Array.isArray(cmd.shares) || cmd.shares.some((sh) => bad(sh?.amount))
       default:

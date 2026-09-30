@@ -153,6 +153,10 @@ export function encodeCommand(s: LedgerState, c: UserCommand): Result<WireComman
       if (!r) return { ok: false, error: 'unknown-ref' }
       return { ok: true, value: { type: 'split.cancel', splitRef: r } }
     }
+    case 'ramp.on':
+      return { ok: true, value: { type: 'ramp.on', method: c.method, eur: c.eur } }
+    case 'ramp.off':
+      return { ok: true, value: { type: 'ramp.off', amount: minorString(c.amount) } }
   }
 }
 
@@ -297,6 +301,13 @@ export function decodeCommand(
       const id = resolveRef(s.splits, w.splitRef)
       if (id === null) return { ok: false, error: 'unknown-ref' }
       return { ok: true, value: { type: 'split.cancel', actor: e.actor, cmdId: e.cmdId, splitId: id } }
+    }
+    case 'ramp.on':
+      return { ok: true, value: { type: 'ramp.on', actor: e.actor, cmdId: e.cmdId, method: w.method, eur: w.eur } }
+    case 'ramp.off': {
+      const amount = parseMinor(w.amount)
+      if (!amount.ok) return { ok: false, error: 'bad-amount' }
+      return { ok: true, value: { type: 'ramp.off', actor: e.actor, cmdId: e.cmdId, amount: amount.value } }
     }
   }
 }

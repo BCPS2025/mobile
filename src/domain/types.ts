@@ -58,6 +58,10 @@ export interface Party {
   /** A business whose QR and checkout payments are sales (café, studio). */
   merchant?: true
   guest?: { poolIndex: number }
+  /** Where the account's banks are (banking hours, bank-transfer arrival). */
+  country?: 'SI' | 'KR'
+  /** Payment methods on file: a card and a bank account (a local payment method is always there). */
+  methods?: { card: boolean; bank: boolean }
 }
 
 // ---- fees
@@ -221,6 +225,14 @@ export interface Limits {
   noteMaxChars: number
 }
 
+/** Opening hours of a country's banks: weekdays (0 = Sunday) and local "HH:MM" in the country's zone. */
+export interface BankingHours {
+  days: number[]
+  open: string
+  close: string
+  tz: string
+}
+
 export interface SimConfig {
   settleMs: number
   /** How long a POS payment code can be paid, in milliseconds (a code older than this has expired). */
@@ -229,6 +241,9 @@ export interface SimConfig {
   fees: Record<FeePolicyId, FeePolicy>
   cardRange: { lowBps: number; highBps: number }
   limits: Limits
+  bankingHours: Record<'SI' | 'KR', BankingHours>
+  /** Bank-transfer top-ups: minutes to arrive inside banking hours, and the local time of the next-day arrival. */
+  bankTransfer: { withinHoursDelayMin: number; nextDayArrival: string }
 }
 
 export interface Balance {
@@ -410,6 +425,9 @@ export interface LedgerState {
   balances: Record<AccountId, Balance>
   txs: Record<string, Tx>
   txOrder: string[]
+  /** Ids of the pending bank-transfer top-ups in arrival order: arrivesAt, then ramp id (an index over
+   *  ramps, kept by evolve; the next to arrive is first). */
+  pendingRamps: string[]
   /** Ids of the pending transactions in settle order: dueAt, then sender id, then transaction id
    *  (an index over txs, kept by evolve; the next to settle is first). */
   pending: string[]
@@ -496,6 +514,10 @@ export type SplitCreateBody = {
 export type SplitReaskBody = { type: 'split.reask'; splitId: string; party: Handle }
 /** The owner cancels every share that is still open. */
 export type SplitCancelBody = { type: 'split.cancel'; splitId: string }
+/** Top up from a method on file: a card or local method arrives at once, a bank transfer when the bank sends it. */
+export type RampOnBody = { type: 'ramp.on'; method: 'card' | 'bank-transfer' | 'local-method'; eur: number }
+/** Convert BCPS to euros to the bank account on file; the converter pays 1.5 %. */
+export type RampOffBody = { type: 'ramp.off'; amount: Minor }
 export type UserCommandBody =
   | PayCommandBody
   | RequestCreateBody
@@ -506,6 +528,8 @@ export type UserCommandBody =
   | SplitCreateBody
   | SplitReaskBody
   | SplitCancelBody
+  | RampOnBody
+  | RampOffBody
 /** A user command: `cmdId` is `${flowInstanceId}:${stepId}`; `actor` is a persona id. */
 export type UserCommand = UserCommandBody & { cmdId: string; actor: PersonaId }
 export type PayCommand = PayCommandBody & { cmdId: string; actor: PersonaId }
@@ -538,6 +562,11 @@ export type LedgerEventBody =
   | { type: 'split.created'; split: Split }
   /** A share now points at a new request (ask again). */
   | { type: 'split.share-updated'; splitId: string; party: PartyId; requestId: string }
+  /** A bank-transfer top-up was asked for; the money arrives at `ramp.arrivesAt`. */
+  | { type: 'ramp.requested'; ramp: Ramp }
+  /** A ramp is done: a card or local top-up and a cash-out complete when they are made (the ramp is new
+   *  then), a bank transfer when it arrives (the ramp is the pending one, now completed). */
+  | { type: 'ramp.completed'; ramp: Ramp }
 /** `cmdId` is set on events a user command produced; scheduler work has none. */
 export type LedgerEvent = { seq: number; at: SimTime; cmdId?: string } & LedgerEventBody
 export type LedgerEventType = LedgerEvent['type']
@@ -547,9 +576,16 @@ export type PendingEvent = { cmdId?: string } & LedgerEventBody
 /** Where an applied batch of events came from (effects coalesce by origin). */
 export type BatchOrigin = 'user' | 'timer' | 'jump' | 'catch-up' | 'replay'
 
+/**
+ * When a bank transfer requested at `requestedAt` reaches an account of `country`. Local-time rules
+ * need zones, which the domain cannot compute, so the node and replay supply them (sim/banking).
+ */
+export type BankArrival = (country: 'SI' | 'KR', requestedAt: SimTime) => SimTime
+
 export interface DecideCtx {
   /** The current virtual clock (live or manual); every command is stamped with it. */
   now: SimTime
+  bankArrival?: BankArrival
 }
 
 // ---- scheduler work (derived from state, never stored)
@@ -584,6 +620,10 @@ export interface DomainError {
   status?: string
   /** invalid-amount: the limit that was exceeded. */
   max?: Minor
+  /** invalid-amount: the smallest amount accepted (the cash-out minimum). */
+  min?: Minor
+  /** invalid-amount: the top-up limit that was exceeded, in whole euros. */
+  maxEur?: number
   /** quote-changed: the debit decide computed now. */
   senderDebit?: Minor
 }
