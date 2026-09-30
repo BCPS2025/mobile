@@ -35,6 +35,9 @@ export interface UiEvents {
     txId: string
     title: string
     line: string | null
+    /** The stage's toast when it is drawn shorter than the banner (null: none of its own). */
+    toastTitle: string | null
+    toastLine: string | null
     amount: Minor
     banner: boolean
     toast: boolean

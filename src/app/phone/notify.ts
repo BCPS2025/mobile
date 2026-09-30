@@ -31,3 +31,20 @@ export function openNotification(
   const target = n.kind === 'sale.received' && isImplemented(RECEIVED, who.shell) ? RECEIVED : TX
   if (isImplemented(target, who.shell)) nav.open(target, { txId: n.txId })
 }
+
+/**
+ * A toast for an account that is not on a phone was tapped (the stage's gutter toast, phone
+ * mode's [Switch]): that account comes onto the phone, and its notification opens as the banner
+ * would open it.
+ */
+export function openToast(
+  app: AppState,
+  slot: SlotKey,
+  t: { id: string; persona: PersonaId; notificationId: string; txId: string; kind: string },
+): void {
+  app.actions.choose(slot, t.persona)
+  app.actions.dismissToast(t.id)
+  const shell = app.persona(t.persona)?.shell
+  if (shell)
+    openNotification(app, { persona: t.persona, slot, shell }, { id: t.notificationId, txId: t.txId, kind: t.kind })
+}

@@ -22,6 +22,9 @@ export interface Notification {
   txId: string
   title: string
   line: string | null
+  /** The stage's toast when it is drawn shorter than the banner (null: none of its own). */
+  toastTitle: string | null
+  toastLine: string | null
   /** The payment amount as the payer sent it (the title's figure). */
   amount: Minor
   /** What tapping it opens (content/notifications.yaml `opens`). */
@@ -76,6 +79,8 @@ export function notificationOf(s: LedgerState, tx: Tx, persona: PersonaId, conte
     txId: tx.id,
     title: fillTemplate(entry.title, values),
     line: line.length > 0 ? line : null,
+    toastTitle: entry.toastTitle ? fillTemplate(entry.toastTitle, values) : null,
+    toastLine: entry.toastLine ? fillTemplate(entry.toastLine, values) : null,
     amount: tx.amount,
     opens: 'tx',
     banner: entry.banner,

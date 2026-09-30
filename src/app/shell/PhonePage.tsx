@@ -7,6 +7,7 @@ import { dateChipText } from '../format'
 import { Avatar } from '../kit/Avatar'
 import { Wordmark } from '../kit/Wordmark'
 import { PhoneHost } from '../phone/PhoneHost'
+import { openToast } from '../phone/notify'
 import { LIVE_SHELLS } from '../phone/registry'
 import { AppProvider, useApp, useTransient, useUi } from '../state/AppContext'
 import { getAppState } from '../state/boot'
@@ -144,9 +145,7 @@ function PhoneToasts() {
   return (
     <div className="pointer-events-none absolute inset-x-2 top-2 z-30 flex flex-col gap-2 [&>*]:pointer-events-auto">
       {reset && <ResetToast />}
-      {latest && (
-        <PhoneToast key={latest.id} toast={latest} onSwitch={() => app.actions.choose('single', latest.persona)} />
-      )}
+      {latest && <PhoneToast key={latest.id} toast={latest} onSwitch={() => openToast(app, 'single', latest)} />}
     </div>
   )
 }

@@ -27,6 +27,8 @@ export function attachEffects(node: LedgerNode, bus: UiBus, content: Content): (
         txId: n.txId,
         title: n.title,
         line: n.line,
+        toastTitle: n.toastTitle,
+        toastLine: n.toastLine,
         amount: n.amount,
         banner: n.banner,
         toast: n.toast,

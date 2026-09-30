@@ -63,6 +63,12 @@ export interface ToastState {
   name: string
   title: string
   line: string | null
+  /**
+   * The stage's toast as drawn ("Payment received" / "11.00 BCPS from @ana"); null for a kind
+   * without one: the stage then shows "On {name}'s phone" over the title and line.
+   */
+  toastTitle: string | null
+  toastLine: string | null
   /** "On Marko Kovač's phone: @ana sent you 16.50 BCPS · Cinema". */
   text: string
   /** The account that paid (when it is one of the accounts), so a toast never opens on its phone. */
@@ -262,6 +268,8 @@ export function createAppState(deps: AppDeps): AppState {
           name,
           title: n.title,
           line: n.line,
+          toastTitle: n.toastTitle,
+          toastLine: n.toastLine,
           text: fillTemplate(content.copy.phoneMode.toast, { name, what }),
           payer: payerOf(n.txId),
         }

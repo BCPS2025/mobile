@@ -150,7 +150,7 @@ export function checkContent(c: Content): ContentProblem[] {
   // ---- notifications: only known placeholders in titles and lines
   const known = new Set<string>(NOTIFICATION_PLACEHOLDERS)
   for (const [kind, n] of Object.entries(c.notifications)) {
-    for (const field of ['title', 'line'] as const) {
+    for (const field of ['title', 'line', 'toastTitle', 'toastLine'] as const) {
       for (const m of (n[field] ?? '').matchAll(/\{(\w+)\}/g)) {
         if (!known.has(m[1] ?? '')) add('notifications.yaml', [kind, field], `unknown placeholder {${m[1]}}`)
       }

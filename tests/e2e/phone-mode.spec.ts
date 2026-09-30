@@ -85,6 +85,8 @@ test.describe('phone mode @webkit', () => {
     await page.getByTestId('toast-switch').click()
     await expect(slot(page, 'single')).toHaveAttribute('data-persona', 'cafe')
     await expect(page.getByTestId('phone-toast')).toHaveCount(0)
+    // [Switch] opens the sale, as the café's banner would.
+    await expect(slot(page, 'single').locator('[data-screen="biz.received"]')).toBeVisible()
   })
 
   test('the browser Back is the phone Back: one screen at a time, Home last', async ({ page }) => {

@@ -413,7 +413,7 @@ test.describe('the café sale on the stage @webkit', () => {
     await balanceAfter(page, 'cafe', '296.89')
   })
 
-  test('the café is not on a phone: a gutter toast "On Café Lipa’s phone", a tap opens the café on that phone', async ({
+  test('the café is not on a phone: a gutter toast "Payment received", a tap opens the sale on that phone', async ({
     page,
   }) => {
     await both(page)
@@ -442,15 +442,16 @@ test.describe('the café sale on the stage @webkit', () => {
     )
     const toast = page.getByTestId('toast')
     await expect(toast).toHaveCount(1, { timeout: 5000 })
-    await expect(toast).toContainText("On Café Lipa's phone")
-    await expect(toast).toContainText('Payment received · 11.00 BCPS')
-    await expect(toast).toContainText('from @ana')
+    // As drawn: "Payment received" over "11.00 BCPS from @ana".
+    await expect(toast).toHaveText(/^Payment received\s*11\.00 BCPS from @ana$/)
     await toast.click()
     await expect(slot(page, 'right')).toHaveAttribute('data-persona', 'cafe')
-    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('1')
-    await slot(page, 'right').getByTestId('bell').click()
-    await slot(page, 'right').locator('[data-testid^="notification-tx:BC-"]').click()
-    await expect(slot(page, 'right').locator('[data-screen="biz.received"]')).toBeVisible()
+    const received = slot(page, 'right').locator('[data-screen="biz.received"]')
+    await expect(received).toBeVisible()
+    await expect(received.getByTestId('success-amount')).toContainText('+11.00')
+    await received.getByRole('button', { name: 'Done' }).click()
+    await expect(slot(page, 'right').locator('[data-screen="pos.home"]')).toBeVisible()
+    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveCount(0)
     await balanceAfter(page, 'cafe', '296.89')
   })
 })

@@ -172,11 +172,14 @@ test.describe('stage', () => {
     // Beside the right phone (the café's), since the payer is on the left.
     const right = await slot(page, 'right').boundingBox()
     expect(box.x).toBeGreaterThanOrEqual((right?.x ?? 0) + (right?.width ?? 0))
-    // A tap opens Marko on that phone.
+    // A tap opens Marko on that phone, on the payment (as his banner would).
     await toast.click()
     await expect(slot(page, 'right')).toHaveAttribute('data-persona', 'marko')
     await expect(toast).toHaveCount(0)
-    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('1')
+    await expect(slot(page, 'right').locator('[data-screen="shared.tx"]')).toBeVisible()
+    await expect(slot(page, 'right').locator('[data-screen="shared.tx"]')).toContainText('16.50')
+    await slot(page, 'right').getByTestId('nav-home').click()
+    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveCount(0)
   })
 
   test('toasts go after 3 s unless hovered, and at most three stand', async ({ page }) => {

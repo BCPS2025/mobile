@@ -1,14 +1,14 @@
 import { ArrowLeftRight, ChevronDown, Clock, Maximize, RotateCcw, SlidersHorizontal, ZoomIn } from 'lucide-react'
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { type StageKey, personaOn } from '@store/sessions'
 import { useClockMinute } from '@store/useLedger'
 import { fill, ui } from '../copy'
 import { dateChipText } from '../format'
-import { Avatar } from '../kit/Avatar'
 import { SessionCounter, Tape } from '../kit/Tape'
 import { Wordmark } from '../kit/Wordmark'
 import { fitsStage } from '../router'
 import { PhoneHost } from '../phone/PhoneHost'
+import { openToast } from '../phone/notify'
 import { AppProvider, useApp, usePrefs, useTransient, useUi } from '../state/AppContext'
 import { getAppState } from '../state/boot'
 import { AccountMenu } from './AccountMenu'
@@ -131,7 +131,6 @@ function LabelBlock({
           onClick={() => setOpen((o) => !o)}
           className="inline-flex h-10 items-center gap-2 border border-navy-700 px-3 font-body text-body text-white hover:border-line-300"
         >
-          {account && <Avatar persona={account} size={22} onNavy />}
           <span className="max-w-[150px] truncate">{name}</span>
           <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
@@ -159,6 +158,36 @@ function LabelBlock({
 
 // ---- toasts in the gutter
 
+/** Space between a side label block and the toasts under it. */
+const BELOW_LABEL = 12
+
+/**
+ * The top of a gutter's toast column: under that side's label block when the labels stand beside
+ * the phones (measured, since a long role such as "CUSTOMER / PLAYER" wraps onto two lines),
+ * otherwise `fallback`.
+ */
+function useColumnTop(side: StageKey, besideLabel: boolean, fallback: number) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [top, setTop] = useState(fallback)
+  useLayoutEffect(() => {
+    const main = ref.current?.offsetParent
+    const label = main?.querySelector<HTMLElement>(`[data-testid="label-${side}"]`)
+    if (!besideLabel || !main || !label) {
+      setTop(fallback)
+      return
+    }
+    const measure = () =>
+      setTop(Math.ceil(label.getBoundingClientRect().bottom - main.getBoundingClientRect().top) + BELOW_LABEL)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(label)
+    observer.observe(main)
+    return () => observer.disconnect()
+  }, [side, besideLabel, fallback])
+  return { ref, top }
+}
+
 /**
  * Toasts for accounts that are not on a phone, in the outer gutter beside the phone that would
  * open them (the right phone, unless it shows the payer), never over a phone; 3 s, paused on
@@ -178,25 +207,25 @@ function GutterToasts({ layout }: { layout: StageLayout }) {
       .map((t) => (
         <ToastCard
           key={t.id}
-          overline={fill(ui.stage.toastFor, { name: t.name })}
-          title={t.title}
-          line={t.line}
+          {...(t.toastTitle === null ? { overline: fill(ui.stage.toastFor, { name: t.name }) } : {})}
+          title={t.toastTitle ?? t.title}
+          line={t.toastTitle === null ? t.line : t.toastLine}
           restartKey={t.seq}
           onDismiss={() => app.actions.dismissToast(t.id)}
-          onPress={() => {
-            app.actions.choose(side, t.persona)
-            app.actions.dismissToast(t.id)
-          }}
+          onPress={() => openToast(app, side, t)}
         />
       ))
+  const besideLabel = layout.labels === 'side' && layout.toasts !== 'bar'
+  const leftTop = useColumnTop('left', besideLabel, 8)
+  const rightTop = useColumnTop('right', besideLabel, 8)
   if (layout.toasts === 'bar') return null
   const width = Math.max(120, Math.min(224, layout.gutter - 16))
-  const top = layout.labels === 'side' ? 118 : 8
   const column = (side: StageKey, extra?: React.ReactNode) => (
     <div
+      ref={side === 'left' ? leftTop.ref : rightTop.ref}
       data-testid={`toasts-${side}`}
       className={`pointer-events-none absolute z-30 flex flex-col gap-2 [&>*]:pointer-events-auto ${side === 'left' ? 'left-2' : 'right-2'}`}
-      style={{ top, width }}
+      style={{ top: side === 'left' ? leftTop.top : rightTop.top, width }}
     >
       {extra}
       {cards(side)}
@@ -229,14 +258,12 @@ function BarToasts() {
         return (
           <div key={t.id} className="w-[220px] shrink-0">
             <ToastCard
-              overline={fill(ui.stage.toastFor, { name: t.name })}
-              title={t.title}
+              {...(t.toastTitle === null ? { overline: fill(ui.stage.toastFor, { name: t.name }) } : {})}
+              title={t.toastTitle ?? t.title}
+              {...(t.toastTitle === null ? {} : { line: t.toastLine })}
               restartKey={t.seq}
               onDismiss={() => app.actions.dismissToast(t.id)}
-              onPress={() => {
-                app.actions.choose(side, t.persona)
-                app.actions.dismissToast(t.id)
-              }}
+              onPress={() => openToast(app, side, t)}
             />
           </div>
         )

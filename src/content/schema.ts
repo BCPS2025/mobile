@@ -635,6 +635,9 @@ const NotificationEntry = z.strictObject({
   to: z.enum(NOTIFICATION_TO),
   title: z.string().min(1),
   line: z.string().min(1).optional(),
+  /** The stage's toast when it is drawn shorter than the banner ("Payment received" / "11.00 BCPS from @ana"). */
+  toastTitle: z.string().min(1).optional(),
+  toastLine: z.string().min(1).optional(),
   opens: z.enum(NOTIFICATION_OPENS),
   banner: z.boolean(),
   toast: z.boolean(),
