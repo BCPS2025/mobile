@@ -1,5 +1,5 @@
 import { Check, ScanFace } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { ui } from '../../copy'
 import { useReducedMotion } from '../../state/motion'
 
@@ -8,6 +8,37 @@ import { useReducedMotion } from '../../state/motion'
 // Button states: default, pressed, disabled and "Sending…" (with the biometric glyph inside the
 // button while a payment is pending; a static tick with reduced motion). Green means money moves
 // (and the café's Charge); navy is every other primary; white on navy docks.
+//
+// A flow step's dock (`settle`) ignores presses for a moment after it appears (SETTLE_MS): the
+// next step's button sits where the last one was, so the second tap of a double tap (or a
+// repeated Enter) would otherwise press it, for example paying straight past a review. The
+// buttons look the same meanwhile and read as aria-disabled. The flow gives its dock a new `key`
+// whenever the dock's buttons start doing something else, so the guard starts again and focus
+// never carries over.
+
+/** How long a new dock ignores presses. */
+export const SETTLE_MS = 450
+
+/** With `settle`, false for the first SETTLE_MS after the dock mounts; otherwise always true. */
+function useSettled(settle: boolean): boolean {
+  const [settled, setSettled] = useState(!settle)
+  useEffect(() => {
+    if (!settle) return
+    const id = window.setTimeout(() => setSettled(true), SETTLE_MS)
+    return () => window.clearTimeout(id)
+  }, [settle])
+  return settled
+}
+
+/** Props that hold a button still while its dock settles. */
+function settleProps(settled: boolean, onPress: () => void) {
+  return {
+    'aria-disabled': settled ? undefined : (true as const),
+    onClick: () => {
+      if (settled) onPress()
+    },
+  }
+}
 
 export type ButtonTone = 'money' | 'navy' | 'white' | 'outline'
 
@@ -78,10 +109,13 @@ export function DockButton({
   primary,
   testId = 'dock-primary',
   onNavy = false,
+  settled = true,
 }: {
   primary: DockPrimary
   testId?: string
   onNavy?: boolean
+  /** False while the dock around it settles: presses are ignored. */
+  settled?: boolean
 }) {
   const { label, tone, enabled = true, sending = false, keepLabel = false, onPress, icon } = primary
   return (
@@ -90,7 +124,7 @@ export function DockButton({
       data-testid={testId}
       aria-busy={sending || undefined}
       disabled={!enabled || sending}
-      onClick={onPress}
+      {...settleProps(settled, onPress)}
       className={`${BASE} ${sending ? SENDING[tone] : TONES[tone]} ${
         onNavy && tone === 'money' && !sending ? 'disabled:bg-navy-700 disabled:text-grey-400' : ''
       }`}
@@ -112,13 +146,17 @@ export function Dock({
   primary,
   secondary,
   stack,
+  settle = false,
 }: {
   tone?: 'light' | 'navy' | 'navy800'
   primary?: DockPrimary
   secondary?: DockSecondary
   stack?: StackItem[]
+  /** Ignore presses for SETTLE_MS after the dock appears (a flow step's dock). */
+  settle?: boolean
 }) {
   const navy = tone !== 'light'
+  const settled = useSettled(settle)
   return (
     <div
       className={`shrink-0 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] ${
@@ -132,7 +170,7 @@ export function Dock({
               key={item.label}
               type="button"
               disabled={item.disabled || item.sending}
-              onClick={item.onPress}
+              {...settleProps(settled, item.onPress)}
               aria-busy={item.sending || undefined}
               className={`${BASE} ${
                 item.kind === 'white'
@@ -152,7 +190,7 @@ export function Dock({
               type="button"
               data-testid="dock-secondary"
               disabled={secondary.disabled}
-              onClick={secondary.onPress}
+              {...settleProps(settled, secondary.onPress)}
               className={`inline-flex min-h-12 shrink-0 items-center py-3.5 pr-3 font-body text-body font-semibold underline underline-offset-2 disabled:opacity-40 ${
                 navy ? 'text-green-500' : 'text-green-700'
               }`}
@@ -165,7 +203,7 @@ export function Dock({
               type="button"
               data-testid="dock-secondary"
               disabled={secondary.disabled}
-              onClick={secondary.onPress}
+              {...settleProps(settled, secondary.onPress)}
               className={`${BASE} ${
                 navy
                   ? 'border border-line-300 text-white active:bg-navy-800'
@@ -175,7 +213,7 @@ export function Dock({
               {secondary.label}
             </button>
           )}
-          {primary && <DockButton primary={primary} onNavy={navy} />}
+          {primary && <DockButton primary={primary} onNavy={navy} settled={settled} />}
         </div>
       )}
     </div>

@@ -42,19 +42,21 @@ function PersonaScreens({ persona, shell }: { persona: string; shell: Shell }) {
   const stack = usePhoneStack(persona)
   const top = stack[stack.length - 1] as Screen
   const key = `${stack.length}:${top.kind}:${'id' in top ? top.id : ''}${top.kind === 'flow' ? `:${top.instanceId}` : ''}`
+  // A new step of a flow counts as a new screen for the focus (not for the fade).
+  const focusKey = top.kind === 'flow' ? `${key}:${top.step}:${top.editing ? 'edit' : ''}` : key
   const root = useRef<HTMLDivElement>(null)
-  const opened = useRef(key)
+  const opened = useRef(focusKey)
 
-  // A screen that opens takes the focus (the button that opened it is gone), unless the focus is
-  // already inside it or in the other phone.
+  // A screen or step that opens takes the focus (the button that opened it is gone), unless the
+  // focus is already inside it or in the other phone.
   useEffect(() => {
-    if (opened.current === key) return
-    opened.current = key
+    if (opened.current === focusKey) return
+    opened.current = focusKey
     const screen = root.current?.querySelector<HTMLElement>('[data-screen]')
     const active = document.activeElement
     const idle = !active || active === document.body
     if (screen && idle && !screen.contains(active)) screen.focus({ preventScroll: true })
-  }, [key])
+  }, [focusKey])
 
   return (
     <div key={key} ref={root} className="anim-fade h-full">

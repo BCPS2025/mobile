@@ -321,6 +321,36 @@ test.describe('the café sale on the stage @webkit', () => {
     await balanceAfter(page, 'cafe', '296.89')
   })
 
+  test('double taps never skip a step: [Charge] stays on the code, Scan’s Continue stays on the review', async ({
+    page,
+  }) => {
+    await both(page)
+    const phone = cafe(page)
+    await phone.locator('[data-tile="charge"]').click()
+    for (const sku of ['flat-white', 'flat-white', 'croissant', 'croissant'])
+      await phone.getByTestId(`item-${sku}`).click()
+    // The second tap lands where the code's Cancel now sits: it does nothing.
+    await phone.getByRole('button', { name: 'Charge 11.00 BCPS' }).dblclick()
+    await expect(phone.locator('[data-screen="pos.code"]')).toBeVisible()
+    await page.waitForTimeout(600)
+    await expect(phone.locator('[data-screen="pos.code"]')).toBeVisible()
+    // The second tap on Continue lands where [Pay 11.00 BCPS] now sits: no payment.
+    await ana(page).locator('[data-tile="scan"]').click()
+    await expect(ana(page).getByTestId('scan-status')).toContainText('Locked · Café Lipa')
+    await ana(page).getByRole('button', { name: 'Continue' }).dblclick()
+    const review = ana(page).locator('[data-screen="c.payCode.review"]')
+    await expect(review).toBeVisible()
+    await page.waitForTimeout(1600)
+    await expect(review).toBeVisible()
+    await expect(ana(page).getByRole('button', { name: 'Pay 11.00 BCPS' })).toBeEnabled()
+    await expect(page.getByTestId('tape-row')).toHaveCount(0)
+    await expect(phone.locator('[data-screen="pos.code"]')).toBeVisible()
+    // A deliberate tap once the review has settled pays, once.
+    await ana(page).getByRole('button', { name: 'Pay 11.00 BCPS' }).click()
+    await expect(phone.locator('[data-screen="pos.paid"]')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('tape-row')).toHaveCount(1)
+  })
+
   test('Home then pay: the café is told with a banner; a tap opens the sale; Done goes back', async ({ page }) => {
     await both(page)
     await chargeEleven(page)

@@ -111,6 +111,39 @@ test.describe('send on the stage @webkit', () => {
     await expectCleanVisibleCopy(page)
   })
 
+  test('a double tap or a second Enter before the review stops on the review; nothing is sent', async ({ page }) => {
+    await anaAndMarko(page)
+    await toAmount(page)
+    const ana = slot(page, 'left')
+    await type(page, '16.50')
+    await ana.getByRole('button', { name: 'Continue' }).click()
+    await ana.getByRole('button', { name: 'Cinema', exact: true }).click()
+    // The second tap lands where [Send 16.67 BCPS] now sits.
+    await ana.getByRole('button', { name: 'Continue' }).dblclick()
+    const review = ana.locator('[data-screen="c.send.review"]')
+    await expect(review).toBeVisible()
+    await page.waitForTimeout(1600)
+    await expect(review).toBeVisible()
+    await expect(ana.getByRole('button', { name: 'Send 16.67 BCPS' })).toBeEnabled()
+    await expect(page.getByTestId('tape-row')).toHaveCount(0)
+
+    // By keyboard: Enter on Continue opens the review and takes the focus to it; Enter again sends nothing.
+    await ana.getByTestId('nav-back').click()
+    await expect(ana.locator('[data-screen="c.send.note"]')).toBeVisible()
+    const next = ana.getByRole('button', { name: 'Continue' })
+    await expect(next).toBeEnabled()
+    await next.focus()
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Enter')
+    await expect(review).toBeVisible()
+    await expect(review).toBeFocused()
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(1600)
+    await expect(review).toBeVisible()
+    await expect(page.getByTestId('tape-row')).toHaveCount(0)
+    await expectBalance(page, 'marko', '132.98')
+  })
+
   test('Max fills 245.05 from a fresh start; the total is the whole balance', async ({ page }) => {
     await anaAndMarko(page)
     await toAmount(page)

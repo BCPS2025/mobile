@@ -72,6 +72,16 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
   }
   const secondary = screen.editing ? null : (step.secondary?.(d, ctx, api) ?? null)
   const Body = step.Screen
+  // A new dock (and its settle guard) whenever its buttons start doing something else: another
+  // step, an Edit detour, or a step whose buttons change role (the café's [New code] turns into
+  // Cancel once a fresh code shows).
+  const dockKey = [
+    screen.instanceId,
+    screen.step,
+    screen.editing ? 'edit' : '',
+    primary.tone,
+    secondary?.kind ?? '',
+  ].join(':')
 
   return (
     <PhoneScreen
@@ -88,7 +98,13 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
       error={screen.error ? <ErrorLine onNavy={navyBody}>{screen.error}</ErrorLine> : null}
       dock={
         step.hideDock?.(d, ctx) ? undefined : (
-          <Dock tone={navyBody ? 'navy' : 'light'} primary={primary} {...(secondary ? { secondary } : {})} />
+          <Dock
+            key={dockKey}
+            settle
+            tone={navyBody ? 'navy' : 'light'}
+            primary={primary}
+            {...(secondary ? { secondary } : {})}
+          />
         )
       }
     >
