@@ -122,7 +122,7 @@ export default defineConfig(({ mode }) => {
               ],
             },
             workbox: {
-              globPatterns: ['**/*.{js,css,html,woff2,svg,png,ico,webmanifest}'],
+              globPatterns: ['**/*.{js,css,html,woff2,svg,png,webp,ico,webmanifest}'],
               // reset.html must always come from the network, never from the precache.
               globIgnores: ['**/node_modules/**', 'reset.html', '**/reset.html'],
               navigateFallback: 'index.html',

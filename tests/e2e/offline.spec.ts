@@ -1,7 +1,7 @@
 // After one load the app needs no network: the café sale, Send and Pay supplier run with the
 // connection off, a reload while offline restores them, phone mode works too, and the page makes
 // no request to any other origin.
-import { expect, test } from '@playwright/test'
+import { type Page, expect, test } from '@playwright/test'
 import {
   APP_QUERY,
   SEND,
@@ -18,6 +18,21 @@ import {
   waitForServiceWorker,
 } from './helpers'
 
+/** Every image on a phone has loaded (the emblem on Welcome, Log in and Enter the code). */
+async function expectImagesLoaded(page: Page, which: 'left' | 'right', where: string): Promise<void> {
+  const images = slot(page, which).locator('img')
+  await expect(images.first()).toBeVisible()
+  await expect
+    .poll(
+      () =>
+        images.evaluateAll((els) =>
+          els.every((e) => (e as HTMLImageElement).complete && (e as HTMLImageElement).naturalWidth > 0),
+        ),
+      { message: `every image on ${where} has loaded` },
+    )
+    .toBe(true)
+}
+
 test.describe('offline after one load', () => {
   test.use({ viewport: { width: 1280, height: 720 } })
 
@@ -29,7 +44,20 @@ test.describe('offline after one load', () => {
     await context.setOffline(true)
     await page.reload()
     await page.locator('[data-testid="stage"]').waitFor()
-    await biometricLogin(page, 'left')
+    // The emblem comes from the cache on Welcome, Log in and Enter the code.
+    const left = slot(page, 'left')
+    await expectImagesLoaded(page, 'left', 'Welcome')
+    await left.getByRole('button', { name: 'Log in', exact: true }).click()
+    await expect(left.locator('[data-screen="auth.login"]')).toBeVisible()
+    await expectImagesLoaded(page, 'left', 'Log in')
+    await left.getByTestId('login-ana').click()
+    await expect(left.getByRole('button', { name: 'Continue' })).toBeEnabled({ timeout: 3000 })
+    await left.getByRole('button', { name: 'Continue' }).click()
+    await expect(left.locator('[data-screen="auth.code"]')).toBeVisible()
+    await expectImagesLoaded(page, 'left', 'Enter the code')
+    await expect(left.getByRole('button', { name: 'Verify and log in' })).toBeEnabled({ timeout: 4000 })
+    await left.getByRole('button', { name: 'Verify and log in' }).click()
+    await expect(left).toHaveAttribute('data-persona', 'ana')
     await biometricLogin(page, 'right')
 
     // The sale, with the code drawn from the ledger and the payment travelling between the phones.
