@@ -7,8 +7,8 @@ import { LIMITS, parseRecord } from '@store/record'
 import { personaIdsOf } from '@store/restore'
 import { type PageLike, type RuntimeDeps, createRuntime } from '@store/runtime'
 import { cafeQrBakery } from '../golden/journeys/cafe-qr-bakery'
-import { fakeLocks, settle } from '../support/fake-locks'
-import { type FakeTime, fakeTime } from '../support/fake-time'
+import { manualLocks, settle } from '../support/manual-locks'
+import { type ManualTime, manualTime } from '../support/manual-time'
 import { STATE_VERSION, memoryStorage } from '../support/records'
 import { content, m } from './helpers'
 
@@ -26,11 +26,11 @@ const bal = (
 
 interface Shared {
   storage: ReturnType<typeof memoryStorage> | null
-  locks: ReturnType<typeof fakeLocks> | null
+  locks: ReturnType<typeof manualLocks> | null
 }
 
-function tab(shared: Shared, over: Partial<RuntimeDeps> & { time?: FakeTime } = {}) {
-  const time = over.time ?? fakeTime()
+function tab(shared: Shared, over: Partial<RuntimeDeps> & { time?: ManualTime } = {}) {
+  const time = over.time ?? manualTime()
   const rt = createRuntime({
     content,
     build: 'dev',
@@ -46,7 +46,7 @@ function tab(shared: Shared, over: Partial<RuntimeDeps> & { time?: FakeTime } = 
 
 const shared = (initial: Record<string, string> = {}, locks = true): Shared => ({
   storage: memoryStorage(initial),
-  locks: locks ? fakeLocks() : null,
+  locks: locks ? manualLocks() : null,
 })
 
 function page() {
@@ -479,7 +479,7 @@ describe('one writer across tabs', () => {
 describe('the live clock and the clock key', () => {
   it('writes the clock every 5 s while it runs and continues from it on reopen', async () => {
     const s = shared()
-    const time = fakeTime()
+    const time = manualTime()
     const a = tab(s, { time, clock: { mode: 'live', wallNow: time.wallNow } })
     await settle()
     const start = a.rt.node.now()
@@ -488,14 +488,14 @@ describe('the live clock and the clock key', () => {
     expect(stamp?.at).toEqual({ day: 0, time: '12:15:10.000' })
     a.rt.dispose()
     // Reopened later: the clock continues from the stored value, not from wall time.
-    const time2 = fakeTime(99_000_000)
+    const time2 = manualTime(99_000_000)
     const b = tab(s, { time: time2, clock: { mode: 'live', wallNow: time2.wallNow } })
     expect(b.rt.node.now()).toBe(start + 10_000)
   })
 
   it('a fractional wall clock (performance.now) stamps, writes and restores the session', async () => {
     const s = shared()
-    const time = fakeTime(1000.25)
+    const time = manualTime(1000.25)
     const wallNow = () => time.wallNow() + 0.3
     const a = tab(s, { time, clock: { mode: 'live', wallNow } })
     await settle()
@@ -507,7 +507,7 @@ describe('the live clock and the clock key', () => {
     expect(a.rt.exportState().ok).toBe(true)
     const before = JSON.stringify(a.rt.node.getState())
     a.rt.dispose()
-    const b = tab(s, { time: fakeTime(5_000.5), clock: { mode: 'live', wallNow: () => 5_000.5 } })
+    const b = tab(s, { time: manualTime(5_000.5), clock: { mode: 'live', wallNow: () => 5_000.5 } })
     expect(b.rt.notices()).toEqual([])
     expect(JSON.stringify(b.rt.node.getState())).toBe(before)
     expect(bal(b.rt, 'cafe')).toBe('296.89')
@@ -515,7 +515,7 @@ describe('the live clock and the clock key', () => {
 
   it('input keeps the live clock running; focus catches up due work', async () => {
     const s = shared()
-    const time = fakeTime()
+    const time = manualTime()
     const { rt } = tab(s, { time, clock: { mode: 'live', wallNow: time.wallNow } })
     await settle()
     const win = page()

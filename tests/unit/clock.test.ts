@@ -4,7 +4,7 @@ import { createClock } from '@sim/clock'
 import { MAX_TIMER_MS } from '@sim/scheduler'
 import { buildSeed } from '@sim/seed'
 import { type AppliedBatch, createLedgerNode, isJump } from '@store/node'
-import { fakeTime } from '../support/fake-time'
+import { manualTime } from '../support/manual-time'
 import { EPOCH, content, m } from './helpers'
 
 // The clock store and the node's timer: live time 1:1 only while visible
@@ -25,7 +25,7 @@ const sale = (amount = '11.00'): UserCommand => ({
 })
 
 function live(visible = true) {
-  const time = fakeTime()
+  const time = manualTime()
   const clock = createClock({
     mode: 'live',
     start: T0,
@@ -39,7 +39,7 @@ function live(visible = true) {
 
 describe('live clock', () => {
   it('stays on whole milliseconds when the wall clock has fractions (performance.now)', () => {
-    const time = fakeTime(1000.25)
+    const time = manualTime(1000.25)
     const clock = createClock({
       mode: 'live',
       start: T0,
@@ -157,7 +157,7 @@ describe('node timer with the clock store', () => {
   })
 
   it('late timers never change what happens: items are stamped at their own due time', () => {
-    const time = fakeTime()
+    const time = manualTime()
     const node = createLedgerNode({ seed: seed.state, t0: T0, timers: time.timers })
     node.dispatch(sale())
     node.clock.advance(100)
@@ -173,7 +173,7 @@ describe('node timer with the clock store', () => {
   })
 
   it('a far due item causes no busy loop: every wait is capped at 60 s and moves the clock', () => {
-    const time = fakeTime()
+    const time = manualTime()
     const far = farPending(seed.state, T0 + 45 * 86_400_000)
     const node = createLedgerNode({ seed: far, t0: T0, timers: time.timers })
     node.run(T0) // arms the timer

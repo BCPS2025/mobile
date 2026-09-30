@@ -11,7 +11,7 @@ interface Req {
 
 const abortError = () => Object.assign(new Error('aborted'), { name: 'AbortError' })
 
-export function fakeLocks(): LockManagerLike & { holder(name: string): boolean; queued(name: string): number } {
+export function manualLocks(): LockManagerLike & { holder(name: string): boolean; queued(name: string): number } {
   const held = new Map<string, Req>()
   const queue = new Map<string, Req[]>()
   const q = (name: string) => {

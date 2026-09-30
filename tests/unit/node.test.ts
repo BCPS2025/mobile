@@ -34,7 +34,7 @@ const send = (amount: string, debit: string): PayCommand => ({
   expect: { senderDebit: m(debit) },
 })
 
-function fakeTimers() {
+function manualTimers() {
   const queue: { fn: () => void; ms: number; cleared: boolean }[] = []
   return {
     queue,
@@ -198,7 +198,7 @@ describe('LedgerNode', () => {
   })
 
   it('arms one timer for the next due item, capped at 60 s, and ignores stale generations', () => {
-    const t = fakeTimers()
+    const t = manualTimers()
     const node = createLedgerNode({ seed: seed.state, t0: seed.t0, timers: t.timers })
     const origins: string[] = []
     node.onBatch((b) => origins.push(b.origin))

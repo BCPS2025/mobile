@@ -1,5 +1,5 @@
 // Property test of the page runtime: random sequences of the milestone A1
-// command set through `createRuntime` with storage, the writer lock and fake timers, including
+// command set through `createRuntime` with storage, the writer lock and manual timers, including
 // Reset, Undo, commands the runtime must refuse as not storable (notes over 40 characters, items
 // no screen sends, a persona id in place of a handle, a malformed cmdId), control characters in
 // notes, Clock jumps (including one beyond the 400-day limit) and debounced writes firing at
@@ -17,8 +17,8 @@ import { invariants } from '@domain/invariants'
 import type { SimTime, PayCommand } from '@domain/types'
 import { stableStringify } from '@store/record'
 import { createRuntime } from '@store/runtime'
-import { fakeLocks, settle } from '../support/fake-locks'
-import { fakeTime } from '../support/fake-time'
+import { manualLocks, settle } from '../support/manual-locks'
+import { manualTime } from '../support/manual-time'
 import { memoryStorage } from '../support/records'
 import { content } from '../unit/helpers'
 import {
@@ -58,8 +58,8 @@ const stats = { accepted: 0, refusedAsUnstorable: 0, resets: 0, undos: 0, writes
 
 async function runSequence(epoch: string, steps: readonly Step[]): Promise<void> {
   const storage = memoryStorage()
-  const locks = fakeLocks()
-  const time = fakeTime()
+  const locks = manualLocks()
+  const time = manualTime()
   const deps = { content, build: 'dev', storage, locks, clock: { mode: 'manual' as const }, epochDate: epoch }
   const rt = createRuntime({ ...deps, timers: time.timers })
   await settle()
@@ -149,7 +149,7 @@ async function runSequence(epoch: string, steps: readonly Step[]): Promise<void>
   const log = stableStringify(rt.node.log())
   rt.dispose()
   await settle()
-  const next = createRuntime({ ...deps, timers: fakeTime().timers })
+  const next = createRuntime({ ...deps, timers: manualTime().timers })
   expect(next.notices()).toEqual([])
   expect(JSON.stringify(next.node.getState())).toBe(before)
   expect(next.node.now()).toBe(now)

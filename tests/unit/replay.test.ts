@@ -11,7 +11,7 @@ import { LIMITS, type LogEntry, freshUi, serializeRecord } from '@store/record'
 import { replay } from '@store/replay'
 import { restoreText } from '@store/restore'
 import { cafeQrBakery } from '../golden/journeys/cafe-qr-bakery'
-import { fakeTime } from '../support/fake-time'
+import { manualTime } from '../support/manual-time'
 import { STATE_VERSION, recordOf, sessionOf } from '../support/records'
 import { content, m } from './helpers'
 
@@ -142,7 +142,7 @@ describe('live equals replay', () => {
     for (let run = 0; run < 25; run++) {
       const rand = rng(1000 + run)
       const seed = buildSeed(content, '2026-09-25')
-      const time = fakeTime()
+      const time = manualTime()
       const node = createLedgerNode({ seed: seed.state, t0: seed.t0, timers: time.timers })
       const encoder = createLogEncoder()
       let k = 0

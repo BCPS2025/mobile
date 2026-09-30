@@ -22,7 +22,7 @@ import { snapshotRecord } from '@store/persistence'
 import { freshUi, serializeRecord } from '@store/record'
 import { replay } from '@store/replay'
 import { restoreText } from '@store/restore'
-import { fakeTime } from '../support/fake-time'
+import { manualTime } from '../support/manual-time'
 import { STATE_VERSION } from '../support/records'
 import { content } from '../unit/helpers'
 import {
@@ -69,10 +69,10 @@ interface Outcome {
   record: string
 }
 
-/** Runs one sequence on a live node with fake timers; asserts the per-step properties. */
+/** Runs one sequence on a live node with manual timers; asserts the per-step properties. */
 function runSequence(epoch: string, steps: readonly Step[]): Outcome {
   const seed = buildSeed(content, epoch)
-  const time = fakeTime()
+  const time = manualTime()
   const node = createLedgerNode({ seed: seed.state, t0: seed.t0, timers: time.timers })
   const ids = cmdIds()
   const problems: string[] = []

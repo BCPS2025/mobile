@@ -1,4 +1,4 @@
-// A fake wall clock with timers, for the live clock, the node's scheduler timer and persistence.
+// A hand-driven wall clock with timers, for the live clock, the node's scheduler timer and persistence.
 // `advance(ms)` moves wall time forward and fires every timer that falls due, in order.
 import type { Timers } from '@sim/clock'
 
@@ -10,7 +10,7 @@ interface Handle {
   id: number
 }
 
-export interface FakeTime {
+export interface ManualTime {
   timers: Timers
   wallNow: () => number
   advance(ms: number): void
@@ -22,7 +22,7 @@ export interface FakeTime {
   fireNext(): boolean
 }
 
-export function fakeTime(start = 1_000_000): FakeTime {
+export function manualTime(start = 1_000_000): ManualTime {
   let wall = start
   let seq = 0
   const queue: Handle[] = []
