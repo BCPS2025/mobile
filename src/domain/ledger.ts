@@ -296,9 +296,12 @@ function decideRequestCreate(
   }
   if (c.note !== undefined) request.note = c.note
   if (c.items && c.items.length > 0) request.items = c.items.map((it) => ({ ...it }))
-  // A merchant has one code at a time: the previous one (also one that ran out) is cancelled first.
+  // A merchant has one code at a time: the previous one, while it is still good, is cancelled
+  // first. One that ran out keeps its status (it has expired by time, nobody cancelled it).
   const replaced: PendingEvent[] = Object.values(s.requests)
-    .filter((r) => r.channel === 'pos' && r.requester === actor && r.status === 'open')
+    .filter(
+      (r) => r.channel === 'pos' && r.requester === actor && r.status === 'open' && !isPosCodeExpired(s, r, ctx.now),
+    )
     .sort((a, b) => (a.id < b.id ? -1 : 1))
     .map((r) => ({ type: 'request.status', cmdId: c.cmdId, requestId: r.id, status: 'cancelled' }))
   return { ok: true, value: [...replaced, { type: 'request.created', cmdId: c.cmdId, request }] }

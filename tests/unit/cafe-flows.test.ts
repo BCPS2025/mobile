@@ -12,7 +12,7 @@ import { createAppState } from '@app/state/app'
 import { formatMinor } from '@domain/money'
 import type { PersonaId, SimTime, UserCommand } from '@domain/types'
 import { resolveItems } from '@sim/seed'
-import { latestPosRequest, openPosRequest } from '@store/selectors'
+import { latestPosRequest, openPosRequest, posCodeState } from '@store/selectors'
 import { content, m } from './helpers'
 
 // The café flows against a real app state and ledger: Charge (items or a custom amount, the code,
@@ -191,7 +191,7 @@ describe('Charge', () => {
     expect(f.code()).toBeUndefined()
   })
 
-  it('a code that ran out shows [New code]; it makes a fresh code with the same items and cancels the old one', () => {
+  it('a code that ran out shows [New code]; it makes a fresh code with the same items; the old one stays expired', () => {
     const f = fixture()
     const { api } = f.open('charge')
     f.tap('flat-white', 2)
@@ -221,7 +221,9 @@ describe('Charge', () => {
     expect(second?.amount).toBe(1100)
     expect(second?.items).toEqual(first?.items)
     expect(second?.note).toBe('Table 4')
-    expect(f.node.getState().requests[first?.id ?? '']?.status).toBe('cancelled')
+    // Nobody cancelled the old code: whoever still looks at it reads "expired", not "cancelled".
+    expect(f.node.getState().requests[first?.id ?? '']?.status).toBe('open')
+    expect(posCodeState(f.node.getState(), first?.id ?? '', f.node.now(), VALIDITY)).toBe('expired')
     expect(f.draft().requestId).toBe(second?.id)
     expect(f.step()?.id).toBe('code')
     // [New code] twice in a row (a second code after another expiry) still has fresh ids.

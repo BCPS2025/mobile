@@ -105,7 +105,7 @@ describe('request.create', () => {
     expect(r.items).toBeUndefined()
   })
 
-  it('a new code cancels the previous open one in the same batch, also one that ran out', () => {
+  it('a new code cancels the previous good one in the same batch; one that ran out stays expired', () => {
     const h = fresh()
     run(h, charge())
     const first = codeOf(h)
@@ -114,13 +114,16 @@ describe('request.create', () => {
     expect(events[0]).toMatchObject({ requestId: first.id, status: 'cancelled' })
     expect(h.node.getState().requests[first.id]?.status).toBe('cancelled')
     const second = codeOf(h)
-    // Time passes: the second code runs out (still `open`), a third replaces it.
+    // Time passes: the second code runs out (still `open`), a third follows it. Nobody cancelled
+    // the second: it keeps its status and still reads as expired, never as cancelled.
     h.node.clock.jumpTo((h.node.now() + VALIDITY) as SimTime)
     expect(posCodeState(h.node.getState(), second.id, h.node.now(), VALIDITY)).toBe('expired')
     const again = run(h, charge())
-    expect(again.map((e) => e.type)).toEqual(['request.status', 'request.created'])
-    expect(h.node.getState().requests[second.id]?.status).toBe('cancelled')
+    expect(again.map((e) => e.type)).toEqual(['request.created'])
+    expect(h.node.getState().requests[second.id]?.status).toBe('open')
+    expect(posCodeState(h.node.getState(), second.id, h.node.now(), VALIDITY)).toBe('expired')
     expect(codeOf(h).id).toBe('R-000003')
+    expect(openPosRequest(h.node.getState(), 'cafe', h.node.now(), VALIDITY)?.id).toBe('R-000003')
     expect(invariants(h.node.getState())).toEqual([])
   })
 

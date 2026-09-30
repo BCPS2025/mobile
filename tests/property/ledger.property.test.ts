@@ -129,9 +129,15 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
         stats.charges++
         const created = r.value.filter((e) => e.type === 'request.created')
         expect(created).toHaveLength(1)
-        // The merchant's earlier open codes are cancelled in the same batch, before the new one.
+        // The merchant's earlier codes that are still good are cancelled in the same batch, before
+        // the new one; one that ran out keeps its status.
         const open = posCodes(before)
-          .filter((c) => c.requester === cmd.actor && c.status === 'open')
+          .filter(
+            (c) =>
+              c.requester === cmd.actor &&
+              c.status === 'open' &&
+              node.now() < c.createdAt + before.config.posCodeValidityMs,
+          )
           .map((c) => c.id)
         const cancelled = r.value.flatMap((e) => (e.type === 'request.status' ? [e.requestId] : []))
         expect([...cancelled].sort()).toEqual(open)

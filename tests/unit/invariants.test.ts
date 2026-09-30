@@ -176,6 +176,27 @@ describe('each invariant names a planted fault', () => {
     expect(numbers({ ...paidLunch, subscriptions: { [sub.id]: sub } })).toEqual([9])
   })
 
+  it('[7] a merchant never has two good payment codes; one that ran out may stay open', () => {
+    const code = (id: string, createdAt: number) => ({
+      id,
+      requester: 'cafe',
+      amount: 1100 as Minor,
+      channel: 'pos' as const,
+      feePayer: 'recipient' as const,
+      policy: 'merchant' as const,
+      status: 'open' as const,
+      createdAt: createdAt as SimTime,
+      cmdId: `c-${id}`,
+    })
+    const validity = paidLunch.config.posCodeValidityMs
+    const withCodes = (...codes: ReturnType<typeof code>[]) => ({
+      ...paidLunch,
+      requests: { ...paidLunch.requests, ...Object.fromEntries(codes.map((c) => [c.id, c])) },
+    })
+    expect(numbers(withCodes(code('R-1', t0), code('R-2', t0 + validity)))).not.toContain(7)
+    expect(numbers(withCodes(code('R-1', t0), code('R-2', t0 + validity - 1)))).toContain(7)
+  })
+
   it('[10] escrow releases never exceed the amount; a proposal only while disputed', () => {
     const s = {
       ...paidLunch,

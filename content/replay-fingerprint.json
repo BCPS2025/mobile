@@ -1,6 +1,6 @@
 {
   "stateVersion": 2,
-  "reason": "Payment codes added (request.create, request.cancel, code expiry in pay); logs that only hold payments replay to the same ledger",
+  "reason": "A new payment code no longer cancels a previous code that has already run out; it stays expired. Balances and every accepted command replay the same.",
   "inputs": {
     "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
     "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
@@ -10,8 +10,8 @@
     "src/domain/counter.ts": "f2096f6068d560be59b665231f82003cf6bca322978541cabddddf5ff685fb7b",
     "src/domain/fees.ts": "8f03ed588123bb7d49b1a608d5105eb6f38fe7584ebc435dec35f2250d0dc282",
     "src/domain/ids.ts": "c887635c96980d661642b2a910b2a199bf6ae7eba139caea656469b2aac31b28",
-    "src/domain/invariants.ts": "b691ddebdb25c1ff301f64355dee22eef80852d967f1e4b2f2761e22b648ca30",
-    "src/domain/ledger.ts": "09db1e47bfd9da1ccb53d8669f74a2bcef6383ba6267f3f9ca5cc8551f497311",
+    "src/domain/invariants.ts": "a2537d75a0b20fc0e2f8d35b4a77ffee81cb9f5015f3be57ab0ff63c41444393",
+    "src/domain/ledger.ts": "d7bdf7025feaa3b16ccbc37a4939ec8b31873735906b9ff1123892ccfce6cb81",
     "src/domain/money.ts": "fcd5ee3f2028e6bcbb90f46f2eab8d6d388e0b76f0c6da7206aaff4c7620a671",
     "src/domain/rate.ts": "43a207247e91eb6c9ffe29c3d3f25f0ebca069366ebdaf87d8cb06a462eacdfb",
     "src/domain/types.ts": "c8473f9dd9423298f7bdaf790d3e31e940273ddf7c51654d33305f0617cc2afb",

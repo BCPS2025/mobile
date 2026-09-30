@@ -1,6 +1,6 @@
 import { settleOrder } from './ledger'
 import { isSystemAccount } from './types'
-import type { AccountId, LedgerState, Tx } from './types'
+import type { AccountId, LedgerState, PaymentRequest, Tx } from './types'
 
 // Ledger health checks, numbered 1–16. Checked after every event in tests and in
 // development. An empty list means healthy; each string names one violation and its number.
@@ -140,15 +140,26 @@ export function invariants(s: LedgerState): string[] {
     }
   }
 
-  // A merchant has at most one open payment code, and a code has no payer and the merchant policy.
-  const openCodes = new Map<string, number>()
+  // A merchant has at most one good payment code: of its open codes, every one but the newest had
+  // run out when the next was made (codes that ran out keep the status open). A code has no payer
+  // and the merchant policy.
+  const openCodes = new Map<string, PaymentRequest[]>()
   for (const req of Object.values(s.requests)) {
     if (req.channel !== 'pos') continue
     if (req.payer !== undefined) bad(7, `payment code ${req.id} names a payer`)
     if (req.policy !== 'merchant') bad(17, `payment code ${req.id} does not use the merchant fee policy`)
-    if (req.status === 'open') openCodes.set(req.requester, (openCodes.get(req.requester) ?? 0) + 1)
+    if (req.status === 'open') openCodes.set(req.requester, [...(openCodes.get(req.requester) ?? []), req])
   }
-  for (const [merchant, n] of openCodes) if (n > 1) bad(7, `${merchant} has ${n} open payment codes`)
+  for (const [merchant, codes] of openCodes) {
+    const byAge = [...codes].sort((a, b) => a.createdAt - b.createdAt || (a.id < b.id ? -1 : 1))
+    for (let i = 1; i < byAge.length; i++) {
+      const older = byAge[i - 1] as PaymentRequest
+      const newer = byAge[i] as PaymentRequest
+      if (newer.createdAt < older.createdAt + s.config.posCodeValidityMs) {
+        bad(7, `${merchant} has two good payment codes: ${older.id} and ${newer.id}`)
+      }
+    }
+  }
 
   // ---- links (7, 17)
   for (const link of Object.values(s.links)) {
