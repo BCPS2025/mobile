@@ -201,6 +201,7 @@ export function HistoryView() {
       </fieldset>
       {groups.length === 0 ? (
         <EmptyState
+          top
           icon={searching ? Search : EMPTY_ICON[filter]}
           title={searching ? ui.empty.search.title : ui.empty.filters[filter].title}
           body={searching ? ui.empty.search.body : ui.empty.filters[filter].body}

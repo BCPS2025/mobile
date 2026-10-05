@@ -206,7 +206,7 @@ export function Dock({
               data-testid="dock-secondary"
               disabled={secondary.disabled}
               {...settleProps(settled, secondary.onPress)}
-              className={`${BASE} ${secondary.fit ? '!w-auto shrink-0 px-5' : ''} ${
+              className={`${BASE} ${secondary.fit ? 'w-auto! shrink-0 px-5' : ''} ${
                 navy
                   ? 'border border-line-300 text-white active:bg-navy-800'
                   : 'border border-line-300 bg-surface text-navy-900 active:bg-line-100'

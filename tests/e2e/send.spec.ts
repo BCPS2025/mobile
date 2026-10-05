@@ -290,10 +290,15 @@ test.describe('the empty lists', () => {
     await expect(page.getByTestId('mark-all-read')).toHaveCount(0)
   })
 
-  test('History from a fresh start opens on Yesterday; a row opens its payment', async ({ page }) => {
+  test('History from a fresh start: the waiting Lunch request under Today, then Yesterday; a row opens its payment', async ({
+    page,
+  }) => {
     await openApp(page, '#/phone/ana')
     await page.locator('[data-tile="history"]').click()
-    await expect(page.locator('[data-screen="c.history"] h2').first()).toHaveText('YESTERDAY')
+    const days = page.locator('[data-screen="c.history"] h2')
+    await expect(days.nth(0)).toHaveText('TODAY')
+    await expect(days.nth(1)).toHaveText('YESTERDAY')
+    await expect(page.getByTestId('status-r_seed_lunch')).toContainText('WAITING')
     await page
       .getByTestId(/^tx-BC-/)
       .first()

@@ -135,6 +135,48 @@ describe('Requests, links and splits in the list', () => {
   })
 })
 
+describe('A share of a split bill that was paid', () => {
+  it('reads "Split share" under the person and the note, for the one who paid and the one who was paid', () => {
+    const h = headless('2026-09-25')
+    const brunch = h.node
+      .getState()
+      .txOrder.map((id) => h.node.getState().txs[id])
+      .find((tx) => tx?.items?.some((i) => i.name.toLowerCase() === 'brunch'))
+    if (!brunch) throw new Error('no brunch')
+    run(h, {
+      type: 'split.create',
+      actor: 'ana',
+      sourceTxId: brunch.id,
+      total: m('26.40'),
+      note: 'Brunch for two',
+      shares: [{ party: 'marko', amount: m('13.20') }],
+    })
+    const requestId = Object.values(h.node.getState().requests).find((r) => r.channel === 'split')?.id ?? ''
+    run(h, {
+      type: 'pay',
+      actor: 'marko',
+      to: '@ana',
+      amount: m('13.20'),
+      channel: 'request',
+      note: 'Brunch for two',
+      requestId,
+      expect: { senderDebit: m('13.33') },
+    })
+    h.node.settleDue()
+    for (const [persona, title] of [
+      ['ana', '@marko · Brunch for two'],
+      ['marko', '@ana · Brunch for two'],
+    ] as const) {
+      const s = h.node.getState()
+      const row = activity(s, persona, h.node.now(), TZ, {})
+        .flatMap((g) => g.rows)
+        .find((r) => r.tx.links?.requestId === requestId)
+      if (!row) throw new Error(`no row for ${persona}`)
+      expect(rowText(row, s, persona, TZ)).toMatchObject({ title, sub: 'Split share · 12:15' })
+    }
+  })
+})
+
 describe('A bank transfer that has not arrived', () => {
   it('is a PENDING row of its own under All, Money in, Top-ups & cash-outs; it becomes the payment when it arrives', () => {
     const h = headless('2026-09-25')

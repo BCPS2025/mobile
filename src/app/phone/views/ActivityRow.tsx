@@ -112,7 +112,14 @@ export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string,
       openable: true,
     }
   }
-  const sub = tx.kind === 'purchase' ? fill(ui.tx.withNote, { label: time, note: ui.history.sale }) : time
+  // A share of a bill that someone split reads "Split share · 18:20".
+  const share = tx.links?.requestId === undefined ? undefined : s.requests[tx.links.requestId]
+  const sub =
+    tx.kind === 'purchase'
+      ? fill(ui.tx.withNote, { label: time, note: ui.history.sale })
+      : share?.channel === 'split'
+        ? fill(ui.history.splitShareOut, { when: time })
+        : time
   return {
     title: tx.note ? fill(ui.tx.withNote, { label: name, note: tx.note }) : name,
     sub,

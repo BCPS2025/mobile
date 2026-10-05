@@ -8,15 +8,21 @@ export function EmptyState({
   body,
   action,
   onNavy = false,
+  top = false,
 }: {
   icon: LucideIcon
   title: string
   body?: string
   action?: ReactNode
   onNavy?: boolean
+  /** Sits under the controls above it instead of in the middle of the screen (History, under its chips). */
+  top?: boolean
 }) {
   return (
-    <div data-testid="empty-state" className="flex flex-1 flex-col items-center justify-center px-8 py-10 text-center">
+    <div
+      data-testid="empty-state"
+      className={`flex flex-1 flex-col items-center px-8 text-center ${top ? 'justify-start pt-10' : 'justify-center py-10'}`}
+    >
       <span
         aria-hidden="true"
         className={`flex size-16 items-center justify-center ${onNavy ? 'bg-navy-800 text-line-300' : 'bg-line-100 text-grey-600'}`}
