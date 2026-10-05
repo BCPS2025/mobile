@@ -52,6 +52,7 @@ function FromBody({ d, ctx, api }: StepProps<Draft>) {
       content={ctx.content}
       viewer={ctx.persona}
       peopleOnly
+      selfAbout="request"
       onSubmit={api.press}
     />
   )

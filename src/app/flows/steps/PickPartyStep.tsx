@@ -26,8 +26,12 @@ export interface PickPartyStepProps {
   viewer: PersonaId
   /** Which parties may be picked. */
   filter?: PartyFilter['filter']
-  /** People only (Request money): a business that was typed is told to send an invoice instead. */
+  /** People only (Request money, Payment link): a business that was typed gets this line instead. */
   peopleOnly?: boolean
+  /** The line for a business that was typed when only people may be picked. */
+  businessError?: string
+  /** What `self-payment` is about when the viewer typed their own handle. */
+  selfAbout?: 'request'
   /** Enter, when the query names someone. */
   onSubmit?: () => void
 }
@@ -93,9 +97,9 @@ export function PickPartyStep(p: PickPartyStepProps) {
       {unknown && (
         <ErrorLine className="mt-3">
           {isSelf(p.state, p.viewer, typed)
-            ? errorText({ code: 'self-payment' }, p.peopleOnly ? { about: 'request' } : {})
+            ? errorText({ code: 'self-payment' }, p.selfAbout ? { about: p.selfAbout } : {})
             : business
-              ? errorText({ code: 'not-allowed' }, { about: 'request' })
+              ? (p.businessError ?? errorText({ code: 'not-allowed' }, { about: 'request' }))
               : errorText({
                   code: 'unknown-recipient',
                   handle: typed.startsWith('@') ? typed : `@${normaliseQuery(typed)}`,

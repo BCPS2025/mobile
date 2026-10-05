@@ -97,7 +97,7 @@ export interface StepDef<D> {
   /** Buttons stacked in the dock (Link ready: [Send in BCPS] over [Done]) instead of the primary and secondary. */
   stack?(d: D, ctx: FlowCtx, api: FlowApi<D>): StackItem[]
   /** The task header of this step when it differs from the flow's (Scan is navy, its review light). */
-  header?(d: D, ctx: FlowCtx): 'light' | 'navy' | 'business'
+  header?(d: D, ctx: FlowCtx): 'light' | 'navy' | 'navy800' | 'business'
   /** No dock under this step (Scan while no code is in view). */
   hideDock?(d: D, ctx: FlowCtx): boolean
   /** The step shows something that changes with the clock (a code that can expire): it renders every second. */

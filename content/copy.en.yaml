@@ -391,6 +391,52 @@ requestDetail:
   cancelledTitle: Request cancelled
   cancelledBody: "{first} will see that you cancelled it. No money moved."
 
+# Payment link (c.link.*) and the detail of a link you made.
+link:
+  title: Payment link
+  amountTitle: How much?
+  amountHint: The payer sees this amount
+  noteTitle: What is it for?
+  noteVisibility: Everyone who opens the link sees this note.
+  reviewTitle: Check your link
+  rowAmount: Amount
+  rowNote: Note
+  noNote: No note
+  rowWho: Who can pay
+  who: One person · single use
+  rowFee: Transaction fee
+  feeBy: Paid by the payer
+  create: Create link
+  readyOverline: LINK READY
+  qrLabel: "bcps link · {amount} BCPS · {note}"
+  qrLabelPlain: "bcps link · {amount} BCPS"
+  copy: Copy link
+  copied: Link copied
+  showQr: Show QR
+  reference: Reference {id}
+  sendInBcps: Send in BCPS
+  toTitle: Who gets the link?
+  sendLink: Send link
+  peopleOnly: Payment links go to people.
+  qrHint: Scan this code to pay the link.
+  sentOverline: SENT
+  sentTitle: Link sent
+  sentBody: "To {handle}"
+
+linkDetail:
+  title: Payment link
+  waiting: Waiting
+  paidBy: "Paid by {handle} ✓"
+  paid: Paid
+  from: From
+  sentTo: Sent to
+  sent: Sent
+  reference: Reference
+  singleOpen: "Single use: one person can pay this link."
+  singleClosed: "Single use: the link closed after {first} paid."
+  shareAgain: Share again
+  send: Send in BCPS
+
 # The progress of a split bill and cancelling what is still open.
 splitDetail:
   title: Split a bill
