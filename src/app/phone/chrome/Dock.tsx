@@ -61,6 +61,8 @@ export interface DockSecondary {
   label: string
   onPress: () => void
   disabled?: boolean
+  /** An outline button as wide as its label, leaving the rest to the primary (a long primary label). */
+  fit?: boolean
 }
 
 export interface StackItem {
@@ -204,7 +206,7 @@ export function Dock({
               data-testid="dock-secondary"
               disabled={secondary.disabled}
               {...settleProps(settled, secondary.onPress)}
-              className={`${BASE} ${
+              className={`${BASE} ${secondary.fit ? '!w-auto shrink-0 px-5' : ''} ${
                 navy
                   ? 'border border-line-300 text-white active:bg-navy-800'
                   : 'border border-line-300 bg-surface text-navy-900 active:bg-line-100'

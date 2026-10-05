@@ -2,7 +2,7 @@ import { ui } from '../copy'
 import { createPayFlow } from './payFlow'
 
 // Send (c.send.*): people paying a person or a business by @username. "Send again" from a payment
-// opens it filled in, straight on Review.
+// opens it filled in, straight on Review; a scanned personal code opens it on the amount.
 
 export const sendFlow = createPayFlow({
   id: 'send',
@@ -33,6 +33,7 @@ export const sendFlow = createPayFlow({
       amount: amount ?? '',
       note: ctx.params.note ?? '',
       templated: to !== undefined && amount !== undefined,
+      ...(to !== undefined && amount === undefined ? { fixedTo: true } : {}),
     }
   },
 })

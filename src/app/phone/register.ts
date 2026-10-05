@@ -16,6 +16,7 @@ import { HistoryView } from './views/HistoryView'
 import { IdentityCard } from './views/IdentityCard'
 import { NotificationsView } from './views/NotificationsView'
 import { LinkDetail } from './views/LinkDetail'
+import { MyCodeView } from './views/MyCode'
 import { ReceivedDetail } from './views/ReceivedDetail'
 import { RequestDetail } from './views/RequestDetail'
 import { SplitDetail } from './views/SplitDetail'
@@ -37,6 +38,7 @@ registerAuthScreen('code', CodeScreen)
 registerView('about', AboutView)
 registerView('history', HistoryView)
 registerView('notifications', NotificationsView)
+registerView('myCode', { consumer: MyCodeView })
 registerHubHeader('identity', IdentityCard)
 registerDetail('tx', TxDetailView)
 registerDetail('received', ReceivedDetail)

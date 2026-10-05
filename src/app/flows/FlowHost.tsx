@@ -8,7 +8,7 @@ import { usePhoneNav } from '../phone/nav'
 import { usePersonaPhone } from '../phone/PhoneContext'
 import type { FlowScreen } from '../phone/types'
 import { ui } from '../copy'
-import { useApp, useUi } from '../state/AppContext'
+import { useApp, useTransient, useUi } from '../state/AppContext'
 import { createFlowApi } from './actions'
 import { makeFlowCtx } from './ctx'
 import { phaseOf, stepBar, txOf } from './engine'
@@ -29,6 +29,7 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
   const impl = flowImpl(screen.id) as FlowImpl<unknown> | undefined
   useLedgerState() // re-render on every ledger change: the phase comes from the ledger
   useUi() // and when who is on the other phone changes (Scan looks at it)
+  useTransient((t) => t.shownQr) // and when a QR is shown (Scan can point at it)
   // A step with something that expires re-renders every second, and only then.
   const live = impl?.steps[screen.step]?.live === true
   useSyncExternalStore(live ? node.clock.subscribeSecond : NO_SUBSCRIPTION, node.clock.second, node.clock.second)

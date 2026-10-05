@@ -187,7 +187,8 @@ const screenId = async (page: Page) =>
  */
 async function crawl(page: Page, home: string): Promise<Crawled> {
   const screens = new Map<string, number>()
-  const CHILDREN = '[data-testid^="row-"], button[data-testid^="tx-BC-"], [data-testid^="notification-"]'
+  const CHILDREN =
+    '[data-testid^="row-"], button[data-testid^="tx-BC-"], [data-testid^="notification-"], [data-testid^="pay-item-"], button[data-testid^="status-"]'
 
   async function children(id: string): Promise<string[]> {
     const phone = slot(page, 'single')
@@ -233,8 +234,17 @@ async function crawl(page: Page, home: string): Promise<Crawled> {
       } else {
         await expect(page.getByTestId('nav-back'), `${id}: Back`).toBeEnabled()
       }
-      // The screen that opened has the focus.
-      await expect(slot(page, 'single').locator(`[data-screen="${id}"]`).first()).toBeFocused()
+      // The screen that opened has the focus, or the keypad inside it (an amount step takes the keyboard).
+      await expect
+        .poll(
+          () =>
+            slot(page, 'single')
+              .locator(`[data-screen="${id}"]`)
+              .first()
+              .evaluate((el) => el.contains(document.activeElement)),
+          { message: `${id}: focus` },
+        )
+        .toBe(true)
     }
     for (const sel of await children(id)) {
       await slot(page, 'single').locator(sel).first().click()
@@ -268,10 +278,16 @@ test.describe('the crawler', () => {
         'auth.logout',
         'c.history',
         'c.home',
+        'c.link.amount',
+        'c.mycode',
+        'c.payItem.review',
         'c.payRequest.hub',
         'c.profile',
+        'c.request.from',
         'c.scan',
         'c.send.to',
+        'c.split.pick',
+        'c.wallet.hub',
         'shared.about',
         'shared.notifications',
         'shared.tx',

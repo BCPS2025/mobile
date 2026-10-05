@@ -279,6 +279,16 @@ scan:
   rowTo: To
   rowItems: Items
   pay: "Pay {amount} BCPS"
+  lockedCounter: Counter code · You enter the amount
+  lockedPerson: "Personal code · {handle}"
+  lockedLink: "Payment link · {amount} BCPS"
+  nearby: "{count} codes nearby"
+  nearbyTitle: Codes nearby
+  rowCounter: "{name} · Counter"
+  rowCounterHint: You enter the amount
+  rowTable: "{name} · {table}"
+  counterTitle: "Pay {name}"
+  counterTag: "Counter code · {name} ✓"
 
 send:
   title: Send
@@ -627,6 +637,14 @@ detail:
   refund: Refund
   refunded: "Refunded ✓ · {time}"
   missing: This payment isn't available.
+
+# My code (c.mycode): the QR others scan to pay you.
+myCode:
+  hint: Anyone who scans this code can send you money.
+  qrLabel: "Payment code of {handle}"
+  copy: "Copy {handle}"
+  copied: Copied
+  share: Share payment link
 
 profile:
   identity: "ID card · {country} · verified"

@@ -101,6 +101,8 @@ export interface ViewSpec {
   shells: readonly Shell[]
   /** Details its rows open. */
   details: readonly DetailId[]
+  /** Flows its buttons start (My code: Share payment link). */
+  flows?: readonly FlowId[]
 }
 export const VIEWS: Record<ViewId, ViewSpec> = {
   history: {
@@ -114,7 +116,7 @@ export const VIEWS: Record<ViewId, ViewSpec> = {
     details: ['tx', 'received', 'request', 'link', 'split'],
   },
   about: { screen: 'shared.about', shells: ['consumer', 'pos'], details: [] },
-  myCode: { screen: 'c.mycode', shells: ['consumer'], details: [] },
+  myCode: { screen: 'c.mycode', shells: ['consumer'], details: [], flows: ['paymentLink'] },
 }
 
 export interface DetailSpec {
@@ -172,6 +174,8 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     startsFrom: ['home'],
     steps: [
       { id: 'scan', screen: 'c.scan', kind: 'input' },
+      { id: 'nearby', screen: 'c.scan.nearby', kind: 'input' },
+      { id: 'counter', screen: 'c.scan.counterAmount', kind: 'input' },
       { id: 'review', screen: 'c.payCode.review', kind: 'review' },
     ],
     commits: ['review'],
@@ -179,7 +183,8 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     successScreen: 'c.payCode.success',
     moves: true,
     followOns: [],
-    handoffs: ['send'],
+    // A personal code opens Send for that person, a payment link opens its check.
+    handoffs: ['send', 'payItem'],
   },
   send: {
     shells: ['consumer'],
@@ -435,7 +440,10 @@ export function tapsFromHome(homes: HomesContent, shell: Shell, personaId: strin
   while (queue.length > 0) {
     const { target, taps: n } = queue.shift() as { target: Target; taps: number }
     if (target.kind === 'hub') for (const r of registeredRows(home, target.id)) see(r.target, n + 1)
-    if (target.kind === 'view') for (const d of VIEWS[target.id].details) see({ kind: 'detail', id: d }, n + 1)
+    if (target.kind === 'view') {
+      for (const d of VIEWS[target.id].details) see({ kind: 'detail', id: d }, n + 1)
+      for (const f of VIEWS[target.id].flows ?? []) see(flow(f), n + 1)
+    }
     if (target.kind === 'detail') {
       for (const f of DETAILS[target.id].flows) see(flow(f), n + 1)
       for (const d of DETAILS[target.id].related) see({ kind: 'detail', id: d }, n + 1)

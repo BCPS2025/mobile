@@ -33,6 +33,8 @@ export interface PayDraft {
   note: string
   /** Opened filled in: it starts on Review and the first three steps are passed over. */
   templated: boolean
+  /** Opened for a recipient that is known (a scanned personal code): it starts on the amount. */
+  fixedTo?: boolean
 }
 
 export interface PayFlowConfig {
@@ -157,14 +159,14 @@ export function createPayFlow(cfg: PayFlowConfig): FlowImpl<PayDraft> {
     title: () => cfg.title,
     tone: () => cfg.tone,
     init: cfg.init,
-    openOn: (d) => (d.templated ? 'review' : 'to'),
+    openOn: (d) => (d.templated ? 'review' : d.fixedTo ? 'amount' : 'to'),
     steps: [
       {
         id: 'to',
         screen: cfg.screens.to,
         kind: 'input',
         Screen: ToStep,
-        skip: (d) => d.templated,
+        skip: (d) => d.templated || d.fixedTo === true,
         primary: (d, ctx) => ({
           label: ui.common.continue,
           tone: 'navy',

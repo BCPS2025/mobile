@@ -132,7 +132,7 @@ describe('screens and flows', () => {
       for (const from of f.startsFrom) expect(depth[from], `${id} from ${from}`).toBeLessThanOrEqual(MAX_BEFORE_FLOW)
     }
     // A hand-off replaces the flow (never stacks one on another), and a follow-on starts from Home.
-    expect(FLOWS.scan.handoffs).toEqual(['send'])
+    expect(FLOWS.scan.handoffs).toEqual(['send', 'payItem'])
     expect(FLOWS.charge.followOns).toEqual(['charge'])
   })
 

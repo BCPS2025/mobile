@@ -4,7 +4,7 @@ import type { LedgerState, PersonaId, Rate, SimTime, Tx, UserCommand } from '@do
 import type { AppState } from '../state/app'
 import type { FlowId, StepKind } from '../phone/registry'
 import type { StackItem } from '../phone/chrome/Dock'
-import type { RefusalOptions } from '../errors'
+import type { Refusal, RefusalOptions } from '../errors'
 import type { Params, Shell, SlotKey } from '../phone/types'
 
 // The flow engine's types. A flow is a linear task, one step per screen, ending on a success
@@ -117,6 +117,11 @@ export interface CommitDef<D> {
   refusal?(d: D, ctx: FlowCtx): RefusalOptions
   /** Whether the step's primary button runs this commit now (default true); otherwise `onPrimary` runs. */
   when?(d: D, ctx: FlowCtx): boolean
+  /**
+   * Called when the command is refused, before the error line is shown: a flow whose review shows a
+   * figure it quoted earlier refreshes the quote here (the amount changed meanwhile).
+   */
+  onRefused?(error: Refusal, d: D, ctx: FlowCtx, api: FlowApi<D>): void
   /** The command, or null when the draft is not ready. `cmdId` is `${instanceId}:${stepId}`. */
   command(d: D, ctx: FlowCtx, cmdId: string): UserCommand | null
   /**

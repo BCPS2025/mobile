@@ -148,6 +148,7 @@ function runCommit<D>(
   if (!result.ok) {
     // A repeat of the same command (a double tap) is refused silently: it was already accepted.
     const message = errorText(result.error, commit.refusal?.(d, ctx))
+    commit.onRefused?.(result.error, d, ctx, api)
     if (message !== null) api.fail(message)
     return
   }

@@ -129,7 +129,7 @@ function ReadyBody({ d, ctx, api }: StepProps<Draft>) {
       </span>
       <p className="mt-4 font-display text-[36px] leading-10 font-semibold tracking-[-0.02em] text-white tnum">
         {formatMinor(link.amount)}
-        <span className="ml-2 text-[16px] font-medium tracking-normal text-grey-400">{ui.common.bcps}</span>
+        <span className="ml-2 text-[16px] font-medium tracking-normal text-muted-on-800">{ui.common.bcps}</span>
       </p>
       {link.note && <p className="font-body text-body-l text-line-300">{link.note}</p>}
       <div className="mt-4 flex w-full gap-3">

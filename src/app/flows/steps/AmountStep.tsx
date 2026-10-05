@@ -34,6 +34,8 @@ export interface AmountStepProps {
   locked?: boolean
   /** Navy body (Charge). */
   onNavy?: boolean
+  /** A tag under the title ("Counter code · Café Lipa ✓"). */
+  tag?: ReactNode
   /** Shown under the keypad row (Charge: the chosen items). */
   children?: ReactNode
 }
@@ -124,7 +126,8 @@ export function AmountStep(p: AmountStepProps) {
       className="flex min-h-0 flex-1 flex-col px-5 outline-none"
     >
       <h2 className={`pt-4 font-display text-display-m ${onNavy ? 'text-white' : 'text-navy-900'}`}>{p.title}</h2>
-      <div className="flex min-h-28 flex-1 flex-col items-center justify-center">
+      {p.tag && <div className="mt-2.5">{p.tag}</div>}
+      <div className={`flex ${p.tag ? 'min-h-20' : 'min-h-28'} flex-1 flex-col items-center justify-center`}>
         <p
           data-testid="amount-value"
           className={`font-display text-[52px] leading-[56px] font-semibold tracking-[-0.02em] tnum ${

@@ -120,7 +120,9 @@ export function SuccessScreen(p: SuccessScreenProps) {
             <dl className="border-t border-navy-700 pt-1 pb-3">
               {p.lines.map((l) => (
                 <div key={l.label} className="flex min-h-10 items-center justify-between gap-4">
-                  <dt className="font-body text-body-s text-grey-400">{l.label}</dt>
+                  <dt className={`font-body text-body-s ${neutral ? 'text-muted-on-800' : 'text-grey-400'}`}>
+                    {l.label}
+                  </dt>
                   <dd
                     className={`text-right text-body-s text-white tnum ${l.mono ? 'font-mono text-mono' : 'font-body'}`}
                   >

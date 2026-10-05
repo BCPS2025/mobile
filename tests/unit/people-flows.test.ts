@@ -205,7 +205,7 @@ describe('Scan', () => {
     expect(f.primary()).toMatchObject({ label: 'Continue', enabled: true })
     api.press()
     expect(f.step()?.id).toBe('review')
-    expect(f.flowNow().draft).toEqual({ locked: 'r_pos_1' })
+    expect(f.flowNow().draft).toMatchObject({ locked: 'r_pos_1', counter: null })
     expect(f.primary()).toEqual({ label: 'Pay 11.00 BCPS', tone: 'money', enabled: true })
     api.press()
     const tx = txOf(f.flowNow(), f.impl('scan') as FlowImpl<unknown>, f.ctx())
@@ -276,12 +276,16 @@ describe('Scan', () => {
     expect(paid.balance('ana')).toBe('247.50')
   })
 
-  it('in phone mode there is no other phone, so nothing to lock onto', () => {
+  it('in phone mode there is no other phone: the open code and the counter code are both nearby', () => {
     const f = fixture({ stage: false })
-    f.withCode()
     f.open('scan')
     const scan = f.impl('scan').steps[0]
-    expect(scan?.hideDock?.(f.flowNow().draft as never, f.ctx())).toBe(true)
+    // Only the counter code is always there, so the dock offers Continue.
+    expect(scan?.hideDock?.(f.flowNow().draft as never, f.ctx())).toBe(false)
+    f.nav.back()
+    f.withCode()
+    f.open('scan')
+    expect(scan?.hideDock?.(f.flowNow().draft as never, f.ctx())).toBe(false)
   })
 
   it('a code for 2.20 alone costs the café 0.02 and shows no card comparison', () => {
