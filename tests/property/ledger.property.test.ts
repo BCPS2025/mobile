@@ -45,6 +45,7 @@ import {
   splitCommand,
   splitPrelude,
 } from './arbitraries'
+import { checkSelectorLaws } from './selector-laws'
 
 // Long runs (FC_RUNS in the thousands) need more than the default 5 s.
 const TIMEOUT = 600_000
@@ -555,6 +556,9 @@ function runSequence(epoch: string, steps: readonly Step[]): Outcome {
   let folded = seed.state
   for (const e of node.events()) folded = evolve(folded, e)
   expect(JSON.stringify(folded)).toBe(JSON.stringify(node.getState()))
+
+  // The selectors of the screens agree with the ledger they read.
+  checkSelectorLaws(node.getState(), node.now())
 
   // The production restore path: parse, validate, replay, invariants, fingerprint.
   const restored = restoreText(record, { content }, { acceptOlder: false })

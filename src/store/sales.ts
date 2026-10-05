@@ -1,8 +1,8 @@
 import type { Content } from '@content/schema'
 import { fillTemplate } from '@domain/counter'
-import { entryOf } from '@domain/ledger'
+import { entryOf, quoteWith } from '@domain/ledger'
 import { asMinor, formatHundredths } from '@domain/money'
-import type { EurCents, LedgerState, Minor, Party, PersonaId, SimTime, Tx } from '@domain/types'
+import type { EurCents, FeePayer, LedgerState, Minor, Party, PersonaId, SimTime, Tx } from '@domain/types'
 import { type IsoDate, addDays, formatTime, localDateOf, weekdayOfDate } from '@sim/tz'
 import { counterpartyOf } from './parties'
 
@@ -85,7 +85,7 @@ const saleRow = (s: LedgerState, tx: Tx): SaleRow => ({
  * A merchant's sales today or over the last seven days (today and the six days before): payments,
  * gross, fees, net after refunds, a chart of the seven days and the list. Fresh café, today: 23
  * payments, gross 111.38, fees 1.11, net 110.27; seven days: 180 payments, gross 1,221.22, fees 12.20,
- * net 1,209.02. `content` says which weekdays the business opens.
+ * net 1,209.02. `content` says which weekdays the business with a till opens.
  */
 export function salesDashboard(
   s: LedgerState,
@@ -97,6 +97,8 @@ export function salesDashboard(
   const tz = content.config.t0.tz
   const today = localDateOf(now, tz)
   const from = range === 'today' ? today : addDays(today, -6)
+  // Only a business with a till keeps opening hours (the café); any other is open every day.
+  const hasTill = content.personas.personas.find((p) => p.id === merchant)?.shell === 'pos'
   const openDays = new Set(Object.keys(content.config.background.cafe.open).map(Number))
   const inRange = (date: IsoDate) => date >= from && date <= today
 
@@ -137,7 +139,7 @@ export function salesDashboard(
       weekday,
       count: d?.count ?? 0,
       gross: asMinor(d?.gross ?? 0),
-      closed: !openDays.has(weekday),
+      closed: hasTill && !openDays.has(weekday),
       today: i === 0,
     })
   }
@@ -156,16 +158,50 @@ export function salesDashboard(
   }
 }
 
+// ---- who pays the fee
+
+/** What a sale costs each side under one choice of fee payer. */
+export interface FeePayerExample {
+  /** The fee (1 % of the sale, paid by one side). */
+  fee: Minor
+  /** What the customer is charged. */
+  customerPays: Minor
+  /** What the business receives. */
+  merchantReceives: Minor
+}
+
+/**
+ * A sale of `amount` under each choice on the "Who pays the fee" screen: `recipient` ("You pay": the customer
+ * pays 11.00 of an 11.00 sale and the business receives 10.89) and `sender` ("Customer pays": 11.11 and 11.00).
+ */
+export function feePayerExamples(s: LedgerState, amount: Minor): Record<FeePayer, FeePayerExample> {
+  const example = (payer: FeePayer): FeePayerExample => {
+    const q = quoteWith(s, { policyId: 'merchant', policy: s.config.fees.merchant, override: payer }, amount)
+    if (!q.ok) throw new Error('a sale amount that cannot be quoted')
+    return { fee: q.value.fee, customerPays: q.value.senderDebit, merchantReceives: q.value.recipientCredit }
+  }
+  return { recipient: example('recipient'), sender: example('sender') }
+}
+
 // ---- refunds
+
+/**
+ * Whether `viewer` can refund a payment: `refundable` (a named sale it received that has settled), `refunded`
+ * (it was) or `no`. A daily summary, a sale to or from anyone else and a buyer the ledger does not name
+ * (the starting balance carried over) offer nothing.
+ */
+export function refundStateOf(tx: Tx, viewer: PersonaId): 'refundable' | 'refunded' | 'no' {
+  if (!isSale(tx, viewer) || tx.summary || (tx.from === 'sys:offstage' && tx.party === undefined)) return 'no'
+  if (tx.refundedBy !== undefined) return 'refunded'
+  return tx.status === 'confirmed' ? 'refundable' : 'no'
+}
 
 /** The sales a merchant can refund, newest first: named, settled, not a daily summary, not refunded yet. */
 export function refundableSales(s: LedgerState, merchant: PersonaId): Tx[] {
   const out: Tx[] = []
   for (const id of s.txOrder) {
     const tx = s.txs[id]
-    if (!tx || !isSale(tx, merchant) || tx.summary || tx.status !== 'confirmed' || tx.refundedBy !== undefined) continue
-    if (tx.from === 'sys:offstage' && tx.party === undefined) continue
-    out.push(tx)
+    if (tx && refundStateOf(tx, merchant) === 'refundable') out.push(tx)
   }
   return out.sort((a, b) => b.createdAt - a.createdAt || (a.id < b.id ? 1 : -1))
 }

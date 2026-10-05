@@ -11,9 +11,11 @@ import {
   activity,
   autoConvertPreview,
   badges,
+  bankOf,
   counterMerchants,
   csvCell,
   daySummary,
+  feePayerExamples,
   hasBank,
   invoiceTag,
   invoices,
@@ -25,6 +27,7 @@ import {
   payItems,
   payoutsOf,
   quoteCashOut,
+  rampByCmdId,
   refundableSales,
   salesCsv,
   salesCsvFile,
@@ -34,6 +37,7 @@ import {
   splitsOf,
   topUpAmount,
   topUpForShortfall,
+  topUpMethods,
   txDetail,
 } from '@store/selectors'
 import { type Headless, headless } from '../support/journey'
@@ -475,6 +479,39 @@ describe('History: filters, search and groups (Ana from a fresh start)', () => {
     expect(statusOf(h, 'cafe', { filter: 'all', status: true })).toEqual([])
   })
 
+  it('a bank transfer on its way is a row of its own until it arrives, then the payment is the row', () => {
+    const h = fresh()
+    run(h, { type: 'ramp.on', actor: 'ana', cmdId: id('topup'), method: 'bank-transfer', eur: 50 })
+    const rampRows = (
+      persona: string,
+      filter: (typeof PEOPLE_FILTERS)[number] | (typeof CAFE_FILTERS)[number],
+      q = '',
+    ) => activity(state(h), persona, h.node.now(), TZ, { filter, query: q }).flatMap((g) => g.ramps)
+    for (const f of ['all', 'in', 'topupsCashouts'] as const)
+      expect(
+        rampRows('ana', f).map((r) => r.ramp.id),
+        f,
+      ).toEqual(['RP-000001'])
+    for (const f of ['out', 'shops', 'people', 'requests'] as const) expect(rampRows('ana', f), f).toEqual([])
+    const [today] = activity(state(h), 'ana', h.node.now(), TZ)
+    expect(today?.key).toBe('today')
+    const row = today?.ramps[0]
+    expect(row && [money(row.signed), row.at, row.arrivesAt - row.at]).toEqual(['55.00', h.node.now(), 2 * 3_600_000])
+    expect(rampRows('ana', 'all', 'bank')).toHaveLength(1)
+    expect(rampRows('ana', 'all', '55.00')).toHaveLength(1)
+    expect(rampRows('ana', 'all', 'pizza')).toEqual([])
+    // Someone else's transfer is not Ana's row, and a transfer is no sale for the café's chips.
+    expect(rampRows('marko', 'all')).toEqual([])
+    run(h, { type: 'ramp.on', actor: 'cafe', cmdId: id('topup'), method: 'bank-transfer', eur: 10 })
+    expect(rampRows('cafe', 'topups').map((r) => money(r.signed))).toEqual(['11.00'])
+    expect(rampRows('cafe', 'sales')).toEqual([])
+    // It arrives: the row goes and the payment takes its place.
+    h.node.advanceTo(state(h).ramps['RP-000001']?.arrivesAt as SimTime, 'timer')
+    h.node.settleDue()
+    expect(rampRows('ana', 'all')).toEqual([])
+    expect(rowsOf(h, 'ana', { filter: 'topupsCashouts' })).toHaveLength(3)
+  })
+
   it('every chip has its label and the lists read as the screens show them', () => {
     const label = (f: (typeof PEOPLE_FILTERS)[number]) => content.copy.history.filters[f]
     expect(PEOPLE_FILTERS.map(label)).toEqual([
@@ -591,6 +628,24 @@ describe('the sales dashboard', () => {
     expect(dash(h, 'today').days).toEqual(days)
   })
 
+  it('who pays the fee: on an 11.00 sale the customer pays 11.00 and the café receives 10.89, or 11.11 and 11.00', () => {
+    const h = fresh()
+    const e = feePayerExamples(state(h), m('11.00'))
+    const line = (x: (typeof e)['recipient']) => [money(x.customerPays), money(x.merchantReceives), money(x.fee)]
+    expect(line(e.recipient)).toEqual(['11.00', '10.89', '0.11'])
+    expect(line(e.sender)).toEqual(['11.11', '11.00', '0.11'])
+    // Round half up, no minimum: below 0.50 there is no fee.
+    expect(line(feePayerExamples(state(h), m('0.49')).sender)).toEqual(['0.49', '0.49', '0.00'])
+    expect(line(feePayerExamples(state(h), m('13.20')).sender)).toEqual(['13.33', '13.20', '0.13'])
+  })
+
+  it('the studio sells every day: no closed day on its chart', () => {
+    const h = fresh()
+    const d = salesDashboard(state(h), 'studio', '7d', h.node.now(), content)
+    expect(d.days.map((x) => x.closed)).toEqual(Array(7).fill(false))
+    expect(d.sales).toBeGreaterThan(0)
+  })
+
   it('a sale asked for and not yet settled is not counted', () => {
     const h = fresh()
     run(h, {
@@ -634,6 +689,23 @@ describe('refundable sales', () => {
     expect(keys).toContain('studio-luka-gems')
     expect(keys).toContain('studio-tue-skin')
     expect(keys).not.toContain('studio-thu')
+  })
+
+  it('a named subscription charge is refundable too, and the payment detail agrees with the list', () => {
+    const h = fresh()
+    const charge = seedTx(h, 'studio-renewal-eva')
+    expect(charge.kind).toBe('subscription-charge')
+    expect(refundableSales(state(h), 'studio').map((t) => t.id)).toContain(charge.id)
+    expect(txDetail(state(h), charge.id, 'studio', content)?.refundState).toBe('refundable')
+    // Everything the list offers reads as refundable in the detail, and nothing else does.
+    for (const merchant of ['cafe', 'studio']) {
+      const offered = new Set(refundableSales(state(h), merchant).map((t) => t.id))
+      for (const t of Object.values(state(h).txs)) {
+        const detail = txDetail(state(h), t.id, merchant, content)
+        if (detail?.refundState === 'refundable') expect(offered.has(t.id), `${merchant} ${t.id}`).toBe(true)
+      }
+      expect(offered.size).toBeGreaterThan(0)
+    }
   })
 })
 
@@ -914,6 +986,39 @@ describe('money in and out', () => {
     expect([min?.fee, min?.eurOut]).toEqual([2, 98])
     expect(quoteCashOut(state(h), m('1.09'))).toBeNull()
     expect(quoteCashOut(state(h), 0 as Minor)).toBeNull()
+  })
+
+  it('the ways to top up: a card if there is one, the bank transfer, a local method always', () => {
+    const h = fresh()
+    const methods = (persona: string) => topUpMethods(state(h), persona, content)
+    expect(methods('ana')).toEqual([
+      { method: 'card', last4: '7719' },
+      { method: 'bank-transfer', bank: 'SI56 •••• •••• 4821' },
+      { method: 'local-method' },
+    ])
+    // The café has bank and local only; the bakery has no bank to send from.
+    expect(methods('cafe')).toEqual([
+      { method: 'bank-transfer', bank: 'SI56 •••• •••• 1934' },
+      { method: 'local-method' },
+    ])
+    expect(methods('bakery').map((x) => x.method)).toEqual(['local-method'])
+    expect(bankOf(content, 'cafe')).toBe('SI56 •••• •••• 1934')
+    expect(bankOf(content, 'bakery')).toBeUndefined()
+  })
+
+  it('a flow finds its top-up or cash-out by its command, also while a bank transfer has no payment', () => {
+    const h = fresh()
+    const bank = id('topup')
+    const card = id('topup')
+    const out = id('cashout')
+    run(h, { type: 'ramp.on', actor: 'ana', cmdId: bank, method: 'bank-transfer', eur: 50 })
+    run(h, { type: 'ramp.on', actor: 'ana', cmdId: card, method: 'card', eur: 10 })
+    run(h, { type: 'ramp.off', actor: 'ana', cmdId: out, amount: m('1.10') })
+    expect(rampByCmdId(state(h), bank)).toMatchObject({ id: 'RP-000001', status: 'pending', direction: 'on' })
+    expect(rampByCmdId(state(h), bank)?.txId).toBeUndefined()
+    expect(rampByCmdId(state(h), card)).toMatchObject({ id: 'RP-000002', status: 'completed', method: 'card' })
+    expect(rampByCmdId(state(h), out)).toMatchObject({ id: 'RP-000003', direction: 'off' })
+    expect(rampByCmdId(state(h), 'nope:topup')).toBeUndefined()
   })
 
   it('Max is what is available; locked money is not there; a bank on file is needed', () => {

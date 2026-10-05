@@ -1,4 +1,4 @@
-import { entryOf } from '@domain/ledger'
+import { entryOf, selectParty } from '@domain/ledger'
 import { asMinor } from '@domain/money'
 import type {
   LedgerState,
@@ -157,6 +157,31 @@ export function myRequests(s: LedgerState, persona: PersonaId): MyRequest[] {
   return out.sort(byNewest).map(({ id: _id, ...row }) => row)
 }
 
+/**
+ * The open request `requester` already made of `payer` (a handle or an id) for the same amount and note,
+ * if any: the request flow asks before sending an identical one.
+ */
+export function identicalOpenRequest(
+  s: LedgerState,
+  requester: PersonaId,
+  payer: string,
+  amount: Minor,
+  note?: string,
+): PaymentRequest | undefined {
+  const to = selectParty(s, payer)
+  if (!to) return undefined
+  const wanted = (note ?? '').trim()
+  return (Object.values(s.requests) as PaymentRequest[]).find(
+    (r) =>
+      r.channel === 'username' &&
+      r.status === 'open' &&
+      r.requester === requester &&
+      r.payer === to.id &&
+      r.amount === amount &&
+      (r.note ?? '') === wanted,
+  )
+}
+
 /** A payment link the account made. */
 export interface LinkRow {
   link: PaymentLink
@@ -253,17 +278,23 @@ export function splitOfTx(s: LedgerState, txId: string): Split | undefined {
 }
 
 /**
+ * Whether "Split a bill" offers a payment: what the account paid for something, not refunded, not split
+ * yet, and not itself the payment of a share of someone else's split.
+ */
+export function isSplitCandidate(s: LedgerState, tx: Tx, persona: PersonaId): boolean {
+  if (!isSplittable(tx, persona) || tx.refundedBy !== undefined || splitOfTx(s, tx.id) !== undefined) return false
+  const paid = tx.links?.requestId === undefined ? undefined : entryOf(s.requests, tx.links.requestId)
+  return paid?.channel !== 'split'
+}
+
+/**
  * The payments "Split a bill" offers: the account's last outgoing payments (10 at most), newest first,
  * without refunds, conversions, top-ups, payments that were refunded, payments that already have a
  * split and payments of a share of someone else's split.
  */
 export function splitCandidates(s: LedgerState, persona: PersonaId, limit = 10): Tx[] {
-  const split = new Set((Object.values(s.splits) as Split[]).flatMap((x) => (x.sourceTxId ? [x.sourceTxId] : [])))
   return txsFor(s, persona)
-    .filter((tx) => {
-      const paid = tx.links?.requestId === undefined ? undefined : entryOf(s.requests, tx.links.requestId)
-      return isSplittable(tx, persona) && tx.refundedBy === undefined && !split.has(tx.id) && paid?.channel !== 'split'
-    })
+    .filter((tx) => isSplitCandidate(s, tx, persona))
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, limit)
 }

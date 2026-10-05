@@ -1,8 +1,18 @@
+import type { Content } from '@content/schema'
 import { available, entryOf } from '@domain/ledger'
 import { quoteFee } from '@domain/fees'
 import { asMinor } from '@domain/money'
 import { eurToMinor } from '@domain/rate'
-import type { AutoConvertSettings, EurCents, FeeQuote, LedgerState, Minor, PersonaId, SimTime } from '@domain/types'
+import type {
+  AutoConvertSettings,
+  EurCents,
+  FeeQuote,
+  LedgerState,
+  Minor,
+  PersonaId,
+  Ramp,
+  SimTime,
+} from '@domain/types'
 import { addDays, localDateOf, resolveLocal, weekdayOfDate } from '@sim/tz'
 
 // Money in and out as the Wallet screens need it: what a top-up gives, what a cash-out costs, the
@@ -45,6 +55,38 @@ export function maxCashOut(s: LedgerState, persona: PersonaId): Minor {
 /** Whether an account has a bank account on file to cash out to. */
 export const hasBank = (s: LedgerState, persona: PersonaId): boolean =>
   entryOf(s.directory, persona)?.methods?.bank === true
+
+/** The bank account on file as it is shown ("SI56 •••• •••• 1934"), or undefined without one. */
+export const bankOf = (content: Content, persona: PersonaId): string | undefined =>
+  content.personas.personas.find((p) => p.id === persona)?.methods?.bank
+
+/** A way to top up that an account has on file. */
+export type TopUpMethod =
+  | { method: 'card' /** The last four digits. */; last4: string }
+  | { method: 'bank-transfer' /** The account the money comes from, masked. */; bank: string }
+  | { method: 'local-method' }
+
+/**
+ * The ways an account can top up, in the order they are listed: its card (if it has one), its bank
+ * transfer (if a bank is on file), and a local payment method (always). A café has no card.
+ */
+export function topUpMethods(s: LedgerState, persona: PersonaId, content: Content): TopUpMethod[] {
+  const me = entryOf(s.directory, persona)
+  const on = content.personas.personas.find((p) => p.id === persona)?.methods
+  const out: TopUpMethod[] = []
+  if (me?.methods?.card && on?.card) out.push({ method: 'card', last4: on.card })
+  if (me?.methods?.bank && on?.bank) out.push({ method: 'bank-transfer', bank: on.bank })
+  out.push({ method: 'local-method' })
+  return out
+}
+
+/**
+ * The top-up or cash-out a command made (a flow finds its ramp by its command id; a bank transfer has no
+ * payment yet, only this).
+ */
+export function rampByCmdId(s: LedgerState, cmdId: string): Ramp | undefined {
+  return (Object.values(s.ramps) as Ramp[]).find((r) => r.cmdId === cmdId)
+}
 
 // ---- auto-convert
 

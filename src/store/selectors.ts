@@ -33,13 +33,14 @@ import type {
 import { localDateOf } from '@sim/tz'
 import { withinHours } from './hours'
 import { counterpartyOf } from './parties'
-import { isSplittable, splitOfTx } from './payitems'
-import { refundTxOf } from './sales'
+import { isSplitCandidate, splitOfTx } from './payitems'
+import { refundStateOf, refundTxOf } from './sales'
 
 // Pure selectors for useLedger. They return primitives or objects that are stable per state.
 
 export { deltaFor, lastSessionTx, txByCmdId, txsFor } from './txs'
 export * from './activity'
+export * from './payaddress'
 export * from './payitems'
 export * from './sales'
 export * from './wallet'
@@ -357,7 +358,7 @@ export interface TxDetail {
    * (it was) or `no`. Summary rows and payments to someone else never offer it.
    */
   refundState: 'refundable' | 'refunded' | 'no'
-  /** The viewer can split this payment (their own outgoing payment, not refunded, not split yet). */
+  /** The viewer can split this payment: a payment they made that "Split a bill" offers (see splitCandidates). */
   splittable: boolean
 }
 
@@ -385,17 +386,7 @@ export function txDetail(s: LedgerState, txId: string, viewer: PersonaId, conten
     split,
     refund: refundTxOf(s, tx),
     refundOf: tx.links?.refundOf === undefined ? undefined : entryOf(s.txs, tx.links.refundOf),
-    refundState:
-      role === 'to' &&
-      merchantSale &&
-      tx.summary === undefined &&
-      (tx.from !== 'sys:offstage' || tx.party !== undefined)
-        ? tx.refundedBy !== undefined
-          ? 'refunded'
-          : tx.status === 'confirmed'
-            ? 'refundable'
-            : 'no'
-        : 'no',
-    splittable: isSplittable(tx, viewer) && tx.refundedBy === undefined && split === undefined,
+    refundState: refundStateOf(tx, viewer),
+    splittable: isSplitCandidate(s, tx, viewer),
   }
 }

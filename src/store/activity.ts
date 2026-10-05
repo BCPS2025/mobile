@@ -1,6 +1,16 @@
 import { entryOf } from '@domain/ledger'
 import { asMinor, formatMinor } from '@domain/money'
-import type { LedgerState, Minor, Party, PaymentLink, PaymentRequest, PersonaId, SimTime, Tx } from '@domain/types'
+import type {
+  LedgerState,
+  Minor,
+  Party,
+  PaymentLink,
+  PaymentRequest,
+  PersonaId,
+  Ramp,
+  SimTime,
+  Tx,
+} from '@domain/types'
 import { type IsoDate, addDays, localDateOf, weekdayOfDate } from '@sim/tz'
 import { counterpartyOf } from './parties'
 import { txsFor } from './txs'
@@ -39,6 +49,20 @@ export interface ActivityStatusRow {
   splitId: string | undefined
 }
 
+/**
+ * A bank-transfer top-up that was asked for and has not arrived: a row of its own ("Top up · Bank transfer
+ * · on its way", PENDING) until the bank sends it, when it becomes the payment it is.
+ */
+export interface ActivityRampRow {
+  ramp: Ramp
+  /** What it adds once it arrives. */
+  signed: Minor
+  /** When it was asked for. */
+  at: SimTime
+  /** When the bank is expected to send it. */
+  arrivesAt: SimTime
+}
+
 export interface ActivityGroup {
   /**
    * `today`, `yesterday`, `thisWeek` or `earlier` (period grouping); or the ISO date of an older
@@ -51,6 +75,8 @@ export interface ActivityGroup {
   rows: ActivityRow[]
   /** Requests and links with no payment to show (only when asked for), newest first. */
   status: ActivityStatusRow[]
+  /** Bank-transfer top-ups on their way, newest first. */
+  ramps: ActivityRampRow[]
 }
 
 /** The History chips: people's on the left, the café's on the right (`all` is both). */
@@ -93,6 +119,8 @@ export interface ActivityOptions {
   status?: boolean
   /** The visible label of a payment (its row text), so a search finds what the row says. */
   label?: (tx: Tx) => string
+  /** The visible label of a top-up on its way, for the same reason. */
+  rampLabel?: (ramp: Ramp) => string
 }
 
 /** Lower case, no accents: "Café" and "cafe" are the same. */
@@ -131,6 +159,17 @@ function inFilter(s: LedgerState, filter: ActivityFilter, tx: Tx, persona: Perso
     case 'topups':
       return tx.kind === 'on-ramp'
   }
+}
+
+/** Whether a top-up on its way belongs under a chip: it is money in, and a top-up. */
+const rampInFilter = (filter: ActivityFilter): boolean =>
+  filter === 'all' || filter === 'in' || filter === 'topupsCashouts' || filter === 'topups'
+
+/** What a search looks through for a top-up on its way. */
+function rampText(ramp: Ramp, label?: (ramp: Ramp) => string): string {
+  return fold(
+    ['top up', ramp.method ?? '', formatMinor(ramp.amount), ramp.id, label ? label(ramp) : ''].join(' \u0001 '),
+  )
 }
 
 /** What a search looks through for a payment. */
@@ -199,7 +238,8 @@ function statusRows(s: LedgerState, persona: PersonaId, withPaid: boolean): Acti
  * An account's payments, newest first, in groups: Today, Yesterday, then one group per older day (or
  * This week and Earlier). Seed rows and daily summary rows are included (a business's history shows
  * them). `filter` and `query` narrow it; `status` adds the requests and links of a person, and the
- * `requests` chip shows only those (paid ones too).
+ * `requests` chip shows only those (paid ones too). A bank-transfer top-up that has not arrived is a row
+ * of `ramps` under the chips that hold top-ups and money in.
  */
 export function activity(
   s: LedgerState,
@@ -236,6 +276,21 @@ export function activity(
       ? statusRows(s, persona, filter === 'requests').filter((r) => query === '' || statusText(r).includes(query))
       : []
 
+  // Bank transfers asked for and not yet arrived (their payment does not exist until they do).
+  const ramps: ActivityRampRow[] = rampInFilter(filter)
+    ? (Object.values(s.ramps) as Ramp[])
+        .filter(
+          (r) =>
+            r.persona === persona &&
+            r.direction === 'on' &&
+            r.status === 'pending' &&
+            r.arrivesAt !== undefined &&
+            (query === '' || rampText(r, opts.rampLabel).includes(query)),
+        )
+        .map((r) => ({ ramp: r, signed: r.amount, at: r.requestedAt, arrivesAt: r.arrivesAt as SimTime }))
+        .sort((a, b) => b.at - a.at || (a.ramp.id < b.ramp.id ? 1 : -1))
+    : []
+
   const keyOf = (date: IsoDate): ActivityGroup['key'] => {
     if (date === today) return 'today'
     if (date === yesterday) return 'yesterday'
@@ -248,12 +303,13 @@ export function activity(
     // Groups are found by key: with period grouping several days share one.
     let g = groups.find((x) => x.key === key)
     if (!g) {
-      g = { key, date, rows: [], status: [] }
+      g = { key, date, rows: [], status: [], ramps: [] }
       groups.push(g)
     } else if (date > g.date) g.date = date
     return g
   }
   for (const row of rows) groupOf(localDateOf(row.at, tz)).rows.push(row)
   for (const row of status) groupOf(localDateOf(row.at, tz)).status.push(row)
+  for (const row of ramps) groupOf(localDateOf(row.at, tz)).ramps.push(row)
   return groups.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
 }
