@@ -1,13 +1,23 @@
-import { Banknote, ChartColumn, CreditCard, Landmark, type LucideIcon, Wallet } from 'lucide-react'
+import {
+  Banknote,
+  ChartColumn,
+  CreditCard,
+  Landmark,
+  Link as LinkIcon,
+  type LucideIcon,
+  Split,
+  Wallet,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatMinor, formatSignedMinor } from '@domain/money'
 import type { LedgerState, PersonaId } from '@domain/types'
 import { formatTime } from '@sim/tz'
 import { counterpartyOf } from '@store/parties'
-import { type ActivityRow as Row, deltaFor } from '@store/selectors'
+import { type ActivityRampRow, type ActivityRow as Row, type ActivityStatusRow, deltaFor } from '@store/selectors'
 import { fill, ui } from '../../copy'
 import { itemsText, partyLabel, shortBank, txLabel } from '../../format'
 import { PartyAvatar } from '../../kit/PartyAvatar'
+import { Tag } from '../chrome/Tag'
 
 // One line of History: an avatar (or an icon square for top-ups, cash-outs and summaries), the
 // name with what it was for, the time and items under it, and the signed amount. A payment that
@@ -58,6 +68,17 @@ export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string,
       title: ui.history.cashOut,
       sub: bank ? fill(ui.history.cashOutLine, { time, bank: shortBank(bank) }) : time,
       leading: tone(Banknote),
+      summary,
+      openable: true,
+    }
+  }
+  // A top-up that came through the bank or the card: "Top up" over the time and how it was paid.
+  if (tx.kind === 'on-ramp' && !tx.seedMeta && tx.to === viewer) {
+    const method = tx.rampId === undefined ? undefined : s.ramps[tx.rampId]?.method
+    return {
+      title: ui.history.topUp,
+      sub: method ? fill(ui.history.topUpLine, { time, method: ui.history.methods[method] }) : time,
+      leading: tone(method === 'card' ? CreditCard : Landmark),
       summary,
       openable: true,
     }
@@ -134,3 +155,105 @@ export function ActivityRowView({ row, text, onOpen }: { row: Row; text: RowText
     </button>
   )
 }
+
+// ---- Requests, payment links and bank transfers that have not arrived
+
+const STATUS_TAG = {
+  open: { tone: 'warning', label: ui.history.waiting },
+  paid: { tone: 'success', label: ui.lists.paid },
+  declined: { tone: 'danger', label: ui.lists.declined },
+  cancelled: { tone: 'neutral', label: ui.lists.cancelled },
+  closed: { tone: 'neutral', label: ui.lists.closed },
+} as const
+
+/**
+ * What a request or a payment link says in the list: who and what for, "Asked you" / "You asked" /
+ * "Your payment link" over the time, and a tag for where it stands. It has an amount but no sign: no
+ * money has moved.
+ */
+export function statusText(row: ActivityStatusRow, tz: string): RowText {
+  const when = formatTime(row.at, tz)
+  const name = row.party ? partyLabel(row.party) : ''
+  const toPay = row.direction === 'to-pay'
+  if (row.kind === 'link') {
+    return {
+      title: row.note ?? ui.lists.linkTitle,
+      sub: fill(toPay ? ui.history.linkIn : ui.history.linkOut, { when }),
+      leading: tone(LinkIcon),
+      summary: false,
+      openable: true,
+    }
+  }
+  const title = row.note ? fill(ui.lists.requestOf, { handle: name, note: row.note }) : name
+  return {
+    title,
+    sub: fill(toPay ? ui.history.requestIn : row.splitId ? ui.history.splitShareOut : ui.history.requestOut, { when }),
+    leading: row.party ? <PartyAvatar party={row.party} /> : tone(row.splitId ? Split : LinkIcon),
+    summary: false,
+    openable: true,
+  }
+}
+
+export function StatusRowView({
+  row,
+  text,
+  onOpen,
+}: {
+  row: ActivityStatusRow
+  text: RowText
+  onOpen: (() => void) | null
+}) {
+  const tag = STATUS_TAG[row.status]
+  const inner = (
+    <>
+      {text.leading}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-body text-body font-semibold text-navy-900">{text.title}</span>
+        <span className="block truncate font-body text-body-s text-grey-600">{text.sub}</span>
+      </span>
+      <Tag tone={tag.tone}>{tag.label}</Tag>
+      <span className="shrink-0 font-body text-body font-semibold text-navy-900 tnum">{formatMinor(row.amount)}</span>
+    </>
+  )
+  const cls = 'flex min-h-14 w-full items-center gap-3 border-b border-line-100 py-1 text-left'
+  return onOpen === null ? (
+    <div className={cls} data-testid={`status-${row.id}`}>
+      {inner}
+    </div>
+  ) : (
+    <button
+      type="button"
+      data-testid={`status-${row.id}`}
+      data-status={row.status}
+      onClick={onOpen}
+      className={`${cls} active:bg-line-100`}
+    >
+      {inner}
+    </button>
+  )
+}
+
+/** A bank transfer asked for and not yet arrived: "Top up" over "Bank transfer · on its way", PENDING, +55.00. */
+export function RampRowView({ row }: { row: ActivityRampRow }) {
+  const method = row.ramp.method ?? 'bank-transfer'
+  return (
+    <div
+      className="flex min-h-14 w-full items-center gap-3 border-b border-line-100 py-1"
+      data-testid={`ramp-${row.ramp.id}`}
+    >
+      {tone(method === 'card' ? CreditCard : Landmark)}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-body text-body font-semibold text-navy-900">{ui.history.topUp}</span>
+        <span className="block truncate font-body text-body-s text-grey-600">{rampSub(row)}</span>
+      </span>
+      <Tag tone="warning">{ui.history.pending}</Tag>
+      <span className="shrink-0 font-body text-body font-semibold text-green-700 tnum">
+        {formatSignedMinor(row.signed)}
+      </span>
+    </div>
+  )
+}
+
+/** "Bank transfer · on its way": what a search for a top-up on its way looks through, too. */
+export const rampSub = (row: ActivityRampRow): string =>
+  fill(ui.history.onItsWay, { method: ui.history.methods[row.ramp.method ?? 'bank-transfer'] })

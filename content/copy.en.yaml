@@ -566,6 +566,21 @@ history:
   summaryLine: "{count} payments · net {net}"
   cashOut: Cash out
   cashOutLine: "{time} · to {bank}"
+  topUp: Top up
+  onItsWay: "{method} · on its way"
+  searchLabel: Search
+  filtersLabel: Filter
+  requestIn: "Asked you · {when}"
+  requestOut: "You asked · {when}"
+  linkIn: "Payment link for you · {when}"
+  linkOut: "Your payment link · {when}"
+  splitShareOut: "Split share · {when}"
+  topUpLine: "{time} · {method}"
+  methods:
+    card: Card
+    bank-transfer: Bank transfer
+    local-method: Local payment method
+  waiting: WAITING
   searchPeople: Search people, shops, notes
   searchBusiness: Search sales, customers, references
   filters:
@@ -698,7 +713,22 @@ notices:
   dismiss: Dismiss
 
 empty:
-  history: No payments yet.
+  search:
+    title: Nothing found.
+    body: Try another name, shop or note.
+  filters:
+    all: { title: No payments yet., body: Payments you make and receive appear here. }
+    in: { title: No money in yet., body: Payments you receive appear here. }
+    out: { title: No money out yet., body: Payments you make appear here. }
+    shops: { title: No shop payments yet., body: Payments to shops appear here. }
+    people: { title: No payments with people yet., body: Payments to and from people appear here. }
+    topupsCashouts: { title: No top-ups or cash-outs yet., body: Money you add or take out appears here. }
+    requests: { title: No requests yet., body: Requests you send or receive appear here. }
+    sales: { title: No sales yet., body: Payments from customers appear here. }
+    refunds: { title: No refunds yet., body: Sales you refund appear here. }
+    suppliers: { title: No supplier payments yet., body: Payments to suppliers appear here. }
+    payouts: { title: No payouts yet., body: Money you cash out appears here. }
+    topups: { title: No top-ups yet., body: Money you add appears here. }
   notifications:
     title: You're all caught up.
     body: New payments and requests appear here.

@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 const S = z.string().min(1)
 const Pillar = z.strictObject({ title: S, body: S })
+const EmptyText = z.strictObject({ title: S, body: S })
 
 export const UiCopySchema = z.looseObject({
   app: z.looseObject({ title: S }),
@@ -453,6 +454,18 @@ export const UiCopySchema = z.looseObject({
     summaryLine: S,
     cashOut: S,
     cashOutLine: S,
+    topUp: S,
+    onItsWay: S,
+    searchLabel: S,
+    filtersLabel: S,
+    requestIn: S,
+    requestOut: S,
+    linkIn: S,
+    linkOut: S,
+    splitShareOut: S,
+    topUpLine: S,
+    methods: z.strictObject({ card: S, 'bank-transfer': S, 'local-method': S }),
+    waiting: S,
     searchPeople: S,
     searchBusiness: S,
     // One label for each chip the History selector offers (people's and the café's).
@@ -555,7 +568,25 @@ export const UiCopySchema = z.looseObject({
     writeFailed: S,
     dismiss: S,
   }),
-  empty: z.strictObject({ history: S, notifications: z.strictObject({ title: S, body: S }) }),
+  empty: z.strictObject({
+    notifications: z.strictObject({ title: S, body: S }),
+    search: z.strictObject({ title: S, body: S }),
+    // One empty state for each chip the History selector offers.
+    filters: z.strictObject({
+      all: EmptyText,
+      in: EmptyText,
+      out: EmptyText,
+      shops: EmptyText,
+      people: EmptyText,
+      topupsCashouts: EmptyText,
+      requests: EmptyText,
+      sales: EmptyText,
+      refunds: EmptyText,
+      suppliers: EmptyText,
+      payouts: EmptyText,
+      topups: EmptyText,
+    }),
+  }),
   notifications: z.strictObject({ title: S, markAll: S, today: S, yesterday: S, earlier: S, unread: S, justNow: S }),
   groups: z.strictObject({ today: S, yesterday: S, thisWeek: S, earlier: S }),
 })

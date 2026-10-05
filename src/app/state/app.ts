@@ -6,7 +6,7 @@ import type { IsoDate } from '@sim/tz'
 import { attachEffects } from '@store/effects'
 import { type Nav, type NavStore, createNavStore } from '@store/nav'
 import type { NotificationSubject } from '@store/notifications'
-import { type ShownQr, noteShownQr } from '@store/selectors'
+import { type ActivityFilter, type ShownQr, noteShownQr } from '@store/selectors'
 import type { StorageLike } from '@store/persistence'
 import { type Runtime, createRuntime } from '@store/runtime'
 import {
@@ -101,6 +101,8 @@ export interface Transient {
   overlay: Overlay | null
   /** QR screens an account showed lately ("My code", a payment link): the phone next to it can scan them. */
   shownQr: readonly ShownQr[]
+  /** What History was last set to for each account: the chip and the search (kept while the page stays open). */
+  history: Partial<Record<PersonaId, { filter: ActivityFilter; query: string }>>
 }
 
 const WELCOME: AuthScreenState = { screen: 'welcome' }
@@ -115,6 +117,7 @@ const freshTransient = (): Transient => ({
   zoom: null,
   overlay: null,
   shownQr: [],
+  history: {},
 })
 
 /** Toasts on screen at once. */
@@ -161,6 +164,8 @@ export interface AppActions {
   dismissResetToast(): void
   /** An account is showing its "My code" or a payment link's QR now (Scan can lock onto it for ten minutes). */
   showQr(persona: PersonaId, kind: ShownQr['kind'], linkId?: string): void
+  /** The chip and the search of an account's History. */
+  setHistory(persona: PersonaId, view: { filter: ActivityFilter; query: string }): void
 }
 
 export interface AppState {
@@ -399,6 +404,9 @@ export function createAppState(deps: AppDeps): AppState {
     },
     dismissResetToast() {
       transient.update((t) => (t.resetToast ? { ...t, resetToast: null } : t))
+    },
+    setHistory(persona, view) {
+      transient.update((t) => ({ ...t, history: { ...t.history, [persona]: view } }))
     },
     showQr(persona, kind, linkId) {
       const entry: ShownQr = { persona, kind, at: runtime.node.now(), ...(linkId !== undefined ? { linkId } : {}) }

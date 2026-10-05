@@ -178,6 +178,14 @@ button:disabled,
   outline: none;
 }
 
+/* A row that scrolls sideways (the History chips) without a scrollbar under it. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .tnum {
   font-variant-numeric: tabular-nums;
 }
