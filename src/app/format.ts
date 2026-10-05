@@ -2,7 +2,7 @@ import { content } from '@content/load'
 import { formatHundredths, formatMinor } from '@domain/money'
 import { approxEur } from '@domain/rate'
 import type { AccountId, Minor, Party, Persona, Rate, SimTime, Tx, TxItem } from '@domain/types'
-import { LJUBLJANA, formatTime, formatWeekday, zonedParts } from '@sim/tz'
+import { LJUBLJANA, daysBetween, formatTime, formatWeekday, localDateOf, zonedParts } from '@sim/tz'
 import { copy, fill, ui } from './copy'
 
 // Display helpers shared by the apps and the stage. Pure functions of state and copy.
@@ -147,4 +147,31 @@ export function itemsText(items: readonly TxItem[] | undefined): string {
   return (items ?? [])
     .map((it) => fill(copy.tx.items, { qty: it.qty, name: it.name.toLocaleLowerCase('en') }))
     .join(' · ')
+}
+
+/**
+ * When something happened, as a row or a sentence reads it, in the viewer's zone: "today 11:40" /
+ * "today at 11:40", "yesterday …", or the day ("Thu 24 Sep 10:12" / "Thu 24 Sep at 10:12").
+ */
+export function whenText(t: SimTime, now: SimTime, tz: string, form: 'row' | 'sentence' = 'row'): string {
+  const date = localDateOf(t, tz)
+  const age = daysBetween(date, localDateOf(now, tz))
+  const time = formatTime(t, tz)
+  const w = ui.when
+  if (age === 0) return fill(form === 'row' ? w.today : w.todayAt, { time })
+  if (age === 1) return fill(form === 'row' ? w.yesterday : w.yesterdayAt, { time })
+  return fill(form === 'row' ? w.day : w.dayAt, { day: dayText(date), time })
+}
+
+/** How long ago: "today", "yesterday", "2 days ago" (a day count, in the viewer's zone). */
+export function agoText(t: SimTime, now: SimTime, tz: string): string {
+  const age = daysBetween(localDateOf(t, tz), localDateOf(now, tz))
+  if (age <= 0) return ui.when.agoToday
+  if (age === 1) return ui.when.agoYesterday
+  return fill(ui.when.agoDays, { n: age })
+}
+
+/** The first word of a person's name ("Marko Kovač" → "Marko"); a business keeps its name. */
+export function firstName(p: Pick<Party, 'kind' | 'displayName'>): string {
+  return p.kind === 'person' ? (p.displayName.split(/\s+/)[0] ?? p.displayName) : p.displayName
 }

@@ -6,7 +6,7 @@ import { formatTime, formatWeekday, localDateOf } from '@sim/tz'
 import { txDetail } from '@store/selectors'
 import { useLedger, useLedgerNode } from '@store/useLedger'
 import { copy, fill, ui } from '../../copy'
-import { approx, eur, itemsText, partyLabel, rateText } from '../../format'
+import { approx, eur, firstName, itemsText, partyLabel, rateText } from '../../format'
 import { useApp } from '../../state/AppContext'
 import { Dock } from '../chrome/Dock'
 import { EmptyState } from '../chrome/EmptyState'
@@ -20,10 +20,6 @@ import { DETAILS } from '../registry'
 // seconds, then who, what, the fee, the rate and the reference, and a line on who can see it. The
 // merchant's view of a sale is navy: who paid, the items, the fee, "Final · no chargebacks" and
 // what cards would have cost. An outgoing payment to a person offers [Send again].
-
-function firstName(p: Party): string {
-  return p.kind === 'person' ? (p.displayName.split(/\s+/)[0] ?? p.displayName) : p.displayName
-}
 
 function Row({ label, sub, children }: { label: string; sub?: ReactNode; children: ReactNode }) {
   return (

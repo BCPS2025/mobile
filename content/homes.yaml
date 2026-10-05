@@ -9,12 +9,21 @@ consumer:
   avatar: profile
   tiles:
     - { tile: scan,       icon: scan-line,        opens: flow }
-    - { tile: payRequest, icon: arrow-left-right, opens: hub }
+    - { tile: payRequest, icon: arrow-left-right, opens: hub, badge: toPay, subline: toPay }
+    - { tile: wallet,     icon: wallet,           opens: hub }
     - { tile: history,    icon: list,             opens: view }
   hubs:
     payRequest:
-      - { row: send, icon: arrow-up-right, subline: sendHint }
+      - { section: toPay }
+      - { row: send,        icon: arrow-up-right,  subline: sendHint }
+      - { row: request,     icon: arrow-down-left, subline: requestHint }
+      - { row: paymentLink, icon: link,            subline: linkHint }
+      - { row: splitBill,   icon: split,           subline: splitHint }
+      - { section: waiting }
+    wallet:
+      - { row: myCode, icon: qr-code }
     profile:
+      - { row: myCode,        icon: qr-code }
       - { row: notifications, icon: bell }
       - { row: about,         icon: info }
       - { row: logout,        icon: log-out }

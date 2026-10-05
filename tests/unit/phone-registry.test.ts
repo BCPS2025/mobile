@@ -55,10 +55,16 @@ describe('the registry against content/homes.yaml', () => {
     }
   })
 
-  it('A2 makes live exactly Scan, Pay & request, History for people and Charge, Sales, Pay for the café', () => {
-    expect(homes.consumer.tiles.map((t) => t.tile)).toEqual(['scan', 'payRequest', 'history'])
+  it('makes live the four tiles of a person and Charge, Sales, Pay for the café', () => {
+    expect(homes.consumer.tiles.map((t) => t.tile)).toEqual(['scan', 'payRequest', 'wallet', 'history'])
     expect(homes.pos.tiles.map((t) => t.tile)).toEqual(['charge', 'sales', 'pay'])
-    expect(registeredRows(homes.consumer, 'payRequest').map((r) => r.row)).toEqual(['send'])
+    expect(registeredRows(homes.consumer, 'payRequest').map((r) => r.row)).toEqual([
+      'send',
+      'request',
+      'paymentLink',
+      'splitBill',
+    ])
+    expect(registeredRows(homes.consumer, 'wallet').map((r) => r.row)).toEqual(['myCode'])
     expect(registeredRows(homes.pos, 'sales').map((r) => r.row)).toEqual(['allPayments'])
     expect(registeredRows(homes.pos, 'pay').map((r) => r.row)).toEqual(['paySupplier'])
   })
@@ -97,6 +103,7 @@ describe('screens and flows', () => {
     for (const f of Object.values(FLOWS)) {
       ids.push(...f.steps.map((s) => s.screen))
       if (f.success !== 'welcome') ids.push(f.successScreen)
+      ids.push(...(f.endsAlsoOn ?? []).map((e) => e.screen))
     }
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -110,8 +117,10 @@ describe('screens and flows', () => {
       expect(['money', 'neutral', 'welcome']).toContain(f.success)
       expect(f.successScreen).toBeTruthy()
       for (const other of [...f.followOns, ...f.handoffs]) expect(FLOWS[other], `${id} → ${other}`).toBeDefined()
-      // A flow that moves money ends on a money success screen.
-      if (f.commits.length > 0 && f.steps.some((s) => s.kind === 'review')) expect(f.success).toBe('money')
+      // A flow that moves money ends on a money success screen; one that does not, on a neutral one
+      // (or Welcome).
+      expect(f.success === 'money', `${id} success`).toBe(f.moves)
+      for (const extra of f.endsAlsoOn ?? []) expect(extra.kind).toBe('neutral')
     }
   })
 

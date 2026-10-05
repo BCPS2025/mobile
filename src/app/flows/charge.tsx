@@ -327,7 +327,7 @@ function PaidBody({ tx, ctx, followOn }: { tx: Tx; ctx: FlowCtx; followOn: () =>
 // ---- the flow
 
 /** A code made by this flow, from what the ledger holds now: the flow shows it from here on. */
-const onCreated: NonNullable<FlowImpl<Draft>['commits'][number]['onAccepted']> = (_d, ctx, api) => {
+const onCreated: NonNullable<FlowImpl<Draft>['commits'][number]['onAccepted']> = (_d, ctx, api, _cmdId) => {
   const made = latestPosRequest(ctx.app.runtime.node.getState(), ctx.persona)
   api.set((x) => ({ ...x, requestId: made?.id ?? null, codes: x.codes + 1 }))
 }
@@ -412,8 +412,8 @@ export const chargeFlow: FlowImpl<Draft> = {
           note: ui.charge.table,
         }
       },
-      onAccepted: (d, ctx, api) => {
-        onCreated(d, ctx, api)
+      onAccepted: (d, ctx, api, cmdId) => {
+        onCreated(d, ctx, api, cmdId)
         api.next()
       },
     },

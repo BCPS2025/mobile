@@ -1,5 +1,6 @@
 import { chargeFlow } from '../flows/charge'
 import { logoutFlow } from '../flows/logout'
+import { payItemFlow } from '../flows/payItem'
 import { paySupplierFlow } from '../flows/paySupplier'
 import { scanFlow } from '../flows/scan'
 import { sendFlow } from '../flows/send'
@@ -37,3 +38,4 @@ registerFlow(scanFlow)
 registerFlow(sendFlow)
 registerFlow(chargeFlow)
 registerFlow(paySupplierFlow)
+registerFlow(payItemFlow)

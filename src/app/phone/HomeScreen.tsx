@@ -1,8 +1,7 @@
 import { fill, ui } from '../copy'
 import { useLedger, useLedgerNode } from '@store/useLedger'
 import { formatMinor } from '@domain/money'
-import { selectAvailable } from '@store/selectors'
-import { salesToday } from '@store/selectors'
+import { badges, salesToday, selectAvailable } from '@store/selectors'
 import { useApp, useUnread } from '../state/AppContext'
 import { BalanceBand } from './chrome/BalanceBand'
 import { BannerSlot } from './chrome/Banner'
@@ -39,11 +38,22 @@ export function HomeScreen() {
 
   /** The live line under a tile's label. */
   const lineOf = (subline: string | undefined): string | null => {
+    if (subline === 'toPay') {
+      const count = badges(state, persona).toPay
+      return count > 0 ? fill(ui.hubs.sublines.toPay, { count }) : null
+    }
     if (subline === 'salesToday') {
       const t = salesToday(state, persona, node.now(), app.content.config.t0.tz)
       return fill(ui.hubs.sublines.salesToday, { count: t.count, gross: formatMinor(t.gross) })
     }
     return null
+  }
+
+  /** The count on a tile's corner. */
+  const badgeOf = (badge: string | undefined): number | undefined => {
+    if (badge === undefined) return undefined
+    const b = badges(state, persona)
+    return badge === 'toPay' ? b.toPay : badge === 'invoicesToPay' ? b.invoicesToPay : b.escrowAction
   }
 
   return (
@@ -71,6 +81,7 @@ export function HomeScreen() {
               icon={iconFor(t.entry.icon)}
               label={ui.tiles[t.tile as keyof typeof ui.tiles]}
               line={lineOf(t.entry.subline)}
+              {...(badgeOf(t.entry.badge) !== undefined ? { badge: badgeOf(t.entry.badge) as number } : {})}
               onPress={() => nav.open(t.target)}
             />
           ))}

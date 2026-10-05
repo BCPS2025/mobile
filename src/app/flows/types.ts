@@ -3,6 +3,8 @@ import type { Content } from '@content/schema'
 import type { LedgerState, PersonaId, Rate, SimTime, Tx, UserCommand } from '@domain/types'
 import type { AppState } from '../state/app'
 import type { FlowId, StepKind } from '../phone/registry'
+import type { StackItem } from '../phone/chrome/Dock'
+import type { RefusalOptions } from '../errors'
 import type { Params, Shell, SlotKey } from '../phone/types'
 
 // The flow engine's types. A flow is a linear task, one step per screen, ending on a success
@@ -88,8 +90,12 @@ export interface StepDef<D> {
   back?(d: D, ctx: FlowCtx, api: FlowApi<D>): 'default' | 'leave' | { step: string }
   /** The task header title of this step when it differs from the flow's (the café's code and Cancel read "Payment code"). */
   title?(d: D, ctx: FlowCtx): string
-  /** Screen body colour (default light; Scan, Charge and Pay code are navy). */
-  body?: 'light' | 'navy'
+  /** Screen body colour (default light; Scan, Charge and Pay code are navy; Link ready is the lighter navy). */
+  body?: 'light' | 'navy' | 'navy-800'
+  /** A header that shows only this overline and Home (Link ready), the way the success screens do. */
+  overline?(d: D, ctx: FlowCtx): string
+  /** Buttons stacked in the dock (Link ready: [Send in BCPS] over [Done]) instead of the primary and secondary. */
+  stack?(d: D, ctx: FlowCtx, api: FlowApi<D>): StackItem[]
   /** The task header of this step when it differs from the flow's (Scan is navy, its review light). */
   header?(d: D, ctx: FlowCtx): 'light' | 'navy' | 'business'
   /** No dock under this step (Scan while no code is in view). */
@@ -107,6 +113,8 @@ export interface CommitDef<D> {
    * once. Default: `step`.
    */
   cmdStep?(d: D): string
+  /** What the refusal of this command is about, for its words ("This request was cancelled."). */
+  refusal?(d: D, ctx: FlowCtx): RefusalOptions
   /** Whether the step's primary button runs this commit now (default true); otherwise `onPrimary` runs. */
   when?(d: D, ctx: FlowCtx): boolean
   /** The command, or null when the draft is not ready. `cmdId` is `${instanceId}:${stepId}`. */
@@ -121,7 +129,7 @@ export interface CommitDef<D> {
    * Called after an accepted command. With `await: 'none'` it replaces the automatic move to the
    * next step: move the flow yourself (`api.goto`, `api.next`, `api.leave`) or stay where it is.
    */
-  onAccepted?(d: D, ctx: FlowCtx, api: FlowApi<D>): void
+  onAccepted?(d: D, ctx: FlowCtx, api: FlowApi<D>, cmdId: string): void
 }
 
 export interface SuccessProps<D> {

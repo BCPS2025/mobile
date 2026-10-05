@@ -185,6 +185,12 @@ export function quoteForRequest(s: LedgerState, r: PaymentRequest): FeeQuote | n
   return q.ok ? q.value : null
 }
 
+/** The fee quote a payment of a payment link would get: the link's snapshot decides who pays (null if refused). */
+export function quoteForLink(s: LedgerState, l: PaymentLink): FeeQuote | null {
+  const q = quoteWith(s, feeContextOfSnapshot(s, l), l.amount)
+  return q.ok ? q.value : null
+}
+
 /** A QR the phone can lock onto. */
 export type ScanCandidate =
   | {

@@ -57,8 +57,11 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
   if (!step) return null
   const api = createFlowApi<unknown>(app, who, screen.instanceId)
   const sending = phase === 'sending'
-  const navyBody = step.body === 'navy'
+  const navyBody = step.body === 'navy' || step.body === 'navy-800'
+  const lighterNavy = step.body === 'navy-800'
   const tone = step.header?.(d, ctx) ?? impl.tone(ctx)
+  const overline = step.overline?.(d, ctx)
+  const stack = screen.editing ? undefined : step.stack?.(d, ctx, api)
 
   const def = screen.editing
     ? { label: ui.steps.backToReview, tone: 'navy' as const, enabled: true }
@@ -81,14 +84,16 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
     screen.editing ? 'edit' : '',
     primary.tone,
     secondary?.kind ?? '',
+    stack ? 'stack' : '',
   ].join(':')
 
   return (
     <PhoneScreen
       id={step.screen}
       header={tone}
-      body={navyBody ? 'navy' : 'light'}
+      body={lighterNavy ? 'navy-800' : navyBody ? 'navy' : 'light'}
       title={step.title?.(d, ctx) ?? impl.title(ctx)}
+      {...(overline ? { overline, overlineTone: 'muted' as const } : {})}
       businessName={app.persona(phone.persona)?.displayName ?? ''}
       onBack={nav.back}
       onHome={nav.home}
@@ -101,9 +106,8 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
           <Dock
             key={dockKey}
             settle
-            tone={navyBody ? 'navy' : 'light'}
-            primary={primary}
-            {...(secondary ? { secondary } : {})}
+            tone={lighterNavy ? 'navy800' : navyBody ? 'navy' : 'light'}
+            {...(stack ? { stack } : { primary, ...(secondary ? { secondary } : {}) })}
           />
         )
       }

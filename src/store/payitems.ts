@@ -20,6 +20,20 @@ import { txsFor } from './txs'
 const byNewest = <T extends { at: SimTime; id: string }>(a: T, b: T): number =>
   b.at - a.at || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
 
+// ---- what a command made
+
+/** The payment link a `link.create` made (a flow finds its link by the command id). */
+export const linkByCmdId = (s: LedgerState, cmdId: string): PaymentLink | undefined =>
+  (Object.values(s.links) as PaymentLink[]).find((l) => l.cmdId === cmdId)
+
+/** The request a `request.create` made, by its command id (not the shares of a split, which share their split's id). */
+export const requestByCmdId = (s: LedgerState, cmdId: string): PaymentRequest | undefined =>
+  (Object.values(s.requests) as PaymentRequest[]).find((r) => r.cmdId === cmdId && r.channel === 'username')
+
+/** The split a `split.create` made, by its command id. */
+export const splitByCmdId = (s: LedgerState, cmdId: string): Split | undefined =>
+  (Object.values(s.splits) as Split[]).find((x) => x.cmdId === cmdId)
+
 // ---- invoices
 
 /** An invoice as its payer or issuer lists it. */
@@ -297,4 +311,57 @@ export function splitCandidates(s: LedgerState, persona: PersonaId, limit = 10):
     .filter((tx) => isSplitCandidate(s, tx, persona))
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, limit)
+}
+
+// ---- what an account is waiting for
+
+/** Closed requests, links and splits stay on the Pay & request list for this long. */
+export const RECENT_OUTCOME_MS = 48 * 3_600_000
+
+export type WaitingOutcome = 'open' | 'paid' | 'declined' | 'cancelled'
+
+/** Something the account asked for or made, with where it stands. */
+export type WaitingItem =
+  | { kind: 'request'; id: string; at: SimTime; outcome: WaitingOutcome; row: MyRequest }
+  | { kind: 'link'; id: string; at: SimTime; outcome: WaitingOutcome; row: LinkRow }
+  | { kind: 'split'; id: string; at: SimTime; outcome: WaitingOutcome; row: SplitProgress }
+
+/**
+ * The account's open requests, links and splits (newest first), then the ones that closed in the last
+ * two days (newest outcome first): what "Waiting" on the Pay & request list shows.
+ */
+export function waitingItems(s: LedgerState, persona: PersonaId, now: SimTime): WaitingItem[] {
+  const open: WaitingItem[] = []
+  const closed: WaitingItem[] = []
+  const place = (item: WaitingItem, closedAt: SimTime) => {
+    if (item.outcome === 'open') open.push(item)
+    else if (now - closedAt < RECENT_OUTCOME_MS) closed.push({ ...item, at: closedAt })
+  }
+  for (const row of myRequests(s, persona)) {
+    const r = row.request
+    place({ kind: 'request', id: r.id, at: r.createdAt, outcome: r.status, row }, row.at)
+  }
+  for (const row of linksOf(s, persona)) {
+    const l = row.link
+    const outcome: WaitingOutcome = l.status === 'open' ? 'open' : l.status === 'paid' ? 'paid' : 'cancelled'
+    place({ kind: 'link', id: l.id, at: l.createdAt, outcome, row }, row.payment?.createdAt ?? l.createdAt)
+  }
+  for (const row of splitsOf(s, persona)) {
+    const sp = row.split
+    const outcome: WaitingOutcome =
+      row.status === 'open'
+        ? 'open'
+        : row.status === 'complete'
+          ? 'paid'
+          : row.shares.some((x) => x.status === 'declined')
+            ? 'declined'
+            : 'cancelled'
+    const closedAt = row.shares.reduce(
+      (t, x) => Math.max(t, x.request?.closedAt ?? 0),
+      sp.createdAt as number,
+    ) as SimTime
+    place({ kind: 'split', id: sp.id, at: sp.createdAt, outcome, row }, closedAt)
+  }
+  const newest = (a: WaitingItem, b: WaitingItem) => b.at - a.at || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
+  return [...open.sort(newest), ...closed.sort(newest)]
 }

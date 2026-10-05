@@ -33,7 +33,7 @@ export function ListRow({
     >
       {leading ??
         (Icon && (
-          <span className="flex size-9 shrink-0 items-center justify-center bg-green-50 text-green-700">
+          <span className="flex size-10 shrink-0 items-center justify-center bg-green-50 text-green-700">
             <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
           </span>
         ))}

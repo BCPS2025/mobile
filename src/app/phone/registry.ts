@@ -12,10 +12,21 @@ import type { Shell } from './types'
 export type TileId = (typeof TILE_IDS)[number]
 export type RowId = (typeof ROW_IDS)[number]
 
-export type FlowId = 'scan' | 'send' | 'charge' | 'paySupplier' | 'logout'
-export type ViewId = 'history' | 'notifications' | 'about'
-export type DetailId = 'tx' | 'received'
-export type HubId = 'payRequest' | 'sales' | 'pay' | 'profile' | 'settings'
+export type FlowId =
+  | 'scan'
+  | 'send'
+  | 'charge'
+  | 'paySupplier'
+  | 'logout'
+  | 'payItem'
+  | 'request'
+  | 'paymentLink'
+  | 'split'
+  | 'cancelRequest'
+  | 'cancelSplit'
+export type ViewId = 'history' | 'notifications' | 'about' | 'myCode'
+export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split'
+export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'profile' | 'settings'
 
 export type Target =
   | { kind: 'flow'; id: FlowId }
@@ -44,6 +55,7 @@ export const HOME_SCREENS: Record<Shell, string> = {
 export const TILES: Partial<Record<TileId, Target>> = {
   scan: flow('scan'),
   payRequest: hub('payRequest'),
+  wallet: hub('wallet'),
   history: view('history'),
   charge: flow('charge'),
   sales: hub('sales'),
@@ -53,6 +65,10 @@ export const TILES: Partial<Record<TileId, Target>> = {
 /** What each hub row opens. */
 export const ROWS: Partial<Record<RowId, Target>> = {
   send: flow('send'),
+  request: flow('request'),
+  paymentLink: flow('paymentLink'),
+  splitBill: flow('split'),
+  myCode: view('myCode'),
   allPayments: view('history'),
   paySupplier: flow('paySupplier'),
   notifications: view('notifications'),
@@ -72,6 +88,7 @@ export interface HubSpec {
 }
 export const HUBS: Record<HubId, HubSpec> = {
   payRequest: { screen: 'c.payRequest.hub', shell: 'consumer' },
+  wallet: { screen: 'c.wallet.hub', shell: 'consumer' },
   profile: { screen: 'c.profile', shell: 'consumer', header: 'identity' },
   sales: { screen: 'pos.sales.hub', shell: 'pos' },
   pay: { screen: 'pos.pay', shell: 'pos' },
@@ -86,9 +103,18 @@ export interface ViewSpec {
   details: readonly DetailId[]
 }
 export const VIEWS: Record<ViewId, ViewSpec> = {
-  history: { screen: { consumer: 'c.history', pos: 'biz.history' }, shells: ['consumer', 'pos'], details: ['tx'] },
-  notifications: { screen: 'shared.notifications', shells: ['consumer', 'pos'], details: ['tx', 'received'] },
+  history: {
+    screen: { consumer: 'c.history', pos: 'biz.history' },
+    shells: ['consumer', 'pos'],
+    details: ['tx', 'request', 'link', 'split'],
+  },
+  notifications: {
+    screen: 'shared.notifications',
+    shells: ['consumer', 'pos'],
+    details: ['tx', 'received', 'request', 'link', 'split'],
+  },
   about: { screen: 'shared.about', shells: ['consumer', 'pos'], details: [] },
+  myCode: { screen: 'c.mycode', shells: ['consumer'], details: [] },
 }
 
 export interface DetailSpec {
@@ -99,8 +125,11 @@ export interface DetailSpec {
   flows: readonly FlowId[]
 }
 export const DETAILS: Record<DetailId, DetailSpec> = {
-  tx: { screen: 'shared.tx', related: [], flows: ['send'] },
+  tx: { screen: 'shared.tx', related: ['split'], flows: ['send', 'split'] },
   received: { screen: 'biz.received', related: ['tx'], flows: [] },
+  request: { screen: 'c.request.detail', related: ['tx'], flows: ['cancelRequest'] },
+  link: { screen: 'c.link.detail', related: ['tx'], flows: ['paymentLink'] },
+  split: { screen: 'c.split.detail', related: ['tx'], flows: ['cancelSplit'] },
 }
 
 export type StepKind = 'input' | 'review' | 'confirm' | 'waitFor' | 'committed'
@@ -127,6 +156,10 @@ export interface FlowSpec {
   success: SuccessKind
   /** data-screen of the success screen. */
   successScreen: string
+  /** Whether the flow's commit moves money (its success is then a `money` one). */
+  moves: boolean
+  /** Other screens the flow may end on (declining a request ends on a neutral one, paying on the money one). */
+  endsAlsoOn?: readonly { screen: string; kind: 'neutral' }[]
   /** Flows this one may start once it has ended (from its success screen: Home first). */
   followOns: readonly FlowId[]
   /** Flows this one may replace itself with, keeping the stack below it ("Pay by @username"). */
@@ -144,6 +177,7 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     commits: ['review'],
     success: 'money',
     successScreen: 'c.payCode.success',
+    moves: true,
     followOns: [],
     handoffs: ['send'],
   },
@@ -159,6 +193,7 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     commits: ['review'],
     success: 'money',
     successScreen: 'c.send.success',
+    moves: true,
     followOns: [],
     handoffs: [],
   },
@@ -174,6 +209,7 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     commits: ['items', 'code', 'cancel'],
     success: 'money',
     successScreen: 'pos.paid',
+    moves: true,
     followOns: ['charge'],
     handoffs: [],
   },
@@ -189,6 +225,101 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     commits: ['review'],
     success: 'money',
     successScreen: 'biz.send.done',
+    moves: true,
+    followOns: [],
+    handoffs: [],
+  },
+  // Pay what someone asked: a request, a payment link sent to you, a share of a split. Declining
+  // (requests and shares) ends on a neutral screen.
+  payItem: {
+    shells: ['consumer'],
+    startsFrom: ['home', 'hub', 'view'],
+    steps: [
+      { id: 'review', screen: 'c.payItem.review', kind: 'review' },
+      { id: 'decline', screen: 'c.payItem.decline', kind: 'confirm' },
+    ],
+    commits: ['review', 'decline'],
+    success: 'money',
+    successScreen: 'c.payItem.success',
+    moves: true,
+    endsAlsoOn: [{ screen: 'c.payItem.declined', kind: 'neutral' }],
+    followOns: [],
+    handoffs: [],
+  },
+  request: {
+    shells: ['consumer'],
+    startsFrom: ['hub'],
+    steps: [
+      { id: 'from', screen: 'c.request.from', kind: 'input' },
+      { id: 'amount', screen: 'c.request.amount', kind: 'input' },
+      { id: 'note', screen: 'c.request.note', kind: 'input' },
+      { id: 'review', screen: 'c.request.review', kind: 'review' },
+      { id: 'again', screen: 'c.request.again', kind: 'confirm' },
+    ],
+    // Send request, and Send another when the same request is already open.
+    commits: ['review', 'again'],
+    success: 'neutral',
+    successScreen: 'c.request.sent',
+    moves: false,
+    followOns: [],
+    handoffs: [],
+  },
+  paymentLink: {
+    shells: ['consumer'],
+    startsFrom: ['hub', 'view', 'detail'],
+    steps: [
+      { id: 'amount', screen: 'c.link.amount', kind: 'input' },
+      { id: 'note', screen: 'c.link.note', kind: 'input' },
+      { id: 'review', screen: 'c.link.review', kind: 'review' },
+      { id: 'ready', screen: 'c.link.ready', kind: 'committed' },
+      { id: 'qr', screen: 'c.link.qr', kind: 'committed' },
+      { id: 'to', screen: 'c.link.to', kind: 'input' },
+    ],
+    // Create link, and the send to one person from Link ready or from a link that waits.
+    commits: ['review', 'to'],
+    success: 'neutral',
+    successScreen: 'c.link.shared',
+    moves: false,
+    followOns: [],
+    handoffs: [],
+  },
+  split: {
+    shells: ['consumer'],
+    startsFrom: ['hub', 'detail'],
+    steps: [
+      { id: 'pick', screen: 'c.split.pick', kind: 'input' },
+      { id: 'amount', screen: 'c.split.amount', kind: 'input' },
+      { id: 'note', screen: 'c.split.note', kind: 'input' },
+      { id: 'people', screen: 'c.split.people', kind: 'input' },
+      { id: 'shares', screen: 'c.split.shares', kind: 'input' },
+      { id: 'review', screen: 'c.split.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'neutral',
+    successScreen: 'c.split.sent',
+    moves: false,
+    followOns: [],
+    handoffs: [],
+  },
+  cancelRequest: {
+    shells: ['consumer'],
+    startsFrom: ['detail'],
+    steps: [{ id: 'confirm', screen: 'c.request.cancel', kind: 'confirm' }],
+    commits: ['confirm'],
+    success: 'neutral',
+    successScreen: 'c.request.cancelled',
+    moves: false,
+    followOns: [],
+    handoffs: [],
+  },
+  cancelSplit: {
+    shells: ['consumer'],
+    startsFrom: ['detail'],
+    steps: [{ id: 'confirm', screen: 'c.split.cancel', kind: 'confirm' }],
+    commits: ['confirm'],
+    success: 'neutral',
+    successScreen: 'c.split.cancelled',
+    moves: false,
     followOns: [],
     handoffs: [],
   },
@@ -199,6 +330,7 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     commits: [],
     success: 'welcome',
     successScreen: 'auth.welcome',
+    moves: false,
     followOns: [],
     handoffs: [],
   },
@@ -215,6 +347,10 @@ export interface Feature {
 export const FEATURES: readonly Feature[] = [
   { id: 'scan', shell: 'consumer', target: flow('scan'), maxTaps: 1 },
   { id: 'send', shell: 'consumer', target: flow('send'), maxTaps: 2 },
+  { id: 'request', shell: 'consumer', target: flow('request'), maxTaps: 2 },
+  { id: 'paymentLink', shell: 'consumer', target: flow('paymentLink'), maxTaps: 2 },
+  { id: 'split', shell: 'consumer', target: flow('split'), maxTaps: 2 },
+  { id: 'myCode', shell: 'consumer', target: view('myCode'), maxTaps: 2 },
   { id: 'history', shell: 'consumer', target: view('history'), maxTaps: 1 },
   { id: 'notifications', shell: 'consumer', target: view('notifications'), maxTaps: 1 },
   { id: 'about', shell: 'consumer', target: view('about'), maxTaps: 2 },

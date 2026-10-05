@@ -6,6 +6,7 @@ import type { IsoDate } from '@sim/tz'
 import { attachEffects } from '@store/effects'
 import { type Nav, type NavStore, createNavStore } from '@store/nav'
 import type { NotificationSubject } from '@store/notifications'
+import { type ShownQr, noteShownQr } from '@store/selectors'
 import type { StorageLike } from '@store/persistence'
 import { type Runtime, createRuntime } from '@store/runtime'
 import {
@@ -98,6 +99,8 @@ export interface Transient {
   lastUsed: StageKey
   zoom: StageKey | null
   overlay: Overlay | null
+  /** QR screens an account showed lately ("My code", a payment link): the phone next to it can scan them. */
+  shownQr: readonly ShownQr[]
 }
 
 const WELCOME: AuthScreenState = { screen: 'welcome' }
@@ -111,6 +114,7 @@ const freshTransient = (): Transient => ({
   lastUsed: 'left',
   zoom: null,
   overlay: null,
+  shownQr: [],
 })
 
 /** Toasts on screen at once. */
@@ -155,6 +159,8 @@ export interface AppActions {
   dismissBanner(persona: PersonaId): void
   dismissToast(id: string): void
   dismissResetToast(): void
+  /** An account is showing its "My code" or a payment link's QR now (Scan can lock onto it for ten minutes). */
+  showQr(persona: PersonaId, kind: ShownQr['kind'], linkId?: string): void
 }
 
 export interface AppState {
@@ -393,6 +399,10 @@ export function createAppState(deps: AppDeps): AppState {
     },
     dismissResetToast() {
       transient.update((t) => (t.resetToast ? { ...t, resetToast: null } : t))
+    },
+    showQr(persona, kind, linkId) {
+      const entry: ShownQr = { persona, kind, at: runtime.node.now(), ...(linkId !== undefined ? { linkId } : {}) }
+      transient.update((t) => ({ ...t, shownQr: noteShownQr(t.shownQr, entry) }))
     },
   }
 

@@ -166,6 +166,7 @@ nav:
 tiles:
   scan: Scan
   payRequest: Pay & request
+  wallet: Wallet
   history: History
   charge: Charge
   sales: Sales
@@ -174,12 +175,17 @@ tiles:
 hubs:
   titles:
     payRequest: Pay & request
+    wallet: Wallet
     sales: Sales
     pay: Pay
     profile: Profile
     settings: Settings
   rows:
     send: Send money
+    request: Request money
+    paymentLink: Payment link
+    splitBill: Split a bill
+    myCode: My code
     allPayments: All payments
     paySupplier: Pay supplier
     notifications: Notifications
@@ -187,8 +193,17 @@ hubs:
     logout: Log out
   sublines:
     sendHint: To a person or business
+    requestHint: Ask someone to pay you
+    linkHint: One person can pay this link
+    splitHint: Share a total between friends
+    toPay: "{count} to pay"
     supplierHint: By @name, code or invoice
     salesToday: "{count} today · {gross}"
+
+  sections:
+    toPay: TO PAY
+    payRequest: PAY & REQUEST
+    waiting: WAITING
 
 home:
   profile: Profile
@@ -276,6 +291,56 @@ send:
   rowNote: Note
   noNote: No note
   send: "Send {amount} BCPS"
+
+# How long ago something happened, in a row or a sentence.
+when:
+  today: "today {time}"
+  yesterday: "yesterday {time}"
+  day: "{day} {time}"
+  todayAt: "today at {time}"
+  yesterdayAt: "yesterday at {time}"
+  dayAt: "{day} at {time}"
+  agoToday: today
+  agoYesterday: yesterday
+  agoDays: "{n} days ago"
+
+# The lists on Pay & request: what you are asked to pay, and what you are waiting for.
+lists:
+  request: "Request · {when}"
+  requestOf: "{handle} · {note}"
+  linkFrom: "Payment link from {name}"
+  linkTitle: Payment link
+  shareFrom: "Your split share · {name}"
+  asked: "Asked {when}"
+  sentLink: "Payment link · {when}"
+  splitProgress: "Split · {paid} of {count} paid"
+  paid: PAID
+  declined: DECLINED
+  cancelled: CANCELLED
+  closed: CLOSED
+
+# Paying what someone asked (a request, a payment link, a split share) or declining it.
+payItem:
+  reviewTitle: "Pay {name}?"
+  rowFrom: From
+  rowFor: For
+  rowAmount: Amount
+  rowFee: Transaction fee
+  rowTotal: Total
+  noNote: No note
+  pay: "Pay {amount}"
+  decline: Decline
+  askedRequest: "{name} asked {when}."
+  askedLink: "{name} sent you this link {when}."
+  askedShare: "{name} asked for your share {when}."
+  declineTitle: "Decline {name}'s request?"
+  rowRequest: Request
+  declineBody: "{first} will see that you declined. No money moves."
+  keep: Keep
+  declineConfirm: Decline
+  declinedOverline: DECLINED
+  declinedTitle: Request declined
+  declinedBody: "{first} will see that you declined. No money moved."
 
 # ---- Café screens
 

@@ -297,3 +297,18 @@ export async function expectNoSeriousViolations(page: Page, where: string, withi
     )
   expect(serious, `axe on ${where}`).toEqual([])
 }
+
+/** The stage with Ana on the left and Marko on the right (through the account menu), both on Home. */
+export async function anaAndMarko(page: Page, hash = '#/stage'): Promise<void> {
+  await openApp(page, hash)
+  await biometricLogin(page, 'left')
+  await page.getByTestId('account-menu-right').click()
+  await page.getByTestId('account-marko').click()
+  await expect(slot(page, 'right')).toHaveAttribute('data-persona', 'marko')
+  await expect(slot(page, 'right').locator('[data-screen="c.home"]')).toBeVisible()
+}
+
+/** Types an amount on the keypad of a phone ("16.50"). */
+export async function typeAmount(phoneLocator: Locator, amount: string): Promise<void> {
+  for (const ch of amount) await phoneLocator.locator(`[data-key="${ch}"]`).click()
+}
