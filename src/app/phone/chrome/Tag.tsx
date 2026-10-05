@@ -41,7 +41,7 @@ export function StatusChip({
   return (
     <p
       data-testid={testId}
-      className={`inline-flex min-h-8 w-fit items-center px-3 py-1 font-body text-body-s font-semibold ${CHIP[tone]}`}
+      className={`inline-flex min-h-7 w-fit items-center px-2.5 font-body text-caption font-semibold ${CHIP[tone]}`}
     >
       {children}
     </p>

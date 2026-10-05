@@ -26,6 +26,8 @@ export interface PickPartyStepProps {
   viewer: PersonaId
   /** Which parties may be picked. */
   filter?: PartyFilter['filter']
+  /** People only (Request money): a business that was typed is told to send an invoice instead. */
+  peopleOnly?: boolean
   /** Enter, when the query names someone. */
   onSubmit?: () => void
 }
@@ -45,12 +47,17 @@ export function partyLines(p: Party, content: Content): { first: string; second:
   return { first: p.handle, second: p.displayName, verified }
 }
 
+const isPerson = (party: Party): boolean => party.kind === 'person'
+
 export function PickPartyStep(p: PickPartyStepProps) {
-  const filter = p.filter ? { filter: p.filter } : {}
+  const filter = p.peopleOnly ? { filter: isPerson } : p.filter ? { filter: p.filter } : {}
   const list = useMemo(() => searchParties(p.state, p.viewer, p.query, filter), [p.state, p.viewer, p.query, filter])
   const picked = resolveParty(p.state, p.viewer, p.query, filter)
   const typed = p.query.trim()
   const unknown = typed !== '' && list.length === 0
+  // Only people may be asked: what was typed names a business.
+  const business =
+    unknown && p.peopleOnly === true && searchParties(p.state, p.viewer, p.query).some((x) => x.kind === 'business')
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && picked) {
       e.preventDefault()
@@ -86,11 +93,13 @@ export function PickPartyStep(p: PickPartyStepProps) {
       {unknown && (
         <ErrorLine className="mt-3">
           {isSelf(p.state, p.viewer, typed)
-            ? errorText({ code: 'self-payment' })
-            : errorText({
-                code: 'unknown-recipient',
-                handle: typed.startsWith('@') ? typed : `@${normaliseQuery(typed)}`,
-              })}
+            ? errorText({ code: 'self-payment' }, p.peopleOnly ? { about: 'request' } : {})
+            : business
+              ? errorText({ code: 'not-allowed' }, { about: 'request' })
+              : errorText({
+                  code: 'unknown-recipient',
+                  handle: typed.startsWith('@') ? typed : `@${normaliseQuery(typed)}`,
+                })}
         </ErrorLine>
       )}
       {!unknown && list.length > 0 && typed === '' && <ListSection>{ui.party.recent}</ListSection>}

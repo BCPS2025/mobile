@@ -24,6 +24,8 @@ export interface AmountStepProps {
   available: Minor | null
   /** What [Max] fills in; null hides the button. */
   max: Minor | null
+  /** A grey line in place of the Available row ("The payer sees this amount"). */
+  hint?: string
   /** An error line under the figure (not enough balance). */
   error?: ReactNode
   /** Enter on the step (the dock's primary, when it is enabled). */
@@ -138,6 +140,14 @@ export function AmountStep(p: AmountStepProps) {
         </p>
         {p.error && <div className="mt-2 w-full">{p.error}</div>}
       </div>
+      {p.hint && p.available === null && p.max === null && (
+        <div
+          className={`flex min-h-[53px] items-center border-t ${onNavy ? 'border-navy-700' : 'border-line-100'}`}
+          data-testid="amount-hint"
+        >
+          <p className={`font-body text-body-s ${onNavy ? 'text-line-300' : 'text-grey-600'}`}>{p.hint}</p>
+        </div>
+      )}
       {(p.available !== null || p.max !== null) && (
         <div
           className={`flex min-h-[53px] items-center justify-between border-t ${onNavy ? 'border-navy-700' : 'border-line-100'}`}

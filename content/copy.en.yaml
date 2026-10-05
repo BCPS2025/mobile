@@ -300,6 +300,9 @@ when:
   todayAt: "today at {time}"
   yesterdayAt: "yesterday at {time}"
   dayAt: "{day} at {time}"
+  detailToday: "Today · {time}"
+  detailYesterday: "Yesterday · {time}"
+  detailDay: "{day} · {time}"
   agoToday: today
   agoYesterday: yesterday
   agoDays: "{n} days ago"
@@ -341,6 +344,63 @@ payItem:
   declinedOverline: DECLINED
   declinedTitle: Request declined
   declinedBody: "{first} will see that you declined. No money moved."
+
+# Request money (c.request.*) and the detail of a request you made.
+request:
+  title: Request money
+  fromTitle: Who do you ask?
+  amountTitle: How much?
+  noteTitle: Add a note?
+  reviewTitle: Check and send
+  rowFrom: From
+  rowAmount: Amount
+  rowNote: Note
+  noNote: No note
+  feeNote: "{name} pays the 1% fee ({fee} BCPS). You receive the full amount."
+  send: Send request
+  againTitle: Send another request?
+  againBody: "You already asked {handle} for {amount} BCPS · {note}."
+  againBodyPlain: "You already asked {handle} for {amount} BCPS."
+  sendAnother: Send another
+  cancel: Cancel
+  sentOverline: SENT
+  sentTitle: Request sent
+  sentBody: "{amount} BCPS from {handle} · {note}"
+  sentBodyPlain: "{amount} BCPS from {handle}"
+
+requestDetail:
+  title: Request
+  waiting: Waiting
+  paidBy: "Paid by {handle} ✓"
+  declinedBy: "Declined by {handle} · no money moved"
+  cancelled: Cancelled · no money moved
+  askedOf: Asked of
+  asked: Asked
+  paid: Paid
+  declined: Declined
+  cancelledAt: Cancelled
+  from: From
+  reason: Reason
+  payment: Payment
+  reference: Reference
+  cancel: Cancel request
+  cancelTitle: "Cancel your request to {handle}?"
+  cancelBody: "{first} will see that you cancelled it. No money moves."
+  keep: Keep
+  cancelOverline: CANCELLED
+  cancelledTitle: Request cancelled
+  cancelledBody: "{first} will see that you cancelled it. No money moved."
+
+# The progress of a split bill and cancelling what is still open.
+splitDetail:
+  title: Split a bill
+  cancelTitle: Cancel the open requests?
+  cancelBody: The people who have not paid will see that you cancelled. No money moves.
+  cancelOpen: Open requests
+  cancelLeft: Still to collect
+  cancelConfirm: Cancel requests
+  cancelledTitle: Open requests cancelled
+  cancelledBody: What was already paid stays paid. No money moved.
 
 # ---- Café screens
 

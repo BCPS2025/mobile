@@ -4,13 +4,16 @@ import { isImplemented } from './implemented'
 import type { Target } from './registry'
 import { topOf } from './stack'
 import type { Shell, SlotKey } from './types'
+import { entryOf } from '@domain/ledger'
 import type { PersonaId } from '@domain/types'
 import type { NotificationSubject } from '@store/notifications'
 
 // Opening what a notification is about (a banner, a toast or a row of the Notifications list):
-// it is marked read, then its payment detail opens on top of the persona's stack. A business
-// that was paid opens the navy Received detail; while a flow step is on top the banner is
-// informational only and nothing opens over the flow.
+// it is marked read, then what it is about opens on top of the persona's stack: the payment's
+// detail, the check of a request, a payment link or a split share that is to be paid, or the
+// detail of a request or split the account made. A business that was paid opens the navy Received
+// detail; while a flow step is on top the banner is informational only and nothing opens over the
+// flow.
 
 const TX: Target = { kind: 'detail', id: 'tx' }
 const RECEIVED: Target = { kind: 'detail', id: 'received' }
@@ -23,6 +26,37 @@ export interface NotificationRef {
   kind: string
 }
 
+interface Route {
+  target: Target
+  params: Record<string, string>
+}
+
+/** The screen a notification opens, or null when it has none (yet). */
+function routeOf(app: AppState, who: { persona: PersonaId; shell: Shell }, n: NotificationRef): Route | null {
+  const s = app.runtime.node.getState()
+  const subject = n.subject
+  if (subject.type === 'request') {
+    // Asked of this account: its check. The requester's own request: its detail (declined).
+    if (n.kind === 'request.received' || n.kind === 'split.received')
+      return { target: { kind: 'flow', id: 'payItem' }, params: { request: subject.id } }
+    if (n.kind === 'request.declined')
+      return { target: { kind: 'detail', id: 'request' }, params: { requestId: subject.id } }
+    return null
+  }
+  if (subject.type === 'link') {
+    return n.kind === 'link.received' ? { target: { kind: 'flow', id: 'payItem' }, params: { link: subject.id } } : null
+  }
+  if (n.txId === null) return null
+  if (n.kind === 'split.completed') {
+    const tx = entryOf(s.txs, n.txId)
+    const request = tx?.links?.requestId === undefined ? undefined : entryOf(s.requests, tx.links.requestId)
+    if (request?.splitId !== undefined)
+      return { target: { kind: 'detail', id: 'split' }, params: { splitId: request.splitId } }
+  }
+  const target = n.kind === 'sale.received' && isImplemented(RECEIVED, who.shell) ? RECEIVED : TX
+  return { target, params: { txId: n.txId } }
+}
+
 export function openNotification(
   app: AppState,
   who: { persona: PersonaId; slot: SlotKey; shell: Shell },
@@ -31,9 +65,8 @@ export function openNotification(
   const nav = createPhoneNav(app, who)
   if (topOf(nav.stack()).kind === 'flow') return
   app.actions.markRead(who.persona, n.id)
-  if (n.txId === null) return
-  const target = n.kind === 'sale.received' && isImplemented(RECEIVED, who.shell) ? RECEIVED : TX
-  if (isImplemented(target, who.shell)) nav.open(target, { txId: n.txId })
+  const route = routeOf(app, who, n)
+  if (route && isImplemented(route.target, who.shell)) nav.open(route.target, route.params)
 }
 
 /**

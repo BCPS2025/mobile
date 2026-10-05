@@ -1,6 +1,8 @@
+import { cancelRequestFlow } from '../flows/cancel'
 import { chargeFlow } from '../flows/charge'
 import { logoutFlow } from '../flows/logout'
 import { payItemFlow } from '../flows/payItem'
+import { requestFlow } from '../flows/request'
 import { paySupplierFlow } from '../flows/paySupplier'
 import { scanFlow } from '../flows/scan'
 import { sendFlow } from '../flows/send'
@@ -12,6 +14,7 @@ import { HistoryView } from './views/HistoryView'
 import { IdentityCard } from './views/IdentityCard'
 import { NotificationsView } from './views/NotificationsView'
 import { ReceivedDetail } from './views/ReceivedDetail'
+import { RequestDetail } from './views/RequestDetail'
 import { TxDetailView } from './views/TxDetail'
 import { registerAuthScreen, registerDetail, registerFlow, registerHubHeader, registerView } from './implemented'
 
@@ -33,9 +36,12 @@ registerView('notifications', NotificationsView)
 registerHubHeader('identity', IdentityCard)
 registerDetail('tx', TxDetailView)
 registerDetail('received', ReceivedDetail)
+registerDetail('request', RequestDetail)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)
 registerFlow(chargeFlow)
 registerFlow(paySupplierFlow)
 registerFlow(payItemFlow)
+registerFlow(requestFlow)
+registerFlow(cancelRequestFlow)

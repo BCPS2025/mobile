@@ -1,7 +1,7 @@
 // Pay & request: the list of what you are asked to pay, paying a request, declining it, and what
 // the other person sees.
 import { expect, test } from '@playwright/test'
-import { anaAndMarko, expectBalance, expectCleanVisibleCopy, slot } from './helpers'
+import { anaAndMarko, expectBalance, expectCleanVisibleCopy, slot, typeAmount } from './helpers'
 
 test.describe('Pay & request on the stage', () => {
   test.use({ viewport: { width: 1280, height: 720 } })
@@ -79,5 +79,148 @@ test.describe('Pay & request on the stage', () => {
     await expectBalance(page, 'ana', '247.50')
     await expectBalance(page, 'marko', '132.98')
     await expect(ana.locator('[data-tile="payRequest"]')).not.toContainText('to pay')
+  })
+
+  test('Ana requests 13.20 "Lunch" from Marko; Marko pays it; Ana 260.70, Marko 119.65', async ({ page }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    const marko = slot(page, 'right')
+    await ana.locator('[data-tile="payRequest"]').click()
+    await ana.getByTestId('row-request').click()
+
+    // Who: people only.
+    await expect(ana.locator('[data-screen="c.request.from"]')).toBeVisible()
+    await expect(ana.getByText('Step 1 of 4')).toBeVisible()
+    await ana.getByTestId('party-search').fill('@cafelipa')
+    await expect(ana.getByTestId('error-line')).toHaveText('Businesses pay by invoice')
+    await expect(ana.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    await ana.getByTestId('party-search').fill('@ana')
+    await expect(ana.getByTestId('error-line')).toHaveText("You can't request from yourself.")
+    await ana.getByTestId('party-search').fill('@marko')
+    await ana.getByRole('button', { name: 'Continue' }).click()
+    await typeAmount(ana, '13.20')
+    await ana.getByRole('button', { name: 'Continue' }).click()
+    await ana.getByRole('button', { name: 'Lunch', exact: true }).click()
+    await ana.getByRole('button', { name: 'Continue' }).click()
+
+    // Check and send: the fee is Marko's, Ana receives the full amount.
+    const review = ana.locator('[data-screen="c.request.review"]')
+    await expect(review).toBeVisible()
+    await expect(ana.getByText('Step 4 of 4')).toBeVisible()
+    await expect(review).toContainText('@marko · Marko Kovač')
+    await expect(review).toContainText('13.20 BCPS')
+    await expect(review).toContainText('Lunch')
+    await expect(ana.getByTestId('info-note')).toHaveText(
+      'Marko pays the 1% fee (0.13 BCPS). You receive the full amount.',
+    )
+    await ana.getByRole('button', { name: 'Send request' }).click()
+    const sent = ana.locator('[data-screen="c.request.sent"]')
+    await expect(sent).toBeVisible()
+    await expect(sent).toContainText('Request sent')
+    await expect(sent).toContainText('13.20 BCPS from @marko · Lunch')
+
+    // Marko: the banner, the count, the list.
+    await expect(marko.getByTestId('banner')).toContainText('@ana requests 13.20 BCPS · Lunch')
+    await expect(marko.locator('[data-tile="payRequest"]')).toContainText('1 to pay')
+    await ana.getByRole('button', { name: 'Done' }).click()
+    await ana.locator('[data-tile="payRequest"]').click()
+    const waiting = ana.getByTestId('waiting')
+    await expect(waiting).toContainText('@marko · Lunch')
+    await expect(waiting).toContainText('Asked today')
+
+    // The banner opens the check; Marko pays 13.33.
+    await marko.getByTestId('banner').click()
+    await expect(marko.locator('[data-screen="c.payItem.review"]')).toBeVisible()
+    await expect(marko.getByTestId('review-total')).toContainText('13.33 BCPS')
+    await marko.getByRole('button', { name: 'Pay 13.33' }).click()
+    await expect(marko.locator('[data-screen="c.payItem.success"]')).toBeVisible({ timeout: 5000 })
+    await expect(ana.getByTestId('banner')).toContainText('@marko paid your request · 13.20 BCPS')
+    await marko.getByRole('button', { name: 'Done' }).click()
+    await expectBalance(page, 'marko', '119.65')
+
+    // Ana's request now reads Paid.
+    await expect(waiting).toContainText('PAID')
+    await ana
+      .getByTestId(/^waiting-/)
+      .first()
+      .click()
+    const detail = ana.locator('[data-screen="c.request.detail"]')
+    await expect(detail).toBeVisible()
+    await expect(detail.getByTestId('status-chip')).toHaveText('Paid by @marko ✓')
+    await expect(detail).toContainText('13.20')
+    await expect(detail.getByRole('button', { name: 'Cancel request' })).toHaveCount(0)
+    await detail.getByTestId('view-payment').click()
+    await expect(ana.locator('[data-screen="shared.tx"]')).toContainText('+13.20')
+    await ana.getByTestId('nav-home').click()
+    await expectBalance(page, 'ana', '260.70')
+    await expectCleanVisibleCopy(page)
+  })
+
+  test('the same request again asks first; Cancel request asks, tells Marko nothing moved', async ({ page }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    const marko = slot(page, 'right')
+    const request = async () => {
+      await ana.locator('[data-tile="payRequest"]').click()
+      await ana.getByTestId('row-request').click()
+      await ana.getByTestId('party-search').fill('@marko')
+      await ana.getByRole('button', { name: 'Continue' }).click()
+      await typeAmount(ana, '13.20')
+      await ana.getByRole('button', { name: 'Continue' }).click()
+      await ana.getByRole('button', { name: 'Lunch', exact: true }).click()
+      await ana.getByRole('button', { name: 'Continue' }).click()
+      await ana.getByRole('button', { name: 'Send request' }).click()
+    }
+    await request()
+    await expect(ana.locator('[data-screen="c.request.sent"]')).toBeVisible()
+    await ana.getByRole('button', { name: 'Done' }).click()
+    await request()
+    const again = ana.locator('[data-screen="c.request.again"]')
+    await expect(again).toBeVisible()
+    await expect(again).toContainText('You already asked @marko for 13.20 BCPS · Lunch.')
+    await ana.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(ana.locator('[data-screen="c.request.review"]')).toBeVisible()
+    await ana.getByTestId('nav-home').click()
+
+    // Cancel the request from its detail.
+    await ana.locator('[data-tile="payRequest"]').click()
+    await ana
+      .getByTestId(/^waiting-R-/)
+      .first()
+      .click()
+    await ana.getByRole('button', { name: 'Cancel request' }).click()
+    const confirm = ana.locator('[data-screen="c.request.cancel"]')
+    await expect(confirm).toBeVisible()
+    await expect(confirm).toContainText('Cancel your request to @marko?')
+    await expect(confirm).toContainText('Marko will see that you cancelled it. No money moves.')
+    await ana.getByRole('button', { name: 'Keep' }).click()
+    await expect(ana.locator('[data-screen="c.request.detail"]')).toBeVisible()
+    await ana.getByRole('button', { name: 'Cancel request' }).click()
+    await ana.getByRole('button', { name: 'Cancel request' }).click()
+    await expect(ana.locator('[data-screen="c.request.cancelled"]')).toContainText('Request cancelled')
+    await ana.getByRole('button', { name: 'Done' }).click()
+    await marko.locator('[data-tile="payRequest"]').click()
+    await expect(marko.getByTestId('to-pay')).toHaveCount(0)
+    await marko.getByTestId('nav-home').click()
+    await expectBalance(page, 'marko', '132.98')
+  })
+
+  test('paying a request that was cancelled meanwhile: "This request was cancelled."', async ({ page }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    const marko = slot(page, 'right')
+    await ana.locator('[data-tile="payRequest"]').click()
+    await ana.getByTestId('pay-item-r_seed_lunch').click()
+    await expect(ana.locator('[data-screen="c.payItem.review"]')).toBeVisible()
+    // Marko withdraws the Lunch request while Ana looks at it.
+    await marko.locator('[data-tile="payRequest"]').click()
+    await marko.getByTestId('waiting-r_seed_lunch').click()
+    await marko.getByRole('button', { name: 'Cancel request' }).click()
+    await marko.getByRole('button', { name: 'Cancel request' }).click()
+    await expect(marko.locator('[data-screen="c.request.cancelled"]')).toBeVisible()
+    await ana.getByRole('button', { name: 'Pay 13.33' }).click()
+    await expect(ana.getByTestId('error-line')).toHaveText('This request was cancelled.')
+    await ana.getByTestId('nav-home').click()
+    await expectBalance(page, 'ana', '247.50')
   })
 })
