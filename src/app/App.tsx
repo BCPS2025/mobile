@@ -7,6 +7,7 @@ import { AboutPage, LandingPage, NotFoundPage } from './shell/Pages'
 // (so a tab showing them does not take the writer lock), and they stay small.
 const StagePage = lazy(() => import('./shell/StagePage'))
 const PhonePage = lazy(() => import('./shell/PhonePage'))
+const PayPage = lazy(() => import('./shell/PayPage'))
 
 const Waiting = () => <div className="min-h-dvh bg-navy-900" />
 
@@ -37,10 +38,10 @@ export function App() {
         </Suspense>
       )
     case 'pay':
-      // A payment code or link opens phone mode; the landing for a known code arrives with links.
+      // A payment link, request or code this browser knows opens its payment page; any other address opens phone mode.
       return (
         <Suspense fallback={<Waiting />}>
-          <PhonePage />
+          <PayPage />
         </Suspense>
       )
     case 'notFound':

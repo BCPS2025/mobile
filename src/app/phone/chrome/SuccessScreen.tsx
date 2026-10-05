@@ -48,8 +48,14 @@ export interface SuccessScreenProps {
   secondary?: DockSecondary
 }
 
+/** A success screen inside a phone: its Home returns to the account's Home. */
 export function SuccessScreen(p: SuccessScreenProps) {
   const nav = usePhoneNav()
+  return <SuccessLayout {...p} onHome={() => nav.home()} />
+}
+
+/** The success screen itself. Without `onHome` the header shows only the overline (the payment page outside the phones). */
+export function SuccessLayout(p: SuccessScreenProps & { onHome?: () => void }) {
   const neutral = p.variant === 'neutral'
   return (
     <PhoneScreen
@@ -58,7 +64,7 @@ export function SuccessScreen(p: SuccessScreenProps) {
       body={neutral ? 'navy-800' : 'navy'}
       overline={p.overline}
       overlineTone={neutral ? 'muted' : 'green'}
-      onHome={() => nav.home()}
+      {...(p.onHome ? { onHome: p.onHome } : {})}
       dock={
         <Dock
           tone={neutral ? 'navy800' : 'navy'}

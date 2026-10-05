@@ -3,8 +3,11 @@ import type { LedgerState, PersonaId, Tx } from '@domain/types'
 import { counterpartyOf } from '@store/parties'
 import { fill, ui } from '../copy'
 import { approx, dateTimeText, partyLabel } from '../format'
-import { SuccessScreen } from '../phone/chrome/SuccessScreen'
+import { SuccessScreen, type SuccessScreenProps } from '../phone/chrome/SuccessScreen'
 import type { FlowCtx } from './types'
+
+/** What the success screen reads: the ledger, the account and the rate. */
+export type MoneyCtx = Pick<FlowCtx, 'state' | 'persona' | 'rate'>
 
 // The success screen of a payment the account made (Pay · Paid · money moved): the overline (PAID
 // or SENT), a green check, the amount, "to Café Lipa", then Reference, Fee and Time; [Done] returns
@@ -25,12 +28,17 @@ export function MoneySuccess({
   tx,
   ctx,
   onDone,
+  layout: Layout = SuccessScreen,
+  doneLabel,
 }: {
   id: string
   overline: string
   tx: Tx
-  ctx: FlowCtx
+  ctx: MoneyCtx
   onDone: () => void
+  /** The screen that draws it (the payment page outside the phones has its own). */
+  layout?: (p: SuccessScreenProps) => React.JSX.Element
+  doneLabel?: string
 }) {
   const to = counterpartyOf(ctx.state, tx.to, tx.party)
   const payer = feePayerOf(ctx.state, tx, ctx.persona)
@@ -42,7 +50,7 @@ export function MoneySuccess({
         ? fill(ui.receipt.feeLineYou, { fee })
         : fill(ui.receipt.feeLine, { fee, name: payer?.name ?? '' })
   return (
-    <SuccessScreen
+    <Layout
       id={id}
       variant="money"
       overline={overline}
@@ -55,6 +63,7 @@ export function MoneySuccess({
         { label: ui.receipt.time, value: dateTimeText(tx.confirmedAt ?? tx.createdAt) },
       ]}
       onDone={onDone}
+      {...(doneLabel ? { doneLabel } : {})}
     />
   )
 }

@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react'
 //   #/phone                one phone with an account switcher
 //   #/phone/:persona       the same, logging that account in
 //   #/about                About BCPS
-//   #/pay?…                a payment code or link: opens phone mode on Welcome
+//   #/pay?…                a payment link, request or code: its payment page, or phone mode on Welcome
 // In-phone navigation is state, not URL. Anything else is a friendly not-found page.
 
 export type Route =

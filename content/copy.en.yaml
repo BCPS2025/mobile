@@ -638,6 +638,25 @@ detail:
   refunded: "Refunded ✓ · {time}"
   missing: This payment isn't available.
 
+# The page a payment link, a request or a payment code opens (#/pay), outside the phones.
+payPage:
+  overlineLink: PAYMENT LINK
+  overlineRequest: PAYMENT REQUEST
+  overlineCode: PAYMENT CODE
+  title: "Pay {name}"
+  noteLine: "{note} · {eur}"
+  who: Who's paying?
+  single: "Single use: one person can pay this link."
+  rowFrom: From
+  rowFor: For
+  rowAmount: Amount
+  rowFee: Transaction fee
+  rowTotal: Total
+  noNote: No note
+  pay: "Pay {amount}"
+  change: Choose someone else
+  back: Back to BCPS
+
 # My code (c.mycode): the QR others scan to pay you.
 myCode:
   hint: Anyone who scans this code can send you money.

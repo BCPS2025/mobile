@@ -115,7 +115,7 @@ export async function openApp(page: Page, hash = '#/', query = APP_QUERY): Promi
   await page.locator('#root > *').first().waitFor()
   // The stage and phone mode load on demand: wait until the page itself stands.
   if (/^#\/(stage|phone|pay)/.test(hash)) {
-    await page.locator('[data-testid="stage"], [data-testid="phone-mode"]').first().waitFor()
+    await page.locator('[data-testid="stage"], [data-testid="phone-mode"], [data-testid="pay-page"]').first().waitFor()
   }
 }
 
