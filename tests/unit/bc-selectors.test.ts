@@ -475,6 +475,22 @@ describe('History: filters, search and groups (Ana from a fresh start)', () => {
     expect(statusOf(h, 'cafe', { filter: 'all', status: true })).toEqual([])
   })
 
+  it('every chip has its label and the lists read as the screens show them', () => {
+    const label = (f: (typeof PEOPLE_FILTERS)[number]) => content.copy.history.filters[f]
+    expect(PEOPLE_FILTERS.map(label)).toEqual([
+      'All',
+      'Money in',
+      'Money out',
+      'Shops',
+      'People',
+      'Top-ups & cash-outs',
+      'Requests',
+    ])
+    expect(CAFE_FILTERS.map(label)).toEqual(['All', 'Sales', 'Refunds', 'Supplier payments', 'Payouts', 'Top-ups'])
+    expect(content.copy.history.searchPeople).toBe('Search people, shops, notes')
+    expect(content.copy.history.searchBusiness).toBe('Search sales, customers, references')
+  })
+
   it('a pending payment is a row too, and history keeps its per-day default for the screens that exist', () => {
     const h = fresh()
     run(h, {

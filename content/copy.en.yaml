@@ -44,14 +44,24 @@ errors:
   insufficientFunds: You have {have} BCPS. Top up {short} BCPS to pay.
   unknownRecipient: No BCPS user '{handle}'. Check the spelling.
   selfPayment: You can't pay yourself.
+  selfRequest: You can't request from yourself.
+  payByInvoice: Businesses pay by invoice
   invalidAmount: "Enter an amount above {min}."
   maxAmount: The maximum is {max} BCPS.
+  maxTopUp: The maximum top-up is €{max}.
+  minCashOut: The minimum is {min} BCPS.
+  sharesOver: The shares add up to more than {total}.
   invalidState: This was already {status}.
   notAllowed: Only {name} can do this.
   quoteChanged: The amount changed. Check it and try again.
   expired: This code has expired
   cancelled: This code was cancelled
   paid: This code was already paid.
+  requestCancelled: This request was cancelled.
+  linkPaid: This link has already been paid.
+  ownLink: This is your own link.
+  alreadyRefunded: Refunded ✓ · {time}
+  refundShort: You have {have} BCPS. The refund needs {amount} BCPS.
   sessionFull: Your session is getting long. Reset to start again.
   generic: Something went wrong. Try again.
 
@@ -333,6 +343,21 @@ history:
   summaryLine: "{count} payments · net {net}"
   cashOut: Cash out
   cashOutLine: "{time} · to {bank}"
+  searchPeople: Search people, shops, notes
+  searchBusiness: Search sales, customers, references
+  filters:
+    all: All
+    in: Money in
+    out: Money out
+    shops: Shops
+    people: People
+    topupsCashouts: Top-ups & cash-outs
+    requests: Requests
+    sales: Sales
+    refunds: Refunds
+    suppliers: Supplier payments
+    payouts: Payouts
+    topups: Top-ups
 
 detail:
   title: Payment

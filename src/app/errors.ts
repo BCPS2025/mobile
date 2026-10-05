@@ -8,35 +8,71 @@ import { fill, ui } from './copy'
 
 export type Refusal = DomainError | StoreRefusal
 
+/**
+ * What the refused command was about. The same refusal reads differently for each: a cancelled
+ * payment code is "This code was cancelled", a cancelled request "This request was cancelled."
+ * Without it the words are those of a payment code.
+ */
+export type RefusalAbout = 'code' | 'request' | 'link' | 'shares' | 'refund'
+
+export interface RefusalOptions {
+  /** Who can do it, for `not-allowed`. */
+  name?: string
+  about?: RefusalAbout
+  /** When the sale was refunded ("Fri 14:15"), for `already-refunded`. */
+  time?: string
+}
+
+/** Whole numbers with commas: 10000 → "10,000". */
+const grouped = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
 /** The error line for a refusal, or null when nothing should be said. */
-export function errorText(err: Refusal, opts: { name?: string } = {}): string | null {
+export function errorText(err: Refusal, opts: RefusalOptions = {}): string | null {
   const e = ui.errors
+  const about = opts.about ?? 'code'
+  const d = err as DomainError
   switch (err.code) {
     case 'duplicate':
       return null
-    case 'insufficient-funds':
-      return fill(e.insufficientFunds, {
-        have: formatMinor((err as DomainError).have ?? asMinor(0)),
-        short: formatMinor((err as DomainError).short ?? asMinor(0)),
-      })
+    case 'insufficient-funds': {
+      const have = d.have ?? asMinor(0)
+      const short = d.short ?? asMinor(0)
+      if (about === 'refund') {
+        return fill(e.refundShort, { have: formatMinor(have), amount: formatMinor(asMinor(have + short)) })
+      }
+      return fill(e.insufficientFunds, { have: formatMinor(have), short: formatMinor(short) })
+    }
     case 'unknown-recipient':
-      return fill(e.unknownRecipient, { handle: (err as DomainError).handle ?? '' })
+      return fill(e.unknownRecipient, { handle: d.handle ?? '' })
     case 'self-payment':
-      return e.selfPayment
+      if (about === 'link') return e.ownLink
+      return about === 'request' ? e.selfRequest : e.selfPayment
     case 'invalid-amount': {
-      const max = (err as DomainError).max
-      return max === undefined
-        ? fill(e.invalidAmount, { min: formatMinor(asMinor(0)) })
-        : fill(e.maxAmount, { max: formatMinor(max) })
+      // The top-up limit is in whole euros; the cash-out minimum and the split total come with the
+      // amount that was exceeded or missed.
+      if (d.maxEur !== undefined) return fill(e.maxTopUp, { max: grouped(d.maxEur) })
+      if (d.min !== undefined) return fill(e.minCashOut, { min: formatMinor(d.min) })
+      if (d.max === undefined) return fill(e.invalidAmount, { min: formatMinor(asMinor(0)) })
+      return about === 'shares'
+        ? fill(e.sharesOver, { total: formatMinor(d.max) })
+        : fill(e.maxAmount, { max: formatMinor(d.max) })
     }
     case 'invalid-state': {
-      const status = (err as DomainError).status
-      if (status === 'paid') return e.paid
-      if (status === 'cancelled') return e.cancelled
-      if (status === 'expired') return e.expired
+      const status = d.status
+      if (about === 'code') {
+        if (status === 'paid') return e.paid
+        if (status === 'cancelled') return e.cancelled
+        if (status === 'expired') return e.expired
+      }
+      if (about === 'request' && status === 'cancelled') return e.requestCancelled
+      if (about === 'link' && status === 'paid') return e.linkPaid
       return fill(e.invalidState, { status: status ?? '' })
     }
+    case 'already-refunded':
+      return fill(e.alreadyRefunded, { time: opts.time ?? '' })
     case 'not-allowed':
+      // A request to a business is not made: businesses are paid by invoice.
+      if (about === 'request') return e.payByInvoice
       return opts.name ? fill(e.notAllowed, { name: opts.name }) : e.generic
     case 'quote-changed':
       return e.quoteChanged
