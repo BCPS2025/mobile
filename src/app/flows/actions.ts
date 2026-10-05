@@ -114,8 +114,9 @@ export function createFlowApi<D>(app: AppState, who: Who, instanceId: string): F
       const ctx = ctxOf(f)
       const commit = commitOf(i, step.id)
       if (commit && (commit.when?.(d, ctx) ?? true)) return runCommit(app, who, api, f, commit, d, patch)
-      if (step.onPrimary) return step.onPrimary(d, ctx, api)
+      // A step opened from an Edit link goes back to the check, whatever its button usually does.
       if (f.editing) return api.goto(i.steps.find((s) => s.kind === 'review')?.id ?? step.id)
+      if (step.onPrimary) return step.onPrimary(d, ctx, api)
       api.next()
     },
     fail(message) {

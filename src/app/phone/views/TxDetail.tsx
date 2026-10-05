@@ -3,7 +3,7 @@ import { type ReactNode, useState } from 'react'
 import { formatHundredths, formatMinor, formatSignedMinor } from '@domain/money'
 import type { Party } from '@domain/types'
 import { formatTime, formatWeekday, localDateOf } from '@sim/tz'
-import { txDetail } from '@store/selectors'
+import { splitsOf, txDetail } from '@store/selectors'
 import { useLedger, useLedgerNode } from '@store/useLedger'
 import { copy, fill, ui } from '../../copy'
 import { approx, eur, firstName, itemsText, partyLabel, rateText } from '../../format'
@@ -13,7 +13,7 @@ import { EmptyState } from '../chrome/EmptyState'
 import { PhoneScreen } from '../chrome/PhoneScreen'
 import { usePhoneNav } from '../nav'
 import { usePersonaPhone } from '../PhoneContext'
-import type { ScreenProps } from '../implemented'
+import { type ScreenProps, isImplemented } from '../implemented'
 import { DETAILS } from '../registry'
 
 // The payment detail (shared.tx): the amount as this account sees it, Sent → Settled with the
@@ -124,13 +124,31 @@ export function TxDetailView({ params }: ScreenProps) {
       ...(tx.note ? { note: tx.note } : {}),
     })
   }
-
+  // A payment you made can be split; one that already was shows how the split stands.
+  const split = detail.split ? splitsOf(state, persona).find((x) => x.split.id === detail.split?.id) : undefined
+  const canSplit = detail.splittable && isImplemented({ kind: 'flow', id: 'split' }, 'consumer')
+  const splitAction = split
+    ? {
+        label: fill(ui.lists.splitProgress, { paid: split.paid, count: split.count }),
+        onPress: () => nav.open({ kind: 'detail', id: 'split' }, { splitId: split.split.id }),
+      }
+    : canSplit
+      ? { label: ui.detail.splitThis, onPress: () => nav.openFlow('split', { txId: tx.id }) }
+      : undefined
+  const refundedAt = detail.refund ? (detail.refund.confirmedAt ?? detail.refund.createdAt) : undefined
   return (
     <PhoneScreen
       {...frame}
       {...chrome}
       dock={
-        canSendAgain ? <Dock primary={{ label: ui.detail.sendAgain, tone: 'navy', onPress: sendAgain }} /> : undefined
+        canSendAgain ? (
+          <Dock
+            primary={{ label: ui.detail.sendAgain, tone: 'navy', onPress: sendAgain }}
+            {...(splitAction ? { secondary: { kind: 'outline' as const, ...splitAction } } : {})}
+          />
+        ) : splitAction ? (
+          <Dock primary={{ label: splitAction.label, tone: 'navy', onPress: splitAction.onPress }} />
+        ) : undefined
       }
     >
       <div className="px-5 pt-3.5 pb-3" data-testid="tx-detail">
@@ -195,6 +213,11 @@ export function TxDetailView({ params }: ScreenProps) {
             <Row label={ui.detail.status}>{copy.txDetail.final}</Row>
           ) : (
             <Row label={ui.detail.rate}>{fill(ui.common.rate, { rate: rateText(state.config.rate) })}</Row>
+          )}
+          {refundedAt !== undefined && (
+            <Row label={ui.detail.refund}>
+              {fill(ui.detail.refunded, { time: `${formatWeekday(refundedAt, tz)} ${formatTime(refundedAt, tz)}` })}
+            </Row>
           )}
           <Row label={ui.detail.reference}>
             <span className="font-mono">{tx.id}</span>

@@ -244,7 +244,7 @@ test.describe('send on the stage @webkit', () => {
     await expect(detail).toContainText('paid by you')
     await expect(detail).toContainText('€1 ≈ 1.10 BCPS')
     await expect(detail).toContainText('Only you and Marko see these details.')
-    await expect(detail).not.toContainText('Split this bill')
+    await expect(detail.getByRole('button', { name: 'Split this bill' })).toBeVisible()
     await detail.getByRole('button', { name: '✓ Verified' }).click()
     await expect(detail.getByText('Verified identity')).toBeVisible()
 

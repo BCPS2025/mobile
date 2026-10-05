@@ -1,9 +1,10 @@
-import { cancelRequestFlow } from '../flows/cancel'
+import { cancelRequestFlow, cancelSplitFlow } from '../flows/cancel'
 import { chargeFlow } from '../flows/charge'
 import { logoutFlow } from '../flows/logout'
 import { payItemFlow } from '../flows/payItem'
 import { paymentLinkFlow } from '../flows/paymentLink'
 import { requestFlow } from '../flows/request'
+import { splitFlow } from '../flows/split'
 import { paySupplierFlow } from '../flows/paySupplier'
 import { scanFlow } from '../flows/scan'
 import { sendFlow } from '../flows/send'
@@ -17,6 +18,7 @@ import { NotificationsView } from './views/NotificationsView'
 import { LinkDetail } from './views/LinkDetail'
 import { ReceivedDetail } from './views/ReceivedDetail'
 import { RequestDetail } from './views/RequestDetail'
+import { SplitDetail } from './views/SplitDetail'
 import { TxDetailView } from './views/TxDetail'
 import { registerAuthScreen, registerDetail, registerFlow, registerHubHeader, registerView } from './implemented'
 
@@ -40,6 +42,7 @@ registerDetail('tx', TxDetailView)
 registerDetail('received', ReceivedDetail)
 registerDetail('request', RequestDetail)
 registerDetail('link', LinkDetail)
+registerDetail('split', SplitDetail)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)
@@ -49,3 +52,5 @@ registerFlow(payItemFlow)
 registerFlow(requestFlow)
 registerFlow(paymentLinkFlow)
 registerFlow(cancelRequestFlow)
+registerFlow(splitFlow)
+registerFlow(cancelSplitFlow)

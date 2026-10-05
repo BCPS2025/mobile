@@ -365,3 +365,14 @@ export function waitingItems(s: LedgerState, persona: PersonaId, now: SimTime): 
   const newest = (a: WaitingItem, b: WaitingItem) => b.at - a.at || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
   return [...open.sort(newest), ...closed.sort(newest)]
 }
+
+// ---- splitting
+
+/**
+ * An equal split of `total` between the owner and `people` others: each of them owes the same, to the
+ * hundredth rounded down, and the owner keeps the rest (10.00 with two people: 3.33 each, 3.34 kept).
+ */
+export function equalSplit(total: Minor, people: number): { each: Minor; own: Minor } {
+  const each = asMinor(Math.floor(total / (people + 1)))
+  return { each, own: asMinor(total - each * people) }
+}

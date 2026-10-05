@@ -151,18 +151,24 @@ export function itemsText(items: readonly TxItem[] | undefined): string {
 
 /**
  * When something happened, as a row or a sentence reads it, in the viewer's zone: "today 11:40" /
- * "today at 11:40", "yesterday …", or the day ("Thu 24 Sep 10:12" / "Thu 24 Sep at 10:12").
+ * "today at 11:40", "yesterday …", or the day ("Thu 24 Sep 10:12" / "Thu 24 Sep at 10:12"). A detail
+ * names it "Today · 11:40"; a status line "today · 11:40".
  */
-export function whenText(t: SimTime, now: SimTime, tz: string, form: 'row' | 'sentence' | 'detail' = 'row'): string {
+export function whenText(
+  t: SimTime,
+  now: SimTime,
+  tz: string,
+  form: 'row' | 'sentence' | 'detail' | 'dot' = 'row',
+): string {
   const date = localDateOf(t, tz)
   const age = daysBetween(date, localDateOf(now, tz))
   const time = formatTime(t, tz)
   const w = ui.when
-  const pick = <K extends keyof typeof w>(row: K, sentence: K, detail: K) =>
-    w[form === 'row' ? row : form === 'sentence' ? sentence : detail]
-  if (age === 0) return fill(pick('today', 'todayAt', 'detailToday'), { time })
-  if (age === 1) return fill(pick('yesterday', 'yesterdayAt', 'detailYesterday'), { time })
-  return fill(pick('day', 'dayAt', 'detailDay'), { day: dayText(date), time })
+  const pick = <K extends keyof typeof w>(row: K, sentence: K, detail: K, dot: K) =>
+    w[form === 'row' ? row : form === 'sentence' ? sentence : form === 'detail' ? detail : dot]
+  if (age === 0) return fill(pick('today', 'todayAt', 'detailToday', 'dotToday'), { time })
+  if (age === 1) return fill(pick('yesterday', 'yesterdayAt', 'detailYesterday', 'dotYesterday'), { time })
+  return fill(pick('day', 'dayAt', 'detailDay', 'dotDay'), { day: dayText(date), time })
 }
 
 /** How long ago: "today", "yesterday", "2 days ago" (a day count, in the viewer's zone). */

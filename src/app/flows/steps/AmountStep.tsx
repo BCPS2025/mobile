@@ -52,10 +52,13 @@ export function AmountKeys({
   onPress,
   locked = false,
   onNavy = false,
+  compact = false,
 }: {
   onPress: (key: string) => void
   locked?: boolean
   onNavy?: boolean
+  /** 40 px keys, for a screen that shares its height with other controls. */
+  compact?: boolean
 }) {
   return (
     <div className={`grid grid-cols-3 gap-x-1 gap-y-1 pb-2 ${locked ? 'opacity-40' : ''}`}>
@@ -67,7 +70,7 @@ export function AmountKeys({
           aria-label={k === 'del' ? ui.common.deleteKey : k}
           disabled={locked}
           onClick={() => onPress(k)}
-          className={`flex h-12 items-center justify-center font-display text-[24px] font-medium tnum ${
+          className={`flex ${compact ? 'h-10' : 'h-12'} items-center justify-center font-display text-[24px] font-medium tnum ${
             onNavy ? 'text-white active:bg-navy-800' : 'text-navy-900 active:bg-line-100'
           }`}
         >

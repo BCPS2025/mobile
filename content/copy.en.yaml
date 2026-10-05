@@ -303,6 +303,9 @@ when:
   detailToday: "Today · {time}"
   detailYesterday: "Yesterday · {time}"
   detailDay: "{day} · {time}"
+  dotToday: "today · {time}"
+  dotYesterday: "yesterday · {time}"
+  dotDay: "{day} · {time}"
   agoToday: today
   agoYesterday: yesterday
   agoDays: "{n} days ago"
@@ -437,9 +440,58 @@ linkDetail:
   shareAgain: Share again
   send: Send in BCPS
 
+# Split a bill (c.split.*).
+split:
+  title: Split a bill
+  pickTitle: Which payment?
+  recent: RECENT PAYMENTS
+  enterAmount: Enter an amount
+  none: No payments to split yet.
+  amountTitle: How much is the bill?
+  noteTitle: What is it for?
+  noteVisibility: Only the people you split with see the note.
+  peopleTitle: Who shares it?
+  peopleSelected: "{n} person selected · you are included."
+  peopleSelectedMany: "{n} people selected · you are included."
+  tooMany: "You can split with up to {max} people."
+  sharesTitle: How do you split it?
+  equal: Equal
+  custom: Custom
+  you: You
+  total: Total
+  reviewTitle: Check and send
+  rowPayment: Payment
+  rowAmount: Amount
+  rowSplit: Split
+  splitEqual: "Equal · {n} people"
+  splitCustom: "Custom · {n} people"
+  pays: "{name} pays"
+  youPaid: You paid
+  yourShare: Your share
+  feeOne: "{name} pays the 1% fee ({fee} BCPS). You receive the full amount."
+  feeMany: Each person pays the 1% fee on their share. You receive the full amount.
+  sendOne: Send 1 request
+  sendMany: "Send {n} requests"
+  sentOverline: SENT
+  sentTitle: Split sent
+  sentBodyOne: "{amount} BCPS from {handle} · {note}"
+  sentBodyMany: "{n} people asked · {note}"
+
 # The progress of a split bill and cancelling what is still open.
 splitDetail:
   title: Split a bill
+  collected: COLLECTED
+  of: "of {total} BCPS · {note}"
+  progress: "{paid} of {count} paid"
+  progressDone: "{paid} of {count} paid ✓"
+  people: PEOPLE
+  waiting: "Waiting · asked {when}"
+  paidAt: "Paid {when}"
+  declinedAt: "Declined {when}"
+  cancelledAt: "Cancelled {when}"
+  hintAsk: You can ask again.
+  askAgain: Ask again
+  cancelOpenLink: Cancel open requests
   cancelTitle: Cancel the open requests?
   cancelBody: The people who have not paid will see that you cancelled. No money moves.
   cancelOpen: Open requests
@@ -556,6 +608,9 @@ detail:
   privacyPurchase: "Refunds are merchant-initiated. Only you and {name} see these details."
   privacyPerson: "Only you and {name} see these details."
   sendAgain: Send again
+  splitThis: Split this bill
+  refund: Refund
+  refunded: "Refunded ✓ · {time}"
   missing: This payment isn't available.
 
 profile:
