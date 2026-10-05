@@ -620,6 +620,7 @@ function decideRampOn(s: LedgerState, c: RampOnCommand, ctx: DecideCtx): Result<
     fee: ZERO,
     status: 'pending',
     requestedAt: ctx.now,
+    cmdId: c.cmdId,
   }
   if (c.method === 'bank-transfer') {
     if (!ctx.bankArrival || !me.country) return err('not-allowed')
@@ -659,6 +660,7 @@ function decideRampOff(s: LedgerState, c: RampOffCommand, ctx: DecideCtx): Resul
     fee: q.value.fee,
     status: 'completed',
     requestedAt: ctx.now,
+    cmdId: c.cmdId,
   }
   const tx: Tx = {
     id: nextTxId(s),

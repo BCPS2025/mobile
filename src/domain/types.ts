@@ -404,6 +404,8 @@ export interface Ramp {
   arrivesAt?: SimTime
   txId?: string
   auto?: true
+  /** The command that made it (a flow finds its ramp by it, also while a bank transfer has no payment yet). */
+  cmdId?: string
 }
 
 export interface GuestAccount {

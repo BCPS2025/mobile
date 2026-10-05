@@ -389,6 +389,26 @@ describe('ramp.off: cash out to the bank, the converter pays 1.5 %', () => {
   })
 })
 
+describe('a ramp says which command made it', () => {
+  it('a card top-up, a bank transfer (no payment yet) and a cash-out each carry their command id', () => {
+    const h = headless('2026-09-25')
+    const card = topUp('card', 10)
+    const bank = topUp('bank-transfer', 20)
+    const out = cashOut('5.00')
+    for (const c of [card, bank, out]) run(h, c)
+    expect(['RP-000001', 'RP-000002', 'RP-000003'].map((r) => ramp(h, r).cmdId)).toEqual([
+      card.cmdId,
+      bank.cmdId,
+      out.cmdId,
+    ])
+    expect(ramp(h, 'RP-000002').txId).toBeUndefined()
+    // The completed bank transfer keeps it when it arrives.
+    h.node.advanceTo(ramp(h, 'RP-000002').arrivesAt as SimTime, 'timer')
+    expect(ramp(h, 'RP-000002')).toMatchObject({ status: 'completed', cmdId: bank.cmdId })
+    expect(invariants(h.node.getState())).toEqual([])
+  })
+})
+
 describe('the log form of a ramp', () => {
   it('ramp.on stores the method and the whole euros; ramp.off the amount', () => {
     const h = headless('2026-09-25')
