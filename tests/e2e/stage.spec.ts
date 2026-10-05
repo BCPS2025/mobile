@@ -141,11 +141,11 @@ test.describe('stage', () => {
     const banner = slot(page, 'right').getByTestId('banner')
     await expect(banner).toContainText('Payment received · 11.00 BCPS')
     await expect(banner).toContainText('from @ana · 2 × flat white · 2 × croissant')
-    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('1')
+    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('3') // two from the start, and the sale
     await expect(page.getByTestId('live-region')).toContainText("On Café Lipa's phone: Payment received · 11.00 BCPS")
     // The banner goes after 3 s; the bell keeps the count.
     await expect(banner).toHaveCount(0, { timeout: 6000 })
-    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('1')
+    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('3')
     await expectCleanVisibleCopy(page)
   })
 

@@ -246,8 +246,40 @@ describe('cross-file rules', () => {
 })
 
 describe('notifications.yaml', () => {
-  it('lists the A2 kinds with known fields', () => {
-    expect(Object.keys(content.notifications)).toEqual(['p2p.received', 'sale.received'])
+  it('lists the kinds of the payments, requests, links, splits, refunds and money in and out', () => {
+    expect(Object.keys(content.notifications)).toEqual([
+      'p2p.received',
+      'sale.received',
+      'request.received',
+      'request.paid',
+      'request.declined',
+      'request.cancelled',
+      'link.received',
+      'link.paid',
+      'split.received',
+      'split.completed',
+      'refund.received',
+      'topup.completed',
+      'topup.pending',
+      'topup.arrived',
+      'cashout.sent',
+      'invoice.received',
+      'invoice.declined',
+      'invoice.cancelled',
+      'conversion.auto',
+    ])
+    // Banner and toast as the catalogue has them.
+    const shown = (k: string) => {
+      const n = content.notifications[k]
+      return `${n?.banner ? 'banner' : '-'}/${n?.toast ? 'toast' : '-'}`
+    }
+    expect(
+      ['request.received', 'request.paid', 'link.received', 'refund.received', 'topup.arrived'].map(shown),
+    ).toEqual(Array(5).fill('banner/toast'))
+    expect(['request.cancelled', 'topup.pending', 'cashout.sent', 'invoice.cancelled'].map(shown)).toEqual(
+      Array(4).fill('-/-'),
+    )
+    expect(['split.completed', 'topup.completed', 'conversion.auto'].map(shown)).toEqual(Array(3).fill('banner/-'))
     expect(content.notifications['sale.received']).toMatchObject({
       to: 'merchant',
       opens: 'tx',

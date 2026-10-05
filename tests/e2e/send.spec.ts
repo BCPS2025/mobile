@@ -282,7 +282,7 @@ test.describe('the empty lists', () => {
   test.use({ viewport: { width: 390, height: 664 } })
 
   test('Notifications with nothing new: "You\'re all caught up."', async ({ page }) => {
-    await openApp(page, '#/phone/ana')
+    await openApp(page, '#/phone/marko')
     await page.getByTestId('bell').click()
     await expect(page.locator('[data-screen="shared.notifications"]')).toBeVisible()
     await expect(page.getByText("You're all caught up.")).toBeVisible()

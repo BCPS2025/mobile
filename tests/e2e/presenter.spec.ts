@@ -101,8 +101,9 @@ test.describe('reload and closing the tab', () => {
     await expectBalance(page, 'cafe', '296.89')
     await expect(page.getByTestId('tape-row').first()).toContainText('settled')
     await expect(page.getByTestId('session-counter')).toContainText('Merchant payments 1')
-    // The unread badge is derived from the ledger again: the café still has its sale unread.
-    await expect(slot(page, 'left').getByTestId('bell-count')).toHaveText('1')
+    // The unread badge is derived from the ledger again: the café still has its sale unread, on top
+    // of the two it started with.
+    await expect(slot(page, 'left').getByTestId('bell-count')).toHaveText('3')
   })
 
   test('closing the tab 50 ms after a payment still restores it', async ({ page, context }) => {

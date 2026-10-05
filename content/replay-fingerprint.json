@@ -1,6 +1,6 @@
 {
   "stateVersion": 2,
-  "reason": "Refunds and settings changes are added to the engine; the auto-convert choices are now every day, weekdays or weekly at 18:00, 20:00, 22:00 or 23:00. Logs of earlier commands replay to the same balances.",
+  "reason": "A calendar date can be written as a heading (Tue 22 Sep); no command, event or balance changes, so logs of earlier commands replay to the same ledger.",
   "inputs": {
     "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
     "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
@@ -21,7 +21,7 @@
     "src/sim/scheduler.ts": "1f766ee5a0a006b12e36dc1c2cc92e232b186d2b72bc256d5f67671d63af6346",
     "src/sim/seed.ts": "77215907d9929dcc76f18188ff64e96742681e4c4a7bdab885546fc747dafd7f",
     "src/sim/t0.ts": "8ec76304bd00501e35c0c98c4b0ddb741f8681522e2f672b95dba98cb6c400c8",
-    "src/sim/tz.ts": "69164a4b8eb1affbcbaba847d89483a52898e73511ecfc215deec0fb0db849b8",
+    "src/sim/tz.ts": "bca723695a275011523deefdf2a49b27e21c031d9d320a9d708657553a18cec8",
     "src/sim/validate-content.ts": "99fb423c2db7f76d6fe97093605c2615e52368ca2325d198015a8c50de5440d9",
     "src/store/log-codec.ts": "376c57aaf5bef841fd40ec877e0d146aa5bf55fdd521e2fad6c6d7557011b243",
     "src/store/replay.ts": "b3c46ef2625ea0d996c177876fcb41e2e04579165f38d1dfa207387098994d29"

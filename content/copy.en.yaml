@@ -55,6 +55,12 @@ errors:
   sessionFull: Your session is getting long. Reset to start again.
   generic: Something went wrong. Try again.
 
+# How a payment method is named in a notification line.
+methodLabels:
+  card: "Card •• {last4}"
+  bank-transfer: Bank transfer
+  local-method: Local payment method
+
 seedRows:
   topUp: Top up · {method} €{eur}
   methods:

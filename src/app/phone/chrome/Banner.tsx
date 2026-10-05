@@ -37,7 +37,7 @@ export function BannerSlot() {
   const top = stack[stack.length - 1]
   // A flow that already shows this very payment (the café's code, once paid) needs no banner.
   const covered =
-    banner !== undefined &&
+    banner?.txId != null &&
     persona !== null &&
     shell !== null &&
     top?.kind === 'flow' &&
@@ -82,7 +82,7 @@ export function BannerSlot() {
         openNotification(
           app,
           { persona, slot: phone.slot, shell },
-          { id: banner.notificationId, txId: banner.txId, kind: banner.kind },
+          { id: banner.notificationId, txId: banner.txId, subject: banner.subject, kind: banner.kind },
         )
       }}
       {...hover}

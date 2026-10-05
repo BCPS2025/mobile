@@ -5,6 +5,7 @@ import type { Timers } from '@sim/clock'
 import type { IsoDate } from '@sim/tz'
 import { attachEffects } from '@store/effects'
 import { type Nav, type NavStore, createNavStore } from '@store/nav'
+import type { NotificationSubject } from '@store/notifications'
 import type { StorageLike } from '@store/persistence'
 import { type Runtime, createRuntime } from '@store/runtime'
 import {
@@ -46,7 +47,9 @@ export interface BannerState {
   persona: PersonaId
   /** The notification (its id is also its read mark). */
   notificationId: string
-  txId: string
+  /** The payment it is about (null for a request, a link or a bank transfer). */
+  txId: string | null
+  subject: NotificationSubject
   kind: string
   title: string
   line: string | null
@@ -58,7 +61,8 @@ export interface ToastState {
   seq: number
   persona: PersonaId
   notificationId: string
-  txId: string
+  txId: string | null
+  subject: NotificationSubject
   kind: string
   name: string
   title: string
@@ -225,8 +229,8 @@ export function createAppState(deps: AppDeps): AppState {
   // ---- notifications become banners (the account is on a phone) or toasts (it is not)
   let seq = 0
   const nameOf = (id: PersonaId) => personas.find((p) => p.id === id)?.displayName ?? id
-  const payerOf = (txId: string): PersonaId | null => {
-    const from = runtime.node.getState().txs[txId]?.from
+  const payerOf = (txId: string | null): PersonaId | null => {
+    const from = txId === null ? undefined : runtime.node.getState().txs[txId]?.from
     return from !== undefined && personas.some((p) => p.id === from) ? from : null
   }
   offs.push(attachEffects(runtime.node, bus, content))
@@ -247,6 +251,7 @@ export function createAppState(deps: AppDeps): AppState {
               persona: n.persona,
               notificationId: n.id,
               txId: n.txId,
+              subject: n.subject,
               kind: n.kind,
               title: n.title,
               line: n.line,
@@ -264,6 +269,7 @@ export function createAppState(deps: AppDeps): AppState {
           persona: n.persona,
           notificationId: n.id,
           txId: n.txId,
+          subject: n.subject,
           kind: n.kind,
           name,
           title: n.title,

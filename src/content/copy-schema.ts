@@ -92,6 +92,7 @@ export const UiCopySchema = z.looseObject({
     sessionFull: S,
     generic: S,
   }),
+  methodLabels: z.strictObject({ card: S, 'bank-transfer': S, 'local-method': S }),
   nav: z.strictObject({ back: S, home: S, step: S }),
   tiles: z.strictObject({ scan: S, payRequest: S, history: S, charge: S, sales: S, pay: S }),
   hubs: z.strictObject({

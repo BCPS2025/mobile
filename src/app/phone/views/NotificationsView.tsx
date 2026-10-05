@@ -90,7 +90,11 @@ export function NotificationsView() {
                         data-testid={`notification-${n.id}`}
                         data-unread={read ? undefined : 'true'}
                         onClick={() =>
-                          openNotification(app, { persona, slot, shell }, { id: n.id, txId: n.txId, kind: n.kind })
+                          openNotification(
+                            app,
+                            { persona, slot, shell },
+                            { id: n.id, txId: n.txId, subject: n.subject, kind: n.kind },
+                          )
                         }
                         className="flex min-h-14 w-full items-center gap-3 border-b border-line-100 py-1 text-left active:bg-line-100"
                       >

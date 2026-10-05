@@ -6,3 +6,20 @@
 # payments create no notification; their receipt is the feedback.
 p2p.received:  { to: payee,    title: "@{payer} sent you {amount} BCPS",  line: "{note}",                 opens: tx, banner: true, toast: true }
 sale.received: { to: merchant, title: "Payment received · {amount} BCPS", line: "from @{payer} · {items}", toastTitle: "Payment received", toastLine: "{amount} BCPS from @{payer}", opens: tx, banner: true, toast: true }
+request.received:  { to: payer,     title: "@{requester} requests {amount} BCPS", line: "{note}", opens: payItem, banner: true, toast: true }
+request.paid:      { to: requester, title: "@{payer} paid your request · {amount} BCPS", line: "{note} · Spendable now", opens: tx, banner: true, toast: true }
+request.declined:  { to: requester, title: "@{payer} declined your request", line: "{note} · no money moved", opens: request, banner: true, toast: true }
+request.cancelled: { to: payer,     title: "@{requester} cancelled the request", line: "{note}", opens: none, banner: false, toast: false }
+link.received:     { to: payee,     title: "@{owner} sent you a payment link", line: "{amount} BCPS · {note}", opens: link, banner: true, toast: true }
+link.paid:         { to: owner,     title: "@{payer} paid your link · {amount} BCPS", line: "{note}", opens: tx, banner: true, toast: true }
+split.received:    { to: participant, title: "@{owner} split {note}", line: "Your share {amount} BCPS", opens: payItem, banner: true, toast: true }
+split.completed:   { to: owner,     title: "{note} · everyone paid ✓", line: "{collected} BCPS collected", opens: split, banner: true, toast: false }
+refund.received:   { to: customer,  title: "Refund from {merchant} · {amount} BCPS", line: "{items}", opens: tx, banner: true, toast: true }
+topup.completed:   { to: account,   title: "Top-up complete · +{amount} BCPS", line: "{method}", opens: tx, banner: true, toast: false }
+topup.pending:     { to: account,   title: "Top-up on its way · €{eur}", line: "Expected {arrivesAt}", opens: ramp, banner: false, toast: false }
+topup.arrived:     { to: account,   title: "Top-up arrived · +{amount} BCPS", line: "Bank transfer · €{eur}", opens: tx, banner: true, toast: true }
+cashout.sent:      { to: account,   title: "Cash out · ≈ €{eur} on its way", line: "To {bank}", opens: tx, banner: false, toast: false }
+invoice.received:  { to: payer,     title: "New invoice {number} from {issuer}", line: "{amount} BCPS · due {date}", opens: invoice, banner: true, toast: true }
+invoice.declined:  { to: issuer,    title: "Invoice {number} declined", line: "{name} · {reason}", opens: invoice, banner: true, toast: true }
+invoice.cancelled: { to: payer,     title: "Invoice {number} cancelled", line: "by {issuer}", opens: none, banner: false, toast: false }
+conversion.auto:   { to: account,   title: "Auto-converted {amount} BCPS", line: "≈ €{eur} to your bank · conversion {fee}", opens: payouts, banner: true, toast: false }

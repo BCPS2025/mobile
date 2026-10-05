@@ -122,7 +122,7 @@ test.describe('the café sale on the stage @webkit', () => {
     await expect(sale.getByText(/^BC-[0-9A-Z]{6}$/)).toBeVisible()
     await expect(sale.getByRole('button', { name: 'New sale' })).toBeVisible()
     await expect(sale.getByTestId('nav-back')).toHaveCount(0)
-    // No banner over PAID, and the café has nothing left unread.
+    // No banner over PAID, and the sale is not left unread (the two from the start remain).
     await expect(phone.getByTestId('banner')).toHaveCount(0)
     await expect(page.getByTestId('tape-row').first()).toContainText(
       '@ana → Café Lipa · 11.00 BCPS · settled · fee 0.11 · BC-',
@@ -138,7 +138,7 @@ test.describe('the café sale on the stage @webkit', () => {
     await expect(phone.getByTestId('amount-value')).toContainText('0.00')
     await phone.getByTestId('nav-home').click()
     await expect(phone.locator('[data-tile="sales"]')).toContainText('24 today · 122.38')
-    await expect(phone.getByTestId('bell-count')).toHaveCount(0)
+    await expect(phone.getByTestId('bell-count')).toHaveText('2')
     await a.getByRole('button', { name: 'Done' }).click()
     await expect(a.locator('[data-screen="c.home"]')).toBeVisible()
     await balanceAfter(page, 'ana', '236.50')
@@ -362,7 +362,7 @@ test.describe('the café sale on the stage @webkit', () => {
     const banner = phone.getByTestId('banner')
     await expect(banner).toContainText('Payment received · 11.00 BCPS', { timeout: 5000 })
     await expect(banner).toContainText('from @ana · 2 × flat white · 2 × croissant')
-    await expect(phone.getByTestId('bell-count')).toHaveText('1')
+    await expect(phone.getByTestId('bell-count')).toHaveText('3') // the two from the start and the sale
     await banner.click()
     const received = phone.locator('[data-screen="biz.received"]')
     await expect(received).toBeVisible()
@@ -377,7 +377,7 @@ test.describe('the café sale on the stage @webkit', () => {
     await expect(received.getByText(/^BC-[0-9A-Z]{6}$/)).toBeVisible()
     await received.getByRole('button', { name: 'Done' }).click()
     await expect(phone.locator('[data-screen="pos.home"]')).toBeVisible()
-    await expect(phone.getByTestId('bell-count')).toHaveCount(0)
+    await expect(phone.getByTestId('bell-count')).toHaveText('2')
     await expect(phone.locator('[data-tile="sales"]')).toContainText('24 today · 122.38')
   })
 
@@ -451,7 +451,7 @@ test.describe('the café sale on the stage @webkit', () => {
     await expect(received.getByTestId('success-amount')).toContainText('+11.00')
     await received.getByRole('button', { name: 'Done' }).click()
     await expect(slot(page, 'right').locator('[data-screen="pos.home"]')).toBeVisible()
-    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveCount(0)
+    await expect(slot(page, 'right').getByTestId('bell-count')).toHaveText('2')
     await balanceAfter(page, 'cafe', '296.89')
   })
 })

@@ -59,9 +59,10 @@ describe('derived notifications', () => {
   it('a sale settling into the café: "Payment received · 11.00 BCPS", from @ana and the items', () => {
     const { node } = session()
     expect(node.dispatch(sale()).ok).toBe(true)
-    expect(notificationsFor(node.getState(), 'cafe', content)).toEqual([]) // not while pending
+    const sales = () => notificationsFor(node.getState(), 'cafe', content).filter((x) => x.kind === 'sale.received')
+    expect(sales()).toEqual([]) // not while pending
     node.settleDue()
-    const list = notificationsFor(node.getState(), 'cafe', content)
+    const list = sales()
     expect(list).toHaveLength(1)
     expect(list[0]).toMatchObject({
       kind: 'sale.received',
@@ -73,7 +74,8 @@ describe('derived notifications', () => {
       toast: true,
     })
     expect(list[0]?.id).toMatch(/^tx:BC-/)
-    expect(notificationsFor(node.getState(), 'ana', content)).toEqual([]) // outgoing: the receipt is the feedback
+    // Outgoing: the receipt is the feedback (Ana keeps only the Lunch request from the start).
+    expect(notificationsFor(node.getState(), 'ana', content).map((x) => x.kind)).toEqual(['request.received'])
   })
 
   it('a P2P payment: "@ana sent you 16.50 BCPS" with the note as the line, or no line', () => {
@@ -91,23 +93,23 @@ describe('derived notifications', () => {
     expect(notificationsFor(b.node.getState(), 'marko', content)[0]?.line).toBeNull()
   })
 
-  it('seeded rows create none: every bell starts at 0', () => {
+  it('the starting ledger creates only the ones it lists as unread: Ana 1, Café 2, Marko 0', () => {
     const { node } = session()
-    for (const p of ['ana', 'marko', 'cafe']) {
-      expect(unreadCount(node.getState(), p, content, undefined, '2026-09-25', TZ)).toBe(0)
-    }
+    const count = (p: string) => unreadCount(node.getState(), p, content, undefined, '2026-09-25', TZ)
+    expect([count('ana'), count('cafe'), count('marko'), count('supplier')]).toEqual([1, 2, 0, 0])
   })
 
   it('read marks: one mark, or "Mark all as read" up to now', () => {
     const { node, seed } = session()
     node.dispatch(sale())
     node.settleDue()
-    const [first] = notificationsFor(node.getState(), 'cafe', content)
+    const first = notificationsFor(node.getState(), 'cafe', content).find((x) => x.kind === 'sale.received')
     if (!first) throw new Error('no notification')
     const count = (ui: ReturnType<typeof freshUi>) =>
       unreadCount(node.getState(), 'cafe', content, ui.read.get('cafe'), seed.t0Date, TZ)
-    expect(count(freshUi())).toBe(1)
-    expect(count(markRead(freshUi(), 'cafe', first.id))).toBe(0)
+    // The café starts with two unread (Thursday's conversion and an invoice); the sale is a third.
+    expect(count(freshUi())).toBe(3)
+    expect(count(markRead(freshUi(), 'cafe', first.id))).toBe(2)
     expect(isRead(first, markRead(freshUi(), 'cafe', first.id).read.get('cafe'), seed.t0Date, TZ)).toBe(true)
     const all = markAllRead(freshUi(), 'cafe', node.now(), seed.t0Date, TZ)
     expect(count(all)).toBe(0)

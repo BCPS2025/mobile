@@ -266,6 +266,14 @@ export function weekdayName(date: IsoDate): string {
   return WEEKDAYS[weekdayOfDate(date)] ?? ''
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** A calendar date as a heading names it: "Tue 22 Sep". */
+export function dayLabel(date: IsoDate): string {
+  const [, m, d] = ymd(date)
+  return `${weekdayName(date)} ${d} ${MONTH_NAMES[m - 1] ?? ''}`
+}
+
 /** The calendar date n business days (Mon–Fri) after the local date of t. Holidays are ignored. */
 export function addBusinessDays(date: IsoDate, n: number): IsoDate {
   let d = date

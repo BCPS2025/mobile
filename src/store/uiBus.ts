@@ -1,4 +1,5 @@
 import type { AccountId, Handle, Minor, PersonaId, TxKind } from '@domain/types'
+import type { NotificationSubject } from './notifications'
 
 // Tiny typed emitter for ephemeral UI events (never part of the ledger). Cosmetics only: nothing
 // that moves money ever happens inside a handler or a timer started from one.
@@ -32,7 +33,9 @@ export interface UiEvents {
     /** Stable id of the notification (its read mark). */
     id: string
     kind: string
-    txId: string
+    /** The payment it is about (null for a request, a link or a bank transfer). */
+    txId: string | null
+    subject: NotificationSubject
     title: string
     line: string | null
     /** The stage's toast when it is drawn shorter than the banner (null: none of its own). */

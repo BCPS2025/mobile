@@ -599,6 +599,7 @@ export const NOTIFICATION_OPENS = [
   'invoice',
   'escrow',
   'payouts',
+  'ramp',
   'home',
   'none',
 ] as const
