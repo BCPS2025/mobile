@@ -17,7 +17,8 @@ npm run dev          # development server with hot reload
 
 Open the address it prints. Routes are hash-based: `#/` (landing), `#/stage` (two phones side by side),
 `#/phone` (one phone with an account switcher), `#/phone/<person>` (logs that person in), `#/about`
-and `#/pay?…` (a payment link opens phone mode). Add `?clock=manual` for a virtual clock that moves
+and `#/pay?…` (a payment link, request or code this browser knows opens its payment page; any other
+address opens phone mode). Add `?clock=manual` for a virtual clock that moves
 only when told to (the end-to-end tests use it).
 
 ## Checks
