@@ -189,6 +189,41 @@ describe('cross-file rules', () => {
     expect(text).toMatch(/gem-pack-500 is not a one-off product/)
   })
 
+  it("a daily summary's day summary lies in the open hours, within the row's count, with a café product", () => {
+    const day = (r: Record<keyof RawContent, Obj>, key: string) => rows(r)[rowIndex(key)] as Obj
+    const ps = problemsOf((r) => {
+      // Saturday: open 07:30–21:40, 48 payments.
+      day(r, 'cafe-sat').day = {
+        firstSale: { time: '07:10', party: '@stranger', sku: 'bagel' },
+        busiest: { from: '22:00', count: 49 },
+      }
+    })
+    const text = messages(ps).join('\n')
+    expect(text).toMatch(/the first sale 07:10 is outside 07:30–21:40/)
+    expect(text).toMatch(/49 payments in an hour, 48 in the day/)
+    expect(text).toMatch(/the hour 22:00 is outside 07:30–21:40/)
+    expect(text).toMatch(/cafe has no product bagel/)
+    expect(text).toMatch(/unknown off-stage person @stranger/)
+    // A day summary belongs to a summary row that says when the day started; hours start on the hour.
+    const more = problemsOf((r) => {
+      day(r, 'cafe-carried-over').day = {
+        firstSale: { time: '08:00', party: '@eva', sku: 'espresso' },
+        busiest: { from: '08:30', count: 1 },
+      }
+    })
+    const t2 = messages(more).join('\n')
+    expect(t2).toMatch(/a day summary needs a summary row that says when it started/)
+    expect(t2).toMatch(/the busiest hour starts on the hour/)
+  })
+
+  it('every café daily summary row of the seed has a day summary that passes', () => {
+    const cafeDaily = (seed as { rows: { key: string; to: string; summary?: unknown; day?: unknown }[] }).rows.filter(
+      (row) => row.to === 'cafe' && row.summary !== undefined,
+    )
+    expect(cafeDaily).toHaveLength(6)
+    for (const row of cafeDaily) expect(row.day, row.key).toBeDefined()
+  })
+
   it('escrow presets add up to 10000; merchants are businesses', () => {
     const ps = problemsOf((r) => {
       const presets = ((r.catalogue.templates as Obj).escrow as Obj).presets as Obj[]

@@ -8,10 +8,11 @@
 #   conversion (off-ramp): from −amount,      to +(amount − fee), sys:fees +fee
 #                       (the converter pays out of the amount; the row has no feePayer)
 # A policy's fee is computed; a `fee` or `eur` written on a row is checked against it.
-# Daily sales summary rows carry `summary` (count, gross, optional product mix); their fee is
-# the policy's 1% of the gross (rounded once per row), paid by the business. `party` names the
-# person behind sys:offstage. The carried-over rows and Marko's taxi share with Ana's pizza
-# keep the start balances.
+# Daily sales summary rows carry `summary` (count, gross, optional product mix); their fee is the
+# policy's 1% of the gross (rounded once per row), paid by the business. The café's also carry `day`
+# for the day summary: the time, person and product of the first sale, and the busiest hour with its
+# payment count (display only). `party` names the person behind sys:offstage. The carried-over rows
+# and Marko's taxi share with Ana's pizza keep the start balances.
 
 rows:
   # ---- Ana Novak (247.50)
@@ -43,29 +44,35 @@ rows:
   - { key: cafe-carried-over, at: { day: -7, time: "23:30" }, kind: transfer, channel: auto,
       from: "sys:offstage", to: cafe, amount: "97.59", labelKey: carriedOver }
   - { key: cafe-sat, at: { day: -6, time: "21:40" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
-      from: "sys:offstage", to: cafe, summary: { count: 48, gross: "334.58" }, labelKey: dailySales }
+      from: "sys:offstage", to: cafe, summary: { count: 48, gross: "334.58" }, labelKey: dailySales,
+      day: { firstSale: { time: "07:38", party: "@marta_k", sku: flat-white }, busiest: { from: "12:00", count: 9 } } }
   - { key: cafe-autoconvert-sat, at: { day: -6, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
       from: cafe, to: "sys:issuance", amount: "214.41", fee: "3.22", eur: "191.99", sharePct: 50, labelKey: autoConverted }
   - { key: cafe-mon, at: { day: -4, time: "21:30" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
-      from: "sys:offstage", to: cafe, summary: { count: 26, gross: "179.16" }, labelKey: dailySales }
+      from: "sys:offstage", to: cafe, summary: { count: 26, gross: "179.16" }, labelKey: dailySales,
+      day: { firstSale: { time: "07:41", party: "@tine", sku: espresso }, busiest: { from: "08:00", count: 5 } } }
   - { key: cafe-autoconvert-mon, at: { day: -4, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
       from: cafe, to: "sys:issuance", amount: "195.89", fee: "2.94", eur: "175.41", sharePct: 50, labelKey: autoConverted }
   - { key: cafe-tue, at: { day: -3, time: "21:30" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
-      from: "sys:offstage", to: cafe, summary: { count: 21, gross: "143.02" }, labelKey: dailySales }
+      from: "sys:offstage", to: cafe, summary: { count: 21, gross: "143.02" }, labelKey: dailySales,
+      day: { firstSale: { time: "07:36", party: "@maja", sku: croissant }, busiest: { from: "12:00", count: 4 } } }
   - { key: cafe-autoconvert-tue, at: { day: -3, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
       from: cafe, to: "sys:issuance", amount: "169.83", fee: "2.55", eur: "152.07", sharePct: 50, labelKey: autoConverted }
   - { key: cafe-wed, at: { day: -2, time: "21:30" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
-      from: "sys:offstage", to: cafe, summary: { count: 19, gross: "141.08" }, labelKey: dailySales }
+      from: "sys:offstage", to: cafe, summary: { count: 19, gross: "141.08" }, labelKey: dailySales,
+      day: { firstSale: { time: "07:52", party: "@jure", sku: flat-white }, busiest: { from: "13:00", count: 4 } } }
   - { key: cafe-cashout-wed, at: { day: -2, time: "21:50" }, kind: off-ramp, channel: auto, policy: off-ramp,
       from: cafe, to: "sys:issuance", amount: "220.00", fee: "3.30", eur: "197.00", labelKey: cashOut }
   - { key: cafe-autoconvert-wed, at: { day: -2, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
       from: cafe, to: "sys:issuance", amount: "44.75", fee: "0.67", eur: "40.07", sharePct: 50, labelKey: autoConverted }
   - { key: cafe-thu, at: { day: -1, time: "21:45" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
-      from: "sys:offstage", to: cafe, summary: { count: 41, gross: "283.40" }, labelKey: dailySales }
+      from: "sys:offstage", to: cafe, summary: { count: 41, gross: "283.40" }, labelKey: dailySales,
+      day: { firstSale: { time: "07:33", party: "@eva", sku: flat-white }, busiest: { from: "12:00", count: 8 } } }
   - { key: cafe-autoconvert-thu, at: { day: -1, time: "23:00" }, kind: off-ramp, channel: auto, policy: off-ramp,
       from: cafe, to: "sys:issuance", amount: "175.73", fee: "2.64", eur: "157.35", sharePct: 50, labelKey: autoConverted }
   - { key: cafe-today, at: { day: 0, time: "12:10" }, startedAt: "07:30", kind: purchase, channel: pos, policy: merchant,
-      from: "sys:offstage", to: cafe, summary: { count: 23, gross: "111.38" }, labelKey: todaySoFar }
+      from: "sys:offstage", to: cafe, summary: { count: 23, gross: "111.38" }, labelKey: todaySoFar,
+      day: { firstSale: { time: "07:44", party: "@luka", sku: flat-white }, busiest: { from: "08:00", count: 5 } } }
 
   # ---- Lintvern Games (1254.00); Marko's skin is listed above. Mix: season-pass × 11.00,
   # gem-pack-500 × 5.50, aurora-wings × 1.10.

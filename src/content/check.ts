@@ -258,6 +258,39 @@ export function checkContent(c: Content): ContentProblem[] {
     if (r.labelKey !== undefined && !Object.hasOwn(c.copy.seedRows, r.labelKey)) {
       add('seed.yaml', ['rows', i, 'labelKey'], `copy.en.yaml has no seedRows.${r.labelKey}`)
     }
+    // The day summary of a daily row: the first sale lies in the hours the day was open, the busiest
+    // hour has no more payments than the day, and the sale is one of the business's products.
+    if (r.day !== undefined && r.summary !== undefined && r.startedAt !== undefined) {
+      const { firstSale, busiest } = r.day
+      if (firstSale.time < r.startedAt || firstSale.time > r.at.time) {
+        add(
+          'seed.yaml',
+          ['rows', i, 'day', 'firstSale', 'time'],
+          `the first sale ${firstSale.time} is outside ${r.startedAt}–${r.at.time}`,
+        )
+      }
+      if (busiest.count > r.summary.count) {
+        add(
+          'seed.yaml',
+          ['rows', i, 'day', 'busiest', 'count'],
+          `${busiest.count} payments in an hour, ${r.summary.count} in the day`,
+        )
+      }
+      const hourEnds = `${String(Number(busiest.from.slice(0, 2)) + 1).padStart(2, '0')}:00`
+      if (hourEnds <= r.startedAt || busiest.from > r.at.time) {
+        add(
+          'seed.yaml',
+          ['rows', i, 'day', 'busiest', 'from'],
+          `the hour ${busiest.from} is outside ${r.startedAt}–${r.at.time}`,
+        )
+      }
+      if (!products(r.to).some((p) => p.sku === firstSale.sku)) {
+        add('seed.yaml', ['rows', i, 'day', 'firstSale', 'sku'], `${r.to} has no product ${firstSale.sku}`)
+      }
+      if (!offstage.has(firstSale.party)) {
+        add('seed.yaml', ['rows', i, 'day', 'firstSale', 'party'], `unknown off-stage person ${firstSale.party}`)
+      }
+    }
   })
   const rowKeys = new Set(c.seed.rows.map((r) => r.key))
   const requestIds = new Set(c.seed.requests.map((r) => r.id))

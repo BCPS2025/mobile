@@ -260,6 +260,16 @@ export function buildSeed(content: Content, epochDate: IsoDate): SeedResult {
     if (row.method !== undefined) meta.method = row.method
     if (row.sharePct !== undefined) meta.sharePct = row.sharePct
     if (row.startedAt !== undefined) meta.startedAt = at({ day: row.at.day, time: row.startedAt })
+    if (row.day !== undefined) {
+      meta.day = {
+        firstSale: {
+          at: at({ day: row.at.day, time: row.day.firstSale.time }),
+          party: row.day.firstSale.party as Handle,
+          sku: row.day.firstSale.sku,
+        },
+        busiest: { from: at({ day: row.at.day, time: row.day.busiest.from }), count: row.day.busiest.count },
+      }
+    }
     if (party !== undefined) tx.party = party
     if (row.note !== undefined) tx.note = row.note
     if (row.summary) {

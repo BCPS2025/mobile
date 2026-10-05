@@ -253,6 +253,16 @@ export const SeedRowSchema = z
     method: z.enum(['bank-transfer', 'card', 'local-method']).optional(),
     sharePct: Int.min(10).max(100).optional(),
     labelKey: z.string().optional(),
+    /** A daily summary's day summary: the first sale and the busiest hour (display only). */
+    day: z
+      .strictObject({
+        firstSale: z.strictObject({ time: LocalTime, party: HandleString, sku: Sku }),
+        busiest: z.strictObject({
+          from: z.string().regex(/^([01]\d|2[0-3]):00$/, 'the busiest hour starts on the hour ("HH:00")'),
+          count: Int.positive(),
+        }),
+      })
+      .optional(),
   })
   .superRefine((r, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: 'custom', message: `seed row ${r.key}: ${message}` })
@@ -264,6 +274,9 @@ export const SeedRowSchema = z
       issue('party is only for rows to or from sys:offstage')
     }
     if (r.startedAt !== undefined && r.startedAt > r.at.time) issue('startedAt is after the row time')
+    if (r.day !== undefined && (r.summary === undefined || r.startedAt === undefined)) {
+      issue('a day summary needs a summary row that says when it started')
+    }
   })
 export type SeedRow = z.infer<typeof SeedRowSchema>
 

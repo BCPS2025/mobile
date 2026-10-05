@@ -250,6 +250,29 @@ describe('T0', () => {
     }
   })
 
+  it("the café's daily rows carry their first sale and busiest hour as instants of that day", () => {
+    const txs = buildSeed(content, EPOCH).state.txs
+    const daily = Object.values(txs).filter((tx) => tx.seed && tx.to === 'cafe' && tx.summary !== undefined)
+    expect(daily).toHaveLength(6)
+    for (const tx of daily) {
+      const day = tx.seedMeta?.day
+      expect(day, tx.seedMeta?.key).toBeDefined()
+      if (!day || !tx.seedMeta?.startedAt) continue
+      const date = localDateOf(tx.createdAt, 'Europe/Ljubljana')
+      expect(localDateOf(day.firstSale.at, 'Europe/Ljubljana')).toBe(date)
+      expect(day.firstSale.at).toBeGreaterThanOrEqual(tx.seedMeta.startedAt)
+      expect(day.firstSale.at).toBeLessThanOrEqual(tx.createdAt)
+      expect(day.busiest.count).toBeLessThanOrEqual(tx.summary?.count ?? 0)
+      expect(formatTime(day.busiest.from, 'Europe/Ljubljana')).toMatch(/^\d\d:00$/)
+    }
+    const sat = daily.find((tx) => tx.seedMeta?.key === 'cafe-sat')?.seedMeta?.day
+    expect(sat && formatTime(sat.firstSale.at, 'Europe/Ljubljana')).toBe('07:38')
+    expect(sat?.firstSale).toMatchObject({ party: '@marta_k', sku: 'flat-white' })
+    expect(sat && [formatTime(sat.busiest.from, 'Europe/Ljubljana'), sat.busiest.count]).toEqual(['12:00', 9])
+    // Rows without a day summary have no such fields.
+    expect(Object.values(txs).filter((tx) => tx.seedMeta?.day !== undefined)).toHaveLength(6)
+  })
+
   it('seed rows keep their local times across DST', () => {
     const st = buildSeed(content, '2026-10-30').state // history spans the October switch
     const taxi = Object.values(st.txs).find((tx) => tx.seedMeta?.key === 'taxi-share')

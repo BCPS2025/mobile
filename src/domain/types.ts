@@ -191,6 +191,11 @@ export interface SeedMeta {
   method?: 'bank-transfer' | 'card' | 'local-method'
   sharePct?: number
   startedAt?: SimTime
+  /** A daily summary row: the first sale and the busiest hour, for the day summary. */
+  day?: {
+    firstSale: { at: SimTime; party: Handle; sku: string }
+    busiest: { from: SimTime; count: number }
+  }
 }
 
 export interface PaymentUri {
