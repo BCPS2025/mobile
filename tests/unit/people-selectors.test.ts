@@ -115,14 +115,14 @@ describe('scanCandidates', () => {
   it('locks onto the open code of the merchant on the other visible phone', () => {
     const [c] = scanCandidates(s, 'ana', 'cafe', now, VALIDITY)
     expect(c).toMatchObject({ kind: 'pos', requestId: 'r_pos_1', merchant: 'cafe' })
-    expect(formatMinor(c?.amount ?? asMinor(0))).toBe('11.00')
-    expect(c?.items.map((i) => i.qty)).toEqual([2, 2])
-    expect(c?.expiresAt).toBe(now + VALIDITY)
+    if (c?.kind !== 'pos') throw new Error('not a payment code')
+    expect(formatMinor(c.amount)).toBe('11.00')
+    expect(c.items.map((i) => i.qty)).toEqual([2, 2])
+    expect(c.expiresAt).toBe(now + VALIDITY)
   })
 
-  it('finds nothing without a code, in phone mode, for the merchant’s own phone, for a person or after expiry', () => {
+  it('finds nothing without a code, for the merchant’s own phone, for a person or after expiry', () => {
     expect(scanCandidates(node.getState(), 'ana', 'cafe', now, VALIDITY)).toEqual([])
-    expect(scanCandidates(s, 'ana', null, now, VALIDITY)).toEqual([])
     expect(scanCandidates(s, 'cafe', 'cafe', now, VALIDITY)).toEqual([])
     expect(scanCandidates(s, 'cafe', 'ana', now, VALIDITY)).toEqual([])
     expect(scanCandidates(s, 'ana', 'marko', now, VALIDITY)).toEqual([])

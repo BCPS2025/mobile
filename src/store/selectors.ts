@@ -18,20 +18,31 @@ import type {
   FeeQuote,
   LedgerState,
   Minor,
+  Handle,
   Party,
   PartyId,
   PayChannel,
+  PaymentLink,
   PaymentRequest,
   PersonaId,
   SimTime,
+  Split,
   Tx,
   TxItem,
 } from '@domain/types'
-import { type IsoDate, addDays, localDateOf } from '@sim/tz'
+import { localDateOf } from '@sim/tz'
 import { withinHours } from './hours'
 import { counterpartyOf } from './parties'
+import { isSplittable, splitOfTx } from './payitems'
+import { refundTxOf } from './sales'
 
 // Pure selectors for useLedger. They return primitives or objects that are stable per state.
+
+export { deltaFor, lastSessionTx, txByCmdId, txsFor } from './txs'
+export * from './activity'
+export * from './payitems'
+export * from './sales'
+export * from './wallet'
 
 export const selectConfirmed =
   (a: AccountId) =>
@@ -55,39 +66,6 @@ export const selectPartyOf =
 /** Fees collected since `baseline` (the starting ledger). */
 export function feesSince(s: LedgerState, baseline: LedgerState): Minor {
   return asMinor(balanceOf(s, 'sys:fees').confirmed - balanceOf(baseline, 'sys:fees').confirmed)
-}
-
-/** Transactions touching an account, newest first (seed rows included). */
-export function txsFor(s: LedgerState, a: AccountId): Tx[] {
-  const out: Tx[] = []
-  for (let i = s.txOrder.length - 1; i >= 0; i--) {
-    const tx = s.txs[s.txOrder[i] ?? '']
-    if (tx?.postings.some((p) => p.account === a)) out.push(tx)
-  }
-  return out
-}
-
-/** Signed effect of a transaction on one account (its postings to that account). */
-export function deltaFor(tx: Tx, a: AccountId): Minor {
-  return asMinor(tx.postings.filter((p) => p.account === a).reduce((acc, p) => acc + p.delta, 0))
-}
-
-/** The most recent session transaction, if any. */
-export function lastSessionTx(s: LedgerState): Tx | undefined {
-  for (let i = s.txOrder.length - 1; i >= 0; i--) {
-    const tx = s.txs[s.txOrder[i] ?? '']
-    if (tx && !tx.seed) return tx
-  }
-  return undefined
-}
-
-/** The transaction a user command created (flows read their phase from the ledger). */
-export function txByCmdId(s: LedgerState, cmdId: string): Tx | undefined {
-  for (let i = s.txOrder.length - 1; i >= 0; i--) {
-    const tx = s.txs[s.txOrder[i] ?? '']
-    if (tx?.cmdId === cmdId) return tx
-  }
-  return undefined
 }
 
 /**
@@ -206,23 +184,83 @@ export function quoteForRequest(s: LedgerState, r: PaymentRequest): FeeQuote | n
   return q.ok ? q.value : null
 }
 
-/** A payment code the phone can lock onto. */
-export interface ScanCandidate {
-  kind: 'pos'
-  requestId: string
-  /** The merchant that shows the code. */
-  merchant: PersonaId
-  amount: Minor
-  items: readonly TxItem[]
-  createdAt: SimTime
-  /** When the code stops working. */
-  expiresAt: SimTime
-}
+/** A QR the phone can lock onto. */
+export type ScanCandidate =
+  | {
+      /** A merchant's open payment code (the café's Charge screen). */
+      kind: 'pos'
+      requestId: string
+      /** The merchant that shows the code. */
+      merchant: PersonaId
+      amount: Minor
+      items: readonly TxItem[]
+      note: string | undefined
+      createdAt: SimTime
+      /** When the code stops working. */
+      expiresAt: SimTime
+    }
+  | {
+      /** A merchant's counter code: always there, the payer enters the amount. */
+      kind: 'counter'
+      merchant: PersonaId
+    }
+  | {
+      /** A person's "My code" QR that was shown lately: opens Send for them. */
+      kind: 'person'
+      persona: PersonaId
+      handle: Handle
+      shownAt: SimTime
+    }
+  | {
+      /** A payment link's QR that was shown lately. */
+      kind: 'link'
+      linkId: string
+      owner: PersonaId
+      amount: Minor
+      note: string | undefined
+      shownAt: SimTime
+    }
+
+/** A merchant's open payment code as a candidate. */
+export type PosScanCandidate = Extract<ScanCandidate, { kind: 'pos' }>
 
 /**
- * What a viewer's Scan can lock onto: the open code of the account shown on the other visible
- * phone, when that account is a merchant (never the viewer's own code, and nothing in phone mode
- * where no other phone is visible). More sources (the counter code) join this list later.
+ * A QR screen an account showed: its "My code" or a payment link. The phone next to it (phone mode: the
+ * same phone after switching account) can scan it for ten minutes.
+ */
+export interface ShownQr {
+  persona: PersonaId
+  kind: 'code' | 'link'
+  linkId?: string
+  at: SimTime
+}
+
+/** How long a shown QR stays scannable. */
+export const SHOWN_QR_WINDOW_MS = 10 * 60_000
+
+/** The shown QRs after one more (`lastShownQr`): the same QR again only refreshes its time; old ones drop out. */
+export function noteShownQr(list: readonly ShownQr[], entry: ShownQr): ShownQr[] {
+  const same = (x: ShownQr) => x.persona === entry.persona && x.kind === entry.kind && x.linkId === entry.linkId
+  return [...list.filter((x) => !same(x) && entry.at - x.at < SHOWN_QR_WINDOW_MS), entry]
+}
+
+export interface ScanOptions {
+  /** QR screens shown lately (`lastShownQr`). */
+  shown?: readonly ShownQr[]
+  /** Merchants with a counter code (the café). */
+  counterMerchants?: readonly PersonaId[]
+}
+
+/** The merchants that have a counter code: those whose home is a till. */
+export const counterMerchants = (content: Content): PersonaId[] =>
+  content.personas.personas.filter((p) => p.shell === 'pos').map((p) => p.id)
+
+/**
+ * What a viewer's Scan can lock onto, never its own code. On the stage, the phone next to it: the open
+ * code of the merchant on it, and what a person on it showed lately. In phone mode, where no other
+ * phone is visible: every merchant's open code, every QR shown in the last ten minutes, and the counter
+ * codes (always there). Open codes first (the visible phone's first), then shown QRs newest first,
+ * then counters.
  */
 export function scanCandidates(
   s: LedgerState,
@@ -230,70 +268,65 @@ export function scanCandidates(
   visibleOther: PersonaId | null,
   now: SimTime,
   validityMs: number,
+  opts: ScanOptions = {},
 ): ScanCandidate[] {
-  if (visibleOther === null || visibleOther === viewer || !isMerchant(s, visibleOther)) return []
-  const r = openPosRequest(s, visibleOther, now, validityMs)
-  if (!r || (r.payer !== undefined && r.payer !== viewer)) return []
-  return [
-    {
+  const out: ScanCandidate[] = []
+  const code = (merchant: PersonaId): ScanCandidate | undefined => {
+    if (merchant === viewer || !isMerchant(s, merchant)) return undefined
+    const r = openPosRequest(s, merchant, now, validityMs)
+    if (!r || (r.payer !== undefined && r.payer !== viewer)) return undefined
+    return {
       kind: 'pos',
       requestId: r.id,
-      merchant: visibleOther,
+      merchant,
       amount: r.amount,
       items: r.items ?? [],
+      note: r.note,
       createdAt: r.createdAt,
       expiresAt: (r.createdAt + validityMs) as SimTime,
-    },
-  ]
-}
-
-// ---- History and the payment detail
-
-export interface ActivityRow {
-  tx: Tx
-  /** The payment amount as this account sees it: minus for money it sent, plus for money it received. */
-  signed: Minor
-  direction: 'in' | 'out'
-  at: SimTime
-  pending: boolean
-}
-
-export interface ActivityGroup {
-  /** `today`, `yesterday` or the ISO date of an older day. */
-  key: 'today' | 'yesterday' | IsoDate
-  /** The local date of the group. */
-  date: IsoDate
-  rows: ActivityRow[]
-}
-
-/**
- * An account's payments, newest first, grouped by local day: Today, Yesterday, then one group per
- * older day. Seed rows and daily summary rows are included (a business's history shows them).
- */
-export function activity(s: LedgerState, persona: PersonaId, now: SimTime, tz: string): ActivityGroup[] {
-  const today = localDateOf(now, tz)
-  const yesterday = addDays(today, -1)
-  const rows: ActivityRow[] = txsFor(s, persona).map((tx) => {
-    const out = tx.from === persona
-    return {
-      tx,
-      signed: asMinor(out ? -tx.amount : tx.amount),
-      direction: out ? 'out' : 'in',
-      at: tx.createdAt,
-      pending: tx.status === 'pending',
     }
-  })
-  rows.sort((a, b) => b.at - a.at)
-  const groups: ActivityGroup[] = []
-  for (const row of rows) {
-    const date = localDateOf(row.at, tz)
-    const key = date === today ? 'today' : date === yesterday ? 'yesterday' : date
-    const last = groups[groups.length - 1]
-    if (last && last.date === date) last.rows.push(row)
-    else groups.push({ key, date, rows: [row] })
   }
-  return groups
+  const phoneMode = visibleOther === null
+  if (visibleOther !== null) {
+    const c = code(visibleOther)
+    if (c) out.push(c)
+  } else {
+    const merchants = Object.keys(s.merchant).filter((id) => isMerchant(s, id))
+    for (const m of merchants.sort()) {
+      const c = code(m)
+      if (c) out.push(c)
+    }
+  }
+  const shown = [...(opts.shown ?? [])].sort((a, b) => b.at - a.at)
+  for (const x of shown) {
+    if (x.persona === viewer || now - x.at > SHOWN_QR_WINDOW_MS || x.at > now) continue
+    if (!phoneMode && x.persona !== visibleOther) continue
+    const who = entryOf(s.directory, x.persona)
+    if (!who) continue
+    if (x.kind === 'code') {
+      if (who.kind === 'person') out.push({ kind: 'person', persona: x.persona, handle: who.handle, shownAt: x.at })
+      continue
+    }
+    const link = x.linkId === undefined ? undefined : entryOf(s.links, x.linkId)
+    if (link?.owner === x.persona && link.status === 'open') {
+      out.push({
+        kind: 'link',
+        linkId: link.id,
+        owner: link.owner,
+        amount: link.amount,
+        note: link.note,
+        shownAt: x.at,
+      })
+    }
+  }
+  if (phoneMode) {
+    for (const m of opts.counterMerchants ?? [])
+      if (m !== viewer && isMerchant(s, m)) out.push({ kind: 'counter', merchant: m })
+  }
+  return out
 }
+
+// ---- The payment detail (History itself is in ./activity)
 
 /** Everything the payment detail shows, from one account's point of view. */
 export interface TxDetail {
@@ -312,6 +345,20 @@ export interface TxDetail {
   outsideBankingHours: boolean
   /** A sale as its merchant sees it (final, no chargebacks, card comparison). */
   merchantSale: boolean
+  /** The request a payment paid, the link it paid and the split it is the source of. */
+  request: PaymentRequest | undefined
+  link: PaymentLink | undefined
+  split: Split | undefined
+  /** The refund of this payment, and the payment this refund returns. */
+  refund: Tx | undefined
+  refundOf: Tx | undefined
+  /**
+   * The viewer's refund action: `refundable` (a named sale it received, not refunded yet), `refunded`
+   * (it was) or `no`. Summary rows and payments to someone else never offer it.
+   */
+  refundState: 'refundable' | 'refunded' | 'no'
+  /** The viewer can split this payment (their own outgoing payment, not refunded, not split yet). */
+  splittable: boolean
 }
 
 /** The payment detail of a transaction, or undefined for an unknown id. */
@@ -322,6 +369,7 @@ export function txDetail(s: LedgerState, txId: string, viewer: PersonaId, conten
   const country = content.personas.personas.find((p) => p.id === viewer)?.country ?? 'SI'
   const hours = content.config.bankingHours[country]
   const merchantSale = role === 'to' && tx.kind === 'purchase' && isMerchant(s, viewer)
+  const split = splitOfTx(s, tx.id)
   return {
     tx,
     role,
@@ -332,5 +380,22 @@ export function txDetail(s: LedgerState, txId: string, viewer: PersonaId, conten
     settledAt: tx.confirmedAt,
     outsideBankingHours: !withinHours(tx.createdAt, hours),
     merchantSale,
+    request: tx.links?.requestId === undefined ? undefined : entryOf(s.requests, tx.links.requestId),
+    link: tx.links?.linkId === undefined ? undefined : entryOf(s.links, tx.links.linkId),
+    split,
+    refund: refundTxOf(s, tx),
+    refundOf: tx.links?.refundOf === undefined ? undefined : entryOf(s.txs, tx.links.refundOf),
+    refundState:
+      role === 'to' &&
+      merchantSale &&
+      tx.summary === undefined &&
+      (tx.from !== 'sys:offstage' || tx.party !== undefined)
+        ? tx.refundedBy !== undefined
+          ? 'refunded'
+          : tx.status === 'confirmed'
+            ? 'refundable'
+            : 'no'
+        : 'no',
+    splittable: isSplittable(tx, viewer) && tx.refundedBy === undefined && split === undefined,
   }
 }

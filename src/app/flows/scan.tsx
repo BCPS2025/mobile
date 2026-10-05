@@ -2,7 +2,7 @@ import { available, entryOf, selectParty } from '@domain/ledger'
 import { asMinor, formatMinor } from '@domain/money'
 import type { PaymentRequest } from '@domain/types'
 import { otherStage, personaOn } from '@store/sessions'
-import { type ScanCandidate, posCodeState, quoteForRequest, scanCandidates } from '@store/selectors'
+import { type PosScanCandidate, posCodeState, quoteForRequest, scanCandidates } from '@store/selectors'
 import { errorText } from '../errors'
 import { fill, ui } from '../copy'
 import { eur, itemsText, partyLabel, payerShort } from '../format'
@@ -29,10 +29,15 @@ interface Draft {
 
 const validityMs = (ctx: FlowCtx): number => ctx.state.config.posCodeValidityMs
 
-/** The code the viewfinder is locked onto right now, if any. */
-function candidateOf(ctx: FlowCtx): ScanCandidate | undefined {
-  const other = ctx.slot === 'single' ? null : personaOn(ctx.app.runtime.ui.get(), otherStage(ctx.slot))
-  return scanCandidates(ctx.state, ctx.persona, other, ctx.now, validityMs(ctx))[0]
+/**
+ * The code the viewfinder is locked onto right now, if any: the open code of the merchant on the phone
+ * beside this one. In phone mode there is no other phone to point at; the codes nearby are listed.
+ */
+function candidateOf(ctx: FlowCtx): PosScanCandidate | undefined {
+  if (ctx.slot === 'single') return undefined
+  const other = personaOn(ctx.app.runtime.ui.get(), otherStage(ctx.slot))
+  const first = scanCandidates(ctx.state, ctx.persona, other, ctx.now, validityMs(ctx))[0]
+  return first?.kind === 'pos' ? first : undefined
 }
 
 /** What the review shows and pays, from the locked code and the ledger right now. */
