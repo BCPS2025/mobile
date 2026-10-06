@@ -226,9 +226,7 @@ export function TxDetailView({ params }: ScreenProps) {
           )}
           {moneyOut && (
             <>
-              <Row label={ui.detail.to}>
-                <span className="font-mono">{bankOf(app.content, persona) ?? ''}</span>
-              </Row>
+              <Row label={ui.detail.to}>{bankOf(app.content, persona) ?? ''}</Row>
               <Row label={ui.cashOut.rowConversion}>{`${formatMinor(tx.fee.fee)} ${ui.common.bcps}`}</Row>
               <Row label={ui.cashOut.rowReceive}>
                 {fill(ui.common.approxEur, { eur: formatHundredths(tx.fee.eurOut ?? 0) })}
