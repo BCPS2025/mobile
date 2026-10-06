@@ -225,7 +225,7 @@ function ReviewBody({ d, ctx, api }: StepProps<Draft>) {
                     ]
                   : []),
                 { label: ui.autoConvert.rowConversion, value: ui.autoConvert.included, testId: 'fact-conversion' },
-                ...(bank ? [{ label: ui.autoConvert.rowTo, value: bank, mono: true, testId: 'fact-to' }] : []),
+                ...(bank ? [{ label: ui.autoConvert.rowTo, value: bank, testId: 'fact-to' }] : []),
               ]
             : [
                 {

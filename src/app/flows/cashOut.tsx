@@ -91,7 +91,7 @@ function ReviewBody({ d, ctx, api }: StepProps<Draft>) {
             value: `${formatMinor(quote.fee)} ${ui.common.bcps}`,
             testId: 'fact-conversion',
           },
-          { label: ui.cashOut.rowTo, value: bank, mono: true, testId: 'fact-to' },
+          { label: ui.cashOut.rowTo, value: bank, testId: 'fact-to' },
           {
             label: ui.cashOut.rowReceive,
             value: fill(ui.common.approxEur, { eur: formatHundredths(quote.eurOut ?? 0) }),

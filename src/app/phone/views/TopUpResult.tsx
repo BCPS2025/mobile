@@ -171,7 +171,7 @@ export function TopUpResult({
         <div className="mt-5">
           <FactsCard
             facts={[
-              ...(bank ? [{ label: ui.topUp.rowFrom, value: bank.bank, mono: true }] : []),
+              ...(bank ? [{ label: ui.topUp.rowFrom, value: bank.bank }] : []),
               { label: ui.topUp.rowReference, value: ramp.id, mono: true },
             ]}
           />
