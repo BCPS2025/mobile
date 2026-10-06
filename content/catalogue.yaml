@@ -35,5 +35,5 @@ noteChips:
   person: [Cinema, Lunch, Pizza, Taxi share, Groceries]
   business: [Croissant delivery, Freight, Stainless shelving]
 declineReasons:
-  invoice: [Wrong amount, Not ordered, Already paid, Other]
+  invoice: [Wrong amount, Already paid, Not ordered, Something else]
   dispute: [Goods not shipped, Goods damaged, Wrong quantity, Other]

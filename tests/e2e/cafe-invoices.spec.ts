@@ -129,9 +129,9 @@ test.describe('Pay an invoice', () => {
     await expect(why).toContainText('Why are you declining?')
     await expect(cafe.getByTestId('decline-reasons').locator('label')).toHaveText([
       'Wrong amount',
-      'Not ordered',
       'Already paid',
-      'Other',
+      'Not ordered',
+      'Something else',
     ])
     await expect(why).toContainText('Pekarna Zrno sees your reason. No money moves.')
     await expect(cafe.getByLabel('Wrong amount')).toBeChecked()

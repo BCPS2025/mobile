@@ -156,7 +156,7 @@ describe('Invoices to pay', () => {
     const f = phoneFixture({ cafe: true })
     const { cafe, row } = openInvoice(f)
     const reasons = content.catalogue.declineReasons.invoice
-    expect(reasons).toEqual(['Wrong amount', 'Not ordered', 'Already paid', 'Other'])
+    expect(reasons).toEqual(['Wrong amount', 'Already paid', 'Not ordered', 'Something else'])
     expect((cafe.flow().draft as { reason: string }).reason).toBe('Wrong amount')
     const secondary = cafe.step().secondary?.(cafe.flow().draft as never, cafe.ctx(), cafe.api() as never)
     expect(secondary).toMatchObject({ kind: 'outline', label: 'Decline' })

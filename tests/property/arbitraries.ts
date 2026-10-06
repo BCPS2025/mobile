@@ -430,7 +430,7 @@ export function answerStepArb(): fc.Arbitrary<AnswerStep> {
     expect: fc.constantFrom<ExpectPick>('right', 'right', 'right', 'right', 'off-by-one'),
     reason: fc.oneof(
       { weight: 2, arbitrary: fc.constant(null) },
-      { weight: 2, arbitrary: fc.constantFrom('Wrong amount', 'Not ordered', 'Already paid', 'Other') },
+      { weight: 2, arbitrary: fc.constantFrom('Wrong amount', 'Already paid', 'Not ordered', 'Something else') },
       { weight: 1, arbitrary: fc.constantFrom('', 'y'.repeat(41)) },
     ),
   })
