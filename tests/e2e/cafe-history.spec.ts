@@ -86,7 +86,7 @@ test.describe('History of the café', () => {
     await expect(cafe.locator('[data-screen="biz.history"]')).toBeVisible()
   })
 
-  test('Export CSV saves the day as one line, with every cell quoted', async ({ page }) => {
+  test('Export CSV saves the day as one line, named for that day, with every cell quoted', async ({ page }) => {
     await stageBoth(page)
     const cafe = slot(page, 'right')
     await openHistory(cafe)
@@ -98,7 +98,8 @@ test.describe('History of the café', () => {
       page.waitForEvent('download'),
       cafe.getByRole('button', { name: 'Export CSV' }).click(),
     ])
-    expect(download.suggestedFilename()).toBe('cafe-lipa-sales-2026-09-25.csv')
+    // Thursday's summary: the file is named for Thursday, not for today.
+    expect(download.suggestedFilename()).toBe('cafe-lipa-sales-2026-09-24.csv')
     expectCleanFileName(download.suggestedFilename())
     const lines = readFileSync(await download.path(), 'utf8')
       .trimEnd()

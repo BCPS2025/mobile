@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { asMinor, formatMinor, formatSignedMinor, mustParseMinor } from '@domain/money'
 import { formatTime } from '@sim/tz'
 import { bankOf, daySummary, saleRow, salesCsvFile } from '@store/selectors'
-import { useLedger, useLedgerNode } from '@store/useLedger'
+import { useLedger } from '@store/useLedger'
 import { fill, ui } from '../../copy'
 import { saveTextFile } from '../../download'
 import { approx, dayText, partyLabel, shortBank } from '../../format'
@@ -51,7 +51,6 @@ export function DaySummaryView({ params }: ScreenProps) {
   const app = useApp()
   const { persona, tz } = usePersonaPhone()
   const nav = usePhoneNav()
-  const node = useLedgerNode()
   const state = useLedger((s) => s)
   const day = daySummary(state, params.rowKey ?? '', tz)
   const account = app.persona(persona)
@@ -74,7 +73,8 @@ export function DaySummaryView({ params }: ScreenProps) {
     ? app.content.catalogue.products[persona]?.find((p) => p.sku === day.firstSale?.sku)
     : undefined
   const exportCsv = () => {
-    const file = salesCsvFile(state, persona, [saleRow(state, day.tx)], node.now(), app.content)
+    // Named for the day it holds (cafe-lipa-sales-2026-09-19.csv), not for today.
+    const file = salesCsvFile(state, persona, [saleRow(state, day.tx)], day.tx.createdAt, app.content)
     saveTextFile(file.fileName, file.text)
   }
   return (

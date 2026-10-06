@@ -387,15 +387,18 @@ export function salesCsv(rows: readonly SaleRow[], content: Content, tz: string)
   return `${lines.join('\n')}\n`
 }
 
-/** The export of a dashboard's rows: `cafe-lipa-sales-2026-09-25.csv` and its text. */
+/**
+ * The export of some sales rows: `cafe-lipa-sales-2026-09-25.csv` and its text. `day` is a moment of
+ * the day the file is named for: now for a dashboard, the day itself for a day summary.
+ */
 export function salesCsvFile(
   s: LedgerState,
   merchant: PersonaId,
   rows: readonly SaleRow[],
-  now: SimTime,
+  day: SimTime,
   content: Content,
 ): { fileName: string; text: string } {
   const tz = content.config.t0.tz
   const name = entryOf(s.directory, merchant)?.displayName ?? merchant
-  return { fileName: `${slug(name)}-sales-${localDateOf(now, tz)}.csv`, text: salesCsv(rows, content, tz) }
+  return { fileName: `${slug(name)}-sales-${localDateOf(day, tz)}.csv`, text: salesCsv(rows, content, tz) }
 }

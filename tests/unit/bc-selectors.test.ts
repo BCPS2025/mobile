@@ -853,6 +853,11 @@ describe('the sales CSV', () => {
     expect(salesCsvFile(state(h), 'studio', [], h.node.now(), content).fileName).toBe(
       'lintvern-games-sales-2026-09-25.csv',
     )
+    // A day summary's export is named for that day, not for today.
+    const saturday = seedTx(h, 'cafe-sat')
+    expect(salesCsvFile(state(h), 'cafe', [], saturday.createdAt, content).fileName).toBe(
+      'cafe-lipa-sales-2026-09-19.csv',
+    )
   })
 })
 
