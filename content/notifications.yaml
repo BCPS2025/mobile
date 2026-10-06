@@ -14,7 +14,7 @@ link.received:     { to: payee,     title: "@{owner} sent you a payment link", l
 link.paid:         { to: owner,     title: "@{payer} paid your link · {amount} BCPS", line: "{note}", opens: tx, banner: true, toast: true }
 split.received:    { to: participant, title: "@{owner} split {note}", line: "Your share {amount} BCPS", opens: payItem, banner: true, toast: true }
 split.completed:   { to: owner,     title: "{note} · everyone paid ✓", line: "{collected} BCPS collected", opens: split, banner: true, toast: false }
-refund.received:   { to: customer,  title: "Refund from {merchant} · {amount} BCPS", line: "{items}", opens: tx, banner: true, toast: true }
+refund.received:   { to: customer,  title: "Refund from {merchant} · +{amount} BCPS", line: "{items}", opens: tx, banner: true, toast: true }
 topup.completed:   { to: account,   title: "Top-up complete · +{amount} BCPS", line: "{method}", opens: tx, banner: true, toast: false }
 topup.pending:     { to: account,   title: "Top-up on its way · €{eur}", line: "Expected {arrivesAt}", opens: ramp, banner: false, toast: false }
 topup.arrived:     { to: account,   title: "Top-up arrived · +{amount} BCPS", line: "Bank transfer · €{eur}", opens: tx, banner: true, toast: true }

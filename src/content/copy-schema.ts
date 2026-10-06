@@ -730,6 +730,7 @@ export const UiCopySchema = z.looseObject({
     linkIn: S,
     linkOut: S,
     splitShareOut: S,
+    refundLine: S,
     topUpLine: S,
     methods: z.strictObject({ card: S, 'bank-transfer': S, 'local-method': S }),
     waiting: S,

@@ -72,7 +72,7 @@ test.describe('Refund a sale', () => {
     await expectCleanVisibleCopy(page)
 
     // Ana hears about it.
-    await expect(ana.getByTestId('banner')).toContainText('Refund from Café Lipa · 26.40 BCPS')
+    await expect(ana.getByTestId('banner')).toContainText('Refund from Café Lipa · +26.40 BCPS')
     await cafe.getByRole('button', { name: 'Done' }).click()
     await expect(cafe.locator('[data-screen="pos.home"]')).toBeVisible()
     await expectBalance(page, 'cafe', '259.60')

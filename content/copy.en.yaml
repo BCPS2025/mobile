@@ -613,6 +613,7 @@ history:
   linkIn: "Payment link for you · {when}"
   linkOut: "Your payment link · {when}"
   splitShareOut: "Split share · {when}"
+  refundLine: "Refund · {when}"
   topUpLine: "{time} · {method}"
   methods:
     card: Card

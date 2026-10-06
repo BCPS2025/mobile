@@ -119,9 +119,11 @@ export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string,
   const sub =
     tx.kind === 'purchase'
       ? fill(ui.tx.withNote, { label: time, note: ui.history.sale })
-      : share?.channel === 'split'
-        ? fill(ui.history.splitShareOut, { when: time })
-        : time
+      : tx.kind === 'refund'
+        ? fill(ui.history.refundLine, { when: time })
+        : share?.channel === 'split'
+          ? fill(ui.history.splitShareOut, { when: time })
+          : time
   return {
     title: tx.note ? fill(ui.tx.withNote, { label: name, note: tx.note }) : name,
     sub,

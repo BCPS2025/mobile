@@ -376,7 +376,7 @@ describe('splits', () => {
 })
 
 describe('refunds', () => {
-  it('the customer hears "Refund from Café Lipa · 26.40 BCPS" with what was bought', () => {
+  it('the customer hears "Refund from Café Lipa · +26.40 BCPS" with what was bought', () => {
     const s = session()
     const brunch = Object.values(s.node.getState().txs).find((t) => t.seedMeta?.key === 'cafe-thu-brunch')
     if (!brunch) throw new Error('no brunch')
@@ -385,7 +385,7 @@ describe('refunds', () => {
     s.node.settleDue()
     expect(s.list('ana')[0]).toMatchObject({
       kind: 'refund.received',
-      title: 'Refund from Café Lipa · 26.40 BCPS',
+      title: 'Refund from Café Lipa · +26.40 BCPS',
       line: '2 × brunch',
       opens: 'tx',
       banner: true,
