@@ -56,6 +56,7 @@ test.describe('Top up by card', () => {
     await expect(page.getByTestId('edge-marker').first()).toHaveText('Top up')
     await expect(ana.locator('[data-screen="shared.topup.done"]')).toBeVisible()
     await expect(ana.getByTestId('success-amount')).toContainText('+55.00')
+    await expect(page.getByTestId('tape-row').first()).toContainText('Top up → @ana · 55.00 BCPS · settled · fee 0.00')
     await expect(ana.locator('[data-screen="shared.topup.done"]')).toContainText('from €50.00 · Card •• 7719')
     await expect(ana.locator('[data-screen="shared.topup.done"]')).toContainText('Ready to spend')
     await expect(ana.locator('[data-screen="shared.topup.done"]')).toContainText('No top-up fee')
@@ -69,6 +70,11 @@ test.describe('Top up by card', () => {
     await ana.locator('[data-tile="history"]').click()
     await ana.getByTestId('chip-topupsCashouts').click()
     await expect(ana.getByTestId('history-list').locator('li')).toHaveCount(3)
+    await ana.getByTestId('history-list').locator('li button').first().click()
+    const detail = ana.locator('[data-screen="shared.tx"]')
+    await expect(detail).toContainText('Card •• 7719')
+    await expect(detail).toContainText('from €50.00')
+    await expect(detail).toContainText('No top-up fee')
   })
 
   test('above €10,000 the words are the limit and Continue stays off', async ({ page }) => {

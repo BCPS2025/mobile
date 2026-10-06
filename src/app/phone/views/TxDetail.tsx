@@ -1,9 +1,11 @@
 import { Info } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { cashOutRef } from '@domain/ids'
+import { entryOf } from '@domain/ledger'
 import { formatHundredths, formatMinor, formatSignedMinor } from '@domain/money'
 import type { Party } from '@domain/types'
 import { formatTime, formatWeekday, localDateOf } from '@sim/tz'
-import { splitsOf, txDetail } from '@store/selectors'
+import { bankOf, splitsOf, topUpMethods, txDetail } from '@store/selectors'
 import { useLedger, useLedgerNode } from '@store/useLedger'
 import { copy, fill, ui } from '../../copy'
 import { approx, eur, firstName, itemsText, partyLabel, rateText } from '../../format'
@@ -109,6 +111,18 @@ export function TxDetailView({ params }: ScreenProps) {
         ? detail.settledAt
         : ((tx.createdAt + state.config.settleMs) as typeof tx.createdAt)
   const eurText = approx(tx.amount, state.config.rate)
+  // Money in from a top-up and out to a bank: the way it came and the euros, or the bank and the conversion.
+  const moneyIn = tx.kind === 'on-ramp' && role === 'to'
+  const moneyOut = tx.kind === 'off-ramp' && role === 'from'
+  const ramp = tx.rampId === undefined ? undefined : entryOf(state.ramps, tx.rampId)
+  const rampMethod = ramp?.method ?? tx.seedMeta?.method
+  const card = topUpMethods(state, persona, app.content).find((m) => m.method === 'card')
+  const methodText =
+    rampMethod === undefined
+      ? ''
+      : fill(app.content.copy.methodLabels[rampMethod], { last4: card?.method === 'card' ? card.last4 : '' })
+  const eurPaid = ramp?.eur ?? tx.seedMeta?.eur
+  const eurPaidText = eurPaid === undefined ? undefined : formatHundredths(eurPaid)
   const cardRange = tx.fee.card
   const canSendAgain =
     role === 'from' &&
@@ -191,24 +205,54 @@ export function TxDetailView({ params }: ScreenProps) {
           )}
         </div>
         <div className="mt-3 border border-line-200 bg-surface">
-          {from && <PartyRow label={ui.detail.from} party={from} verify={role !== 'from'} />}
-          {to && !detail.merchantSale && <PartyRow label={ui.detail.to} party={to} verify={role !== 'to'} />}
+          {from && !moneyIn && !moneyOut && <PartyRow label={ui.detail.from} party={from} verify={role !== 'from'} />}
+          {to && !detail.merchantSale && !moneyIn && !moneyOut && (
+            <PartyRow label={ui.detail.to} party={to} verify={role !== 'to'} />
+          )}
+          {moneyIn && (
+            <>
+              <Row
+                label={ui.detail.method}
+                sub={eurPaidText ? fill(ui.detail.paidEur, { eur: eurPaidText }) : undefined}
+              >
+                {methodText}
+              </Row>
+            </>
+          )}
+          {moneyOut && (
+            <>
+              <Row label={ui.detail.to}>
+                <span className="font-mono">{bankOf(app.content, persona) ?? ''}</span>
+              </Row>
+              <Row label={ui.cashOut.rowConversion}>{`${formatMinor(tx.fee.fee)} ${ui.common.bcps}`}</Row>
+              <Row label={ui.cashOut.rowReceive}>
+                {fill(ui.common.approxEur, { eur: formatHundredths(tx.fee.eurOut ?? 0) })}
+              </Row>
+            </>
+          )}
           {tx.items && tx.items.length > 0 && <Row label={ui.detail.items}>{itemsText(tx.items)}</Row>}
           {tx.note && !detail.merchantSale && <Row label={ui.detail.note}>{tx.note}</Row>}
-          <Row
-            label={ui.detail.fee}
-            sub={
-              feePayer
-                ? feeYou
-                  ? ui.detail.paidByYou
-                  : fill(ui.detail.paidBy, { name: partyLabel(feePayer) })
-                : undefined
-            }
-          >
-            {tx.fee.rule === 'zero'
-              ? ui.fee.chipNone
-              : fill(ui.detail.feeValue, { fee: formatMinor(tx.fee.fee), eur: eur(tx.fee.fee, state.config.rate) })}
-          </Row>
+          {!moneyOut && (
+            <Row
+              label={ui.detail.fee}
+              sub={
+                feePayer && !moneyIn
+                  ? feeYou
+                    ? ui.detail.paidByYou
+                    : fill(ui.detail.paidBy, { name: partyLabel(feePayer) })
+                  : undefined
+              }
+            >
+              {moneyIn
+                ? ui.topUp.noFee
+                : tx.fee.rule === 'zero'
+                  ? ui.fee.chipNone
+                  : fill(ui.detail.feeValue, {
+                      fee: formatMinor(tx.fee.fee),
+                      eur: eur(tx.fee.fee, state.config.rate),
+                    })}
+            </Row>
+          )}
           {detail.merchantSale ? (
             <Row label={ui.detail.status}>{copy.txDetail.final}</Row>
           ) : (
@@ -220,7 +264,7 @@ export function TxDetailView({ params }: ScreenProps) {
             </Row>
           )}
           <Row label={ui.detail.reference}>
-            <span className="font-mono">{tx.id}</span>
+            <span className="font-mono">{moneyOut ? cashOutRef(tx.id) : tx.id}</span>
           </Row>
         </div>
         {detail.merchantSale && cardRange && (

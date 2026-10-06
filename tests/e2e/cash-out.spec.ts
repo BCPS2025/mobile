@@ -74,6 +74,7 @@ test.describe('Cash out of a person', () => {
     await expect(done).toBeVisible({ timeout: 5000 })
     await expect(done).toContainText('CASHED OUT')
     await expect(done).toContainText('110.00')
+    await expect(page.getByTestId('tape-row').first()).toContainText('@ana → Bank · 110.00 BCPS · settled · fee 1.65')
     await expect(done).toContainText('You receive ≈ €98.50')
     await expect(done).toContainText('To SI56 •••• •••• 4821')
     await expect(done).toContainText('Conversion to EUR: 1.5%')
@@ -87,6 +88,15 @@ test.describe('Cash out of a person', () => {
     await ana.locator('[data-tile="history"]').click()
     await ana.getByTestId('chip-topupsCashouts').click()
     await expect(ana.getByTestId('history-list').locator('li')).toHaveCount(3)
+    // The row opens the payment: the bank, the conversion, the euros and the bank reference.
+    await ana.getByTestId('history-list').locator('li button').first().click()
+    const detail = ana.locator('[data-screen="shared.tx"]')
+    await expect(detail).toBeVisible()
+    await expect(detail).toContainText('SI56 •••• •••• 4821')
+    await expect(detail).toContainText('Conversion to EUR: 1.5%')
+    await expect(detail).toContainText('1.65 BCPS')
+    await expect(detail).toContainText('≈ €98.50')
+    await expect(detail).toContainText(/BC-OUT-[0-9A-Z]{6}/)
   })
 
   test('1.10 costs 0.02: ≈ €0.98', async ({ page }) => {

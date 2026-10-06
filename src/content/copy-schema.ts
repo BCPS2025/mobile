@@ -658,6 +658,8 @@ export const UiCopySchema = z.looseObject({
     feeValue: S,
     paidBy: S,
     paidByYou: S,
+    method: S,
+    paidEur: S,
     privacyPurchase: S,
     privacyPerson: S,
     sendAgain: S,

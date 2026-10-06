@@ -20,11 +20,17 @@ function sessionTxs(s: LedgerState): Tx[] {
   return out
 }
 
+/** Money in from a top-up and out to a bank has no phone: the row names where it comes from or goes to. */
+function ramp(tx: Tx, id: string): string | null {
+  if (id !== 'sys:issuance') return null
+  return tx.kind === 'on-ramp' ? ui.stage.edgeTopUp : tx.kind === 'off-ramp' ? ui.stage.edgeBank : null
+}
+
 export function tapeRowText(tx: Tx): string {
   return fill(copy.tape.row, {
     time: timeText(tx.confirmedAt ?? tx.createdAt, true),
-    from: counterpartyLabel(tx.from, tx.party),
-    to: counterpartyLabel(tx.to, tx.party) || (persona(tx.to)?.displayName ?? ''),
+    from: ramp(tx, tx.from) ?? counterpartyLabel(tx.from, tx.party),
+    to: ramp(tx, tx.to) ?? (counterpartyLabel(tx.to, tx.party) || (persona(tx.to)?.displayName ?? '')),
     amount: formatMinor(tx.amount),
     status: tx.status === 'confirmed' ? copy.tape.status.confirmed : copy.tape.status.pending,
     fee: formatMinor(tx.fee.fee),

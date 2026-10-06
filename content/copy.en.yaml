@@ -643,6 +643,8 @@ detail:
   feeValue: "{fee} BCPS (≈ €{eur})"
   paidBy: "paid by {name}"
   paidByYou: paid by you
+  method: Method
+  paidEur: "from €{eur}"
   privacyPurchase: "Refunds are merchant-initiated. Only you and {name} see these details."
   privacyPerson: "Only you and {name} see these details."
   sendAgain: Send again
