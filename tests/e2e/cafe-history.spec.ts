@@ -32,6 +32,28 @@ test.describe('History of the café', () => {
     await expect(cafe.locator('[data-screen="biz.history"]')).not.toContainText('SCHEDULED')
   })
 
+  test('every chip shows rows or its own empty state, and a search that finds nothing says so', async ({ page }) => {
+    await stageBoth(page)
+    const cafe = slot(page, 'right')
+    await openHistory(cafe)
+    const empty = {
+      refunds: 'No refunds yet.',
+      suppliers: 'No supplier payments yet.',
+      topups: 'No top-ups yet.',
+    } as const
+    for (const chip of ['all', 'sales', 'refunds', 'suppliers', 'payouts', 'topups'] as const) {
+      await cafe.getByTestId(`chip-${chip}`).click()
+      await expect(cafe.getByTestId(`chip-${chip}`)).toHaveAttribute('aria-pressed', 'true')
+      if (chip in empty) await expect(cafe.getByTestId('empty-state')).toContainText(empty[chip as keyof typeof empty])
+      else await expect(cafe.getByTestId('history-list')).toBeVisible()
+    }
+    await cafe.getByTestId('chip-all').click()
+    await cafe.getByTestId('history-search').fill('zzzz')
+    await expect(cafe.getByTestId('empty-state')).toContainText('Nothing found.')
+    await cafe.getByTestId('history-search').fill('brunch')
+    await expect(cafe.getByTestId('history-list')).toContainText('@ana · Brunch for two')
+  })
+
   test('a daily sales row opens that day: net sales, SALES / GROSS / FEES / NET and THE DAY', async ({ page }) => {
     await stageBoth(page)
     const cafe = slot(page, 'right')
