@@ -186,6 +186,7 @@ export const invoiceFlow: FlowImpl<Draft> = {
         kind: 'outline',
         label: ui.invoices.decline,
         onPress: () => api.goto('decline'),
+        fit: true,
       }),
     },
     {

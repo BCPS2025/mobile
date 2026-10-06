@@ -76,6 +76,18 @@ test.describe('Pay an invoice', () => {
     await expect(cafe.getByTestId('review-total')).toContainText('53.33 BCPS')
     // No card comparison line on an invoice.
     await expect(detail).not.toContainText('Cards')
+    // The label of the Pay button stays on one line: Decline is only as wide as its word.
+    const lines = await cafe.getByRole('button', { name: 'Pay 53.33 BCPS' }).evaluate((button) => {
+      const tops = new Set<number>()
+      const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT)
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const range = document.createRange()
+        range.selectNodeContents(node)
+        for (const rect of range.getClientRects()) tops.add(Math.round(rect.top))
+      }
+      return tops.size
+    })
+    expect(lines).toBe(1)
     await axe(page, 'Invoice detail')
   })
 
