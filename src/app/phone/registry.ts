@@ -27,6 +27,7 @@ export type FlowId =
   | 'topUp'
   | 'cashOut'
   | 'autoConvert'
+  | 'refund'
 export type ViewId = 'history' | 'notifications' | 'about' | 'myCode'
 export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp' | 'payouts'
 export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'cashOut' | 'profile' | 'settings'
@@ -74,6 +75,7 @@ export const ROWS: Partial<Record<RowId, Target>> = {
   paymentLink: flow('paymentLink'),
   splitBill: flow('split'),
   myCode: view('myCode'),
+  refundSale: flow('refund'),
   allPayments: view('history'),
   paySupplier: flow('paySupplier'),
   topup: flow('topUp'),
@@ -139,7 +141,7 @@ export interface DetailSpec {
   flows: readonly FlowId[]
 }
 export const DETAILS: Record<DetailId, DetailSpec> = {
-  tx: { screen: 'shared.tx', related: ['split'], flows: ['send', 'split'] },
+  tx: { screen: 'shared.tx', related: ['split'], flows: ['send', 'split', 'refund'] },
   received: { screen: 'biz.received', related: ['tx'], flows: [] },
   request: { screen: 'c.request.detail', related: ['tx'], flows: ['cancelRequest'] },
   link: { screen: 'c.link.detail', related: ['tx'], flows: ['paymentLink'] },
@@ -398,6 +400,23 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     followOns: [],
     handoffs: [],
   },
+  // Refund a sale (biz.refund.*): choose a named sale, check, refund. A refund has no fee. It starts
+  // from the Sales list, or from a sale's detail with the sale already chosen.
+  refund: {
+    shells: ['pos'],
+    startsFrom: ['hub', 'detail'],
+    steps: [
+      { id: 'pick', screen: 'biz.refund.pick', kind: 'input' },
+      { id: 'review', screen: 'biz.refund.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'money',
+    successScreen: 'biz.refund.done',
+    moves: true,
+    followOns: [],
+    // The balance does not cover the refund: the error line offers Top up.
+    handoffs: ['topUp'],
+  },
   logout: {
     shells: ['consumer', 'pos'],
     startsFrom: ['hub'],
@@ -433,6 +452,7 @@ export const FEATURES: readonly Feature[] = [
   { id: 'charge', shell: 'pos', target: flow('charge'), maxTaps: 1 },
   { id: 'salesHistory', shell: 'pos', target: view('history'), maxTaps: 2 },
   { id: 'paySupplier', shell: 'pos', target: flow('paySupplier'), maxTaps: 2 },
+  { id: 'refund', shell: 'pos', target: flow('refund'), maxTaps: 2 },
   { id: 'topUp', shell: 'consumer', target: flow('topUp'), maxTaps: 2 },
   { id: 'cashOut', shell: 'consumer', target: flow('cashOut'), maxTaps: 2 },
   { id: 'topUp', shell: 'pos', target: flow('topUp'), maxTaps: 2 },

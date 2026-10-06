@@ -206,6 +206,20 @@ export function refundableSales(s: LedgerState, merchant: PersonaId): Tx[] {
   return out.sort((a, b) => b.createdAt - a.createdAt || (a.id < b.id ? 1 : -1))
 }
 
+/**
+ * The named sales "Refund a sale" lists, newest first: the ones a merchant can refund and the ones it
+ * already did (listed greyed, with REFUNDED ✓, and not to be picked).
+ */
+export function salesToRefund(s: LedgerState, merchant: PersonaId): { tx: Tx; state: 'refundable' | 'refunded' }[] {
+  const out: { tx: Tx; state: 'refundable' | 'refunded' }[] = []
+  for (const id of s.txOrder) {
+    const tx = s.txs[id]
+    const state = tx ? refundStateOf(tx, merchant) : 'no'
+    if (tx && state !== 'no') out.push({ tx, state })
+  }
+  return out.sort((a, b) => b.tx.createdAt - a.tx.createdAt || (a.tx.id < b.tx.id ? 1 : -1))
+}
+
 /** The refund of a payment, if it was refunded. */
 export function refundTxOf(s: LedgerState, tx: Tx): Tx | undefined {
   return tx.refundedBy === undefined ? undefined : entryOf(s.txs, tx.refundedBy)

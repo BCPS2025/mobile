@@ -150,12 +150,22 @@ export function TxDetailView({ params }: ScreenProps) {
       ? { label: ui.detail.splitThis, onPress: () => nav.openFlow('split', { txId: tx.id }) }
       : undefined
   const refundedAt = detail.refund ? (detail.refund.confirmedAt ?? detail.refund.createdAt) : undefined
+  // A merchant can refund a sale it received that has settled and was not refunded yet.
+  const canRefund = detail.refundState === 'refundable' && isImplemented({ kind: 'flow', id: 'refund' }, 'pos')
   return (
     <PhoneScreen
       {...frame}
       {...chrome}
       dock={
-        canSendAgain ? (
+        canRefund ? (
+          <Dock
+            primary={{
+              label: ui.detail.refund,
+              tone: 'navy',
+              onPress: () => nav.openFlow('refund', { txId: tx.id }),
+            }}
+          />
+        ) : canSendAgain ? (
           <Dock
             primary={{ label: ui.detail.sendAgain, tone: 'navy', onPress: sendAgain }}
             {...(splitAction ? { secondary: { kind: 'outline' as const, ...splitAction } } : {})}
@@ -210,14 +220,9 @@ export function TxDetailView({ params }: ScreenProps) {
             <PartyRow label={ui.detail.to} party={to} verify={role !== 'to'} />
           )}
           {moneyIn && (
-            <>
-              <Row
-                label={ui.detail.method}
-                sub={eurPaidText ? fill(ui.detail.paidEur, { eur: eurPaidText }) : undefined}
-              >
-                {methodText}
-              </Row>
-            </>
+            <Row label={ui.detail.method} sub={eurPaidText ? fill(ui.detail.paidEur, { eur: eurPaidText }) : undefined}>
+              {methodText}
+            </Row>
           )}
           {moneyOut && (
             <>

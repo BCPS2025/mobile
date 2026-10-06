@@ -329,6 +329,7 @@ test.describe('the crawler', () => {
         'biz.history',
         'biz.payouts',
         'biz.received',
+        'biz.refund.pick',
         'biz.send.review',
         'biz.settings',
         'pos.cashOut',

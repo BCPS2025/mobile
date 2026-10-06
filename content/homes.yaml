@@ -39,6 +39,7 @@ pos:
   hubs:
     sales:
       - { section: todayKpis }
+      - { row: refundSale, icon: undo-2 }
       - { row: allPayments, icon: list }
     pay:
       - { row: paySupplier, icon: truck, subline: supplierHint }

@@ -39,7 +39,8 @@ export function PhoneScreen({
 }: PhoneScreenProps) {
   const { statusBar } = usePhone()
   const navyBody = body !== 'light'
-  // The status bar and the step bar follow the header (navy for business and navy screens).
+  // The status bar follows the header (navy for business and navy screens); the step bar follows the
+  // body, so a business flow on a light body has a light bar under its navy header.
   const navy = header !== 'light' || navyBody
   return (
     <section
@@ -55,7 +56,7 @@ export function PhoneScreen({
     >
       {statusBar && <StatusBar tone={header === 'navy800' ? 'navy800' : navy ? 'navy' : 'light'} />}
       {!bare && <TaskHeader tone={header} {...headerProps} />}
-      {step && <StepBar n={step.n} total={step.total} tone={navy ? 'navy' : 'light'} />}
+      {step && <StepBar n={step.n} total={step.total} tone={navyBody ? 'navy' : 'light'} />}
       {banner && <BannerSlot />}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
       {error && <div className={`shrink-0 px-5 pb-3 ${navyBody ? 'on-navy' : ''}`}>{error}</div>}

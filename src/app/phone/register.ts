@@ -9,6 +9,7 @@ import { autoConvertFlow } from '../flows/autoConvert'
 import { cashOutFlow } from '../flows/cashOut'
 import { topUpFlow } from '../flows/topUp'
 import { paySupplierFlow } from '../flows/paySupplier'
+import { refundFlow } from '../flows/refund'
 import { scanFlow } from '../flows/scan'
 import { sendFlow } from '../flows/send'
 import { CodeScreen } from './auth/CodeScreen'
@@ -68,3 +69,4 @@ registerFlow(cancelSplitFlow)
 registerFlow(topUpFlow)
 registerFlow(cashOutFlow)
 registerFlow(autoConvertFlow)
+registerFlow(refundFlow)

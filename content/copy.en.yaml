@@ -735,6 +735,27 @@ cashOut:
   noBankBody: None is on file for this account.
   noBankAction: Top up
 
+# Refunding a sale (biz.refund.*): pick a named sale, check, refund. A refund has no fee.
+refund:
+  title: Refund
+  pickTitle: Which sale?
+  searchLabel: Search sales
+  searchPlaceholder: Customer, amount or reference
+  none: No sales to refund.
+  reviewTitle: "Refund {amount} BCPS to {name}?"
+  rowSale: Sale
+  rowReference: Reference
+  rowRefund: Refund
+  refundValue: "{amount} BCPS"
+  note: "No fee. The original {fee} fee isn't returned."
+  button: "Refund {amount} BCPS"
+  doneOverline: REFUNDED
+  doneTo: "to {handle} · {name}"
+  doneToName: "to {name}"
+  doneBody: Refunded ✓ is now shown on the sale.
+  rowFee: Fee
+  noFee: No fee
+
 # What an account converted to euros (biz.payouts).
 payouts:
   title: Payout history
