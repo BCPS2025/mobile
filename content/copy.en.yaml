@@ -171,6 +171,7 @@ tiles:
   charge: Charge
   sales: Sales
   pay: Pay
+  cashOut: Cash out
 
 hubs:
   titles:
@@ -178,6 +179,7 @@ hubs:
     wallet: Wallet
     sales: Sales
     pay: Pay
+    cashOut: Cash out
     profile: Profile
     settings: Settings
   rows:
@@ -189,6 +191,9 @@ hubs:
     allPayments: All payments
     paySupplier: Pay supplier
     topup: Top up
+    cashOut: Cash out
+    autoConvert: Auto-convert
+    payoutHistory: Payout history
     notifications: Notifications
     about: About BCPS
     logout: Log out
@@ -201,6 +206,11 @@ hubs:
     supplierHint: By @name, code or invoice
     salesToday: "{count} today · {gross}"
     topUpHint: No top-up fee
+    cashOutTo: "To {bank}"
+    autoConvert: "Auto {sharePct}% · {time}"
+    autoConvertOn: "On · {sharePct}% · {time}"
+    autoConvertOff: Off
+    payoutsThisWeek: "This week ≈ €{eur}"
 
   sections:
     toPay: TO PAY
@@ -702,6 +712,87 @@ topUp:
   stepArrivedHint: Seconds after it arrives
   rowFrom: From
   rowReference: Reference
+
+# Cash out (shared.cashout.*): BCPS in, euros to the bank on file.
+cashOut:
+  title: Cash out
+  amountTitle: How much?
+  reviewTitle: Check and cash out
+  rowAmount: Amount
+  rowConversion: "Conversion to EUR: 1.5%"
+  rowTo: To
+  rowReceive: You receive
+  arrives: Arrives when your bank processes it.
+  button: "Cash out {amount}"
+  doneOverline: CASHED OUT
+  receive: "You receive ≈ €{eur}"
+  to: "To {bank}"
+  rowReference: Reference
+  noBankTitle: Cash out needs a bank account in your name.
+  noBankBody: None is on file for this account.
+  noBankAction: Top up
+
+# What an account converted to euros (biz.payouts).
+payouts:
+  title: Payout history
+  week: THIS WEEK
+  weekEur: "≈ €{eur}"
+  summary: "{count} payouts · to {bank}"
+  summaryOne: "{count} payout · to {bank}"
+  total: "{amount} BCPS converted · conversion {fee} BCPS"
+  heading: PAYOUTS
+  rowDay: "{day} · {time}"
+  rowAuto: "{amount} BCPS · Auto {sharePct}%"
+  rowManual: "{amount} BCPS · Cash out"
+  rowEur: "≈ €{eur}"
+  included: "Conversion to EUR: 1.5% is included."
+
+# Auto-convert settings (biz.autoconvert.*): saved and shown; nothing converts by itself.
+autoConvert:
+  title: Auto-convert
+  days: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+  onTitle: Convert sales to euros automatically?
+  toggle: Auto-convert
+  toggleHint: Cash out part of your balance on a schedule
+  conversionNote: "Conversion to EUR: 1.5%. Your bank receives the euros."
+  scheduleTitle: When?
+  scheduleGroup: How often
+  daily: Every day
+  weekdays: Weekdays
+  weekly: Weekly
+  time: TIME
+  timeGroup: Time of day
+  shareTitle: How much of the balance?
+  shareValue: "{pct}%"
+  shareLabel: Share of the balance
+  salesOnly: Only on days with sales
+  salesOnlyHint: Skip days when the café is closed
+  reviewTitle: Check and save
+  rowSchedule: Schedule
+  rowShare: Share
+  rowSalesOnly: Only on days with sales
+  rowConversion: "Conversion to EUR: 1.5%"
+  rowTo: To
+  rowState: Auto-convert
+  included: Included
+  on: "On"
+  off: "Off"
+  scheduleDaily: "Every day · {time}"
+  scheduleWeekdays: "Weekdays · {time}"
+  scheduleWeekly: "Every {day} · {time}"
+  shareLine: "{pct}% of the balance"
+  next: "Next: {when} · ≈ {amount} BCPS → ≈ €{eur}"
+  whenTonight: "tonight {time}"
+  whenTomorrow: "tomorrow {time}"
+  whenDay: "{day} {time}"
+  offNote: Nothing converts to euros on its own.
+  save: Save
+  savedOverline: SAVED
+  savedTitle: Saved
+  stripDaily: "Auto-convert {sharePct}% · every day {time}"
+  stripWeekdays: "Auto-convert {sharePct}% · weekdays {time}"
+  stripWeekly: "Auto-convert {sharePct}% · every {day} {time}"
+  stripOff: Auto-convert is off
 
 profile:
   identity: "ID card · {country} · verified"

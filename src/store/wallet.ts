@@ -4,6 +4,7 @@ import { quoteFee } from '@domain/fees'
 import { asMinor } from '@domain/money'
 import { eurToMinor } from '@domain/rate'
 import type {
+  AutoConvertPatch,
   AutoConvertSettings,
   EurCents,
   FeeQuote,
@@ -105,6 +106,19 @@ export function nextAutoConvert(settings: AutoConvertSettings, now: SimTime, tz:
     if (at >= now) return at
   }
   throw new Error('a schedule with no day')
+}
+
+/**
+ * The settings a save would leave: the patch over what the business has, the days following the
+ * schedule (none for every day, Monday to Friday, or the one day of a weekly one, Monday at first).
+ * The ledger applies the same rule when it accepts the command; a test keeps the two together.
+ */
+export function autoConvertAfter(current: AutoConvertSettings, patch: AutoConvertPatch): AutoConvertSettings {
+  const next: AutoConvertSettings = { ...current, ...patch, weekdays: [...current.weekdays] }
+  if (next.schedule === 'daily') next.weekdays = []
+  else if (next.schedule === 'weekdays') next.weekdays = [1, 2, 3, 4, 5]
+  else if (!(current.schedule === 'weekly' && current.weekdays.length === 1)) next.weekdays = [1]
+  return next
 }
 
 export interface AutoConvertPreview {

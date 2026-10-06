@@ -25,9 +25,11 @@ export type FlowId =
   | 'cancelRequest'
   | 'cancelSplit'
   | 'topUp'
+  | 'cashOut'
+  | 'autoConvert'
 export type ViewId = 'history' | 'notifications' | 'about' | 'myCode'
-export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp'
-export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'profile' | 'settings'
+export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp' | 'payouts'
+export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'cashOut' | 'profile' | 'settings'
 
 export type Target =
   | { kind: 'flow'; id: FlowId }
@@ -40,6 +42,7 @@ export const targetKey = (t: Target): string => `${t.kind}:${t.id}`
 const flow = (id: FlowId): Target => ({ kind: 'flow', id })
 const view = (id: ViewId): Target => ({ kind: 'view', id })
 const hub = (id: HubId): Target => ({ kind: 'hub', id })
+const detail = (id: DetailId): Target => ({ kind: 'detail', id })
 
 /** The shells whose screens exist. A shell's accounts appear in the menus once it is live. */
 export const LIVE_SHELLS: readonly Shell[] = ['consumer', 'pos']
@@ -61,6 +64,7 @@ export const TILES: Partial<Record<TileId, Target>> = {
   charge: flow('charge'),
   sales: hub('sales'),
   pay: hub('pay'),
+  cashOut: hub('cashOut'),
 }
 
 /** What each hub row opens. */
@@ -73,6 +77,9 @@ export const ROWS: Partial<Record<RowId, Target>> = {
   allPayments: view('history'),
   paySupplier: flow('paySupplier'),
   topup: flow('topUp'),
+  cashOut: flow('cashOut'),
+  autoConvert: flow('autoConvert'),
+  payoutHistory: detail('payouts'),
   notifications: view('notifications'),
   about: view('about'),
   logout: flow('logout'),
@@ -96,6 +103,7 @@ export const HUBS: Record<HubId, HubSpec> = {
   profile: { screen: 'c.profile', shell: 'consumer', header: 'identity' },
   sales: { screen: 'pos.sales.hub', shell: 'pos' },
   pay: { screen: 'pos.pay', shell: 'pos' },
+  cashOut: { screen: 'pos.cashOut', shell: 'pos', header: 'balance', heading: 'money' },
   settings: { screen: 'biz.settings', shell: 'pos' },
 }
 
@@ -117,7 +125,7 @@ export const VIEWS: Record<ViewId, ViewSpec> = {
   notifications: {
     screen: 'shared.notifications',
     shells: ['consumer', 'pos'],
-    details: ['tx', 'received', 'request', 'link', 'split', 'ramp'],
+    details: ['tx', 'received', 'request', 'link', 'split', 'ramp', 'payouts'],
   },
   about: { screen: 'shared.about', shells: ['consumer', 'pos'], details: [] },
   myCode: { screen: 'c.mycode', shells: ['consumer'], details: [], flows: ['paymentLink'] },
@@ -138,6 +146,8 @@ export const DETAILS: Record<DetailId, DetailSpec> = {
   split: { screen: 'c.split.detail', related: ['tx'], flows: ['cancelSplit'] },
   // A bank-transfer top-up on its way (or arrived): its timeline. It shares the screen of the flow's ending.
   ramp: { screen: 'shared.topup.onItsWay', related: [], flows: [] },
+  // What the business converted to euros, newest first (a detail of Cash out: a notification opens it too).
+  payouts: { screen: 'biz.payouts', related: [], flows: [] },
 }
 
 export type StepKind = 'input' | 'review' | 'confirm' | 'waitFor' | 'committed'
@@ -353,6 +363,41 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     followOns: [],
     handoffs: [],
   },
+  // Cash out (shared.cashout.*): an amount, Check and cash out. An account with no bank on file
+  // sees why instead (shared.cashout.noBank) and can top up.
+  cashOut: {
+    shells: ['consumer', 'pos'],
+    startsFrom: ['hub'],
+    steps: [
+      { id: 'noBank', screen: 'shared.cashout.noBank', kind: 'input' },
+      { id: 'amount', screen: 'shared.cashout.amount', kind: 'input' },
+      { id: 'review', screen: 'shared.cashout.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'money',
+    successScreen: 'shared.cashout.done',
+    moves: true,
+    followOns: [],
+    handoffs: ['topUp'],
+  },
+  // Auto-convert (biz.autoconvert.*): on or off, when, how much, Check and save. It saves the
+  // schedule and shows it; nothing converts by itself.
+  autoConvert: {
+    shells: ['pos'],
+    startsFrom: ['hub'],
+    steps: [
+      { id: 'onoff', screen: 'biz.autoconvert.onoff', kind: 'input' },
+      { id: 'schedule', screen: 'biz.autoconvert.schedule', kind: 'input' },
+      { id: 'share', screen: 'biz.autoconvert.share', kind: 'input' },
+      { id: 'review', screen: 'biz.autoconvert.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'neutral',
+    successScreen: 'biz.autoconvert.saved',
+    moves: false,
+    followOns: [],
+    handoffs: [],
+  },
   logout: {
     shells: ['consumer', 'pos'],
     startsFrom: ['hub'],
@@ -389,6 +434,11 @@ export const FEATURES: readonly Feature[] = [
   { id: 'salesHistory', shell: 'pos', target: view('history'), maxTaps: 2 },
   { id: 'paySupplier', shell: 'pos', target: flow('paySupplier'), maxTaps: 2 },
   { id: 'topUp', shell: 'consumer', target: flow('topUp'), maxTaps: 2 },
+  { id: 'cashOut', shell: 'consumer', target: flow('cashOut'), maxTaps: 2 },
+  { id: 'topUp', shell: 'pos', target: flow('topUp'), maxTaps: 2 },
+  { id: 'cashOut', shell: 'pos', target: flow('cashOut'), maxTaps: 2 },
+  { id: 'autoConvert', shell: 'pos', target: flow('autoConvert'), maxTaps: 2 },
+  { id: 'payouts', shell: 'pos', target: detail('payouts'), maxTaps: 2 },
   { id: 'notifications', shell: 'pos', target: view('notifications'), maxTaps: 1 },
   { id: 'about', shell: 'pos', target: view('about'), maxTaps: 2 },
   { id: 'logout', shell: 'pos', target: flow('logout'), maxTaps: 2 },

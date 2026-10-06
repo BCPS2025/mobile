@@ -5,6 +5,8 @@ import { payItemFlow } from '../flows/payItem'
 import { paymentLinkFlow } from '../flows/paymentLink'
 import { requestFlow } from '../flows/request'
 import { splitFlow } from '../flows/split'
+import { autoConvertFlow } from '../flows/autoConvert'
+import { cashOutFlow } from '../flows/cashOut'
 import { topUpFlow } from '../flows/topUp'
 import { paySupplierFlow } from '../flows/paySupplier'
 import { scanFlow } from '../flows/scan'
@@ -17,6 +19,7 @@ import { HistoryView } from './views/HistoryView'
 import { IdentityCard } from './views/IdentityCard'
 import { NotificationsView } from './views/NotificationsView'
 import { BalanceHeader } from './views/BalanceHeader'
+import { PayoutsView } from './views/Payouts'
 import { RampDetailView } from './views/RampDetail'
 import { LinkDetail } from './views/LinkDetail'
 import { MyCodeView } from './views/MyCode'
@@ -50,6 +53,7 @@ registerDetail('request', RequestDetail)
 registerDetail('link', LinkDetail)
 registerDetail('split', SplitDetail)
 registerDetail('ramp', RampDetailView)
+registerDetail('payouts', PayoutsView)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)
@@ -62,3 +66,5 @@ registerFlow(cancelRequestFlow)
 registerFlow(splitFlow)
 registerFlow(cancelSplitFlow)
 registerFlow(topUpFlow)
+registerFlow(cashOutFlow)
+registerFlow(autoConvertFlow)

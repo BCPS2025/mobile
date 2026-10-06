@@ -1,12 +1,12 @@
 import type { Content } from '@content/schema'
-import { formatMinor } from '@domain/money'
-import type { LedgerState, PersonaId, SimTime } from '@domain/types'
-import { badges, salesToday } from '@store/selectors'
+import { formatHundredths, formatMinor } from '@domain/money'
+import type { AutoConvertSettings, LedgerState, PersonaId, SimTime } from '@domain/types'
+import { badges, bankOf, payoutsOf, salesToday } from '@store/selectors'
 import { fill, ui } from '../copy'
 
 // The grey line under a tile's label or a hub row's label, filled from state: "1 to pay", "23 today ·
-// 111.38". Hints that never change are plain copy. A line with nothing to say (no payment to pay) is
-// null and the tile or row shows none.
+// 111.38", "Auto 50% · 23:00", "This week ≈ €913.89". Hints that never change are plain copy. A line
+// with nothing to say (no bank on file, no payment to pay) is null and the tile or row shows none.
 
 export interface SublineCtx {
   state: LedgerState
@@ -19,6 +19,10 @@ export interface SublineCtx {
 const hints = ui.hubs.sublines as Record<string, string>
 const STATIC = new Set(['sendHint', 'requestHint', 'linkHint', 'splitHint', 'supplierHint', 'topUpHint'])
 
+/** The auto-convert schedule an account has saved, if it is a business with one. */
+export const autoConvertOf = (state: LedgerState, persona: PersonaId): AutoConvertSettings | undefined =>
+  state.merchant[persona]?.autoConvert
+
 export function sublineOf(id: string | undefined, c: SublineCtx): string | null {
   if (id === undefined) return null
   if (STATIC.has(id)) return hints[id] ?? null
@@ -30,6 +34,27 @@ export function sublineOf(id: string | undefined, c: SublineCtx): string | null 
     case 'salesToday': {
       const t = salesToday(c.state, c.persona, c.now, c.tz)
       return fill(ui.hubs.sublines.salesToday, { count: t.count, gross: formatMinor(t.gross) })
+    }
+    case 'cashOutTo': {
+      const bank = bankOf(c.content, c.persona)
+      return bank ? fill(ui.hubs.sublines.cashOutTo, { bank }) : null
+    }
+    case 'autoConvert': {
+      // On a tile: only while it is on.
+      const a = autoConvertOf(c.state, c.persona)
+      return a?.enabled ? fill(ui.hubs.sublines.autoConvert, { sharePct: a.sharePct, time: a.atLocal }) : null
+    }
+    case 'autoConvertOn': {
+      // On a row: how it stands, on or off.
+      const a = autoConvertOf(c.state, c.persona)
+      if (!a) return null
+      return a.enabled
+        ? fill(ui.hubs.sublines.autoConvertOn, { sharePct: a.sharePct, time: a.atLocal })
+        : ui.hubs.sublines.autoConvertOff
+    }
+    case 'payoutsThisWeek': {
+      const week = payoutsOf(c.state, c.persona, c.now, c.tz).week
+      return fill(ui.hubs.sublines.payoutsThisWeek, { eur: formatHundredths(week.eur) })
     }
     default:
       return null

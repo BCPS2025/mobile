@@ -36,7 +36,8 @@ export interface Phone {
   stack(): string[]
 }
 
-export function phoneFixture() {
+/** `cafe: true` puts Café Lipa on the right phone in place of Marko (the pos shell). */
+export function phoneFixture(opts: { cafe?: boolean } = {}) {
   const app = createAppState({
     content,
     build: 'dev',
@@ -47,10 +48,13 @@ export function phoneFixture() {
     epochDate: () => '2026-09-25',
   })
   app.actions.choose('left', 'ana')
-  app.actions.choose('right', 'marko')
+  app.actions.choose('right', opts.cafe ? 'cafe' : 'marko')
   const node = app.runtime.node
-  const as = (persona: 'ana' | 'marko', slot: 'left' | 'right' = persona === 'ana' ? 'left' : 'right'): Phone => {
-    const shell: Shell = 'consumer'
+  const as = (
+    persona: 'ana' | 'marko' | 'cafe',
+    slot: 'left' | 'right' = persona === 'ana' ? 'left' : 'right',
+  ): Phone => {
+    const shell: Shell = persona === 'cafe' ? 'pos' : 'consumer'
     const who: Who = { persona, slot, shell }
     const nav = createPhoneNav(app, who)
     const flow = () => nav.top() as FlowScreen

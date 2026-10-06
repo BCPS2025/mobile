@@ -18,6 +18,7 @@ import type { NotificationSubject } from '@store/notifications'
 const TX: Target = { kind: 'detail', id: 'tx' }
 const RECEIVED: Target = { kind: 'detail', id: 'received' }
 const RAMP: Target = { kind: 'detail', id: 'ramp' }
+const PAYOUTS: Target = { kind: 'detail', id: 'payouts' }
 
 export interface NotificationRef {
   id: string
@@ -48,6 +49,8 @@ function routeOf(app: AppState, who: { persona: PersonaId; shell: Shell }, n: No
     return n.kind === 'link.received' ? { target: { kind: 'flow', id: 'payItem' }, params: { link: subject.id } } : null
   }
   if (subject.type === 'ramp') return { target: RAMP, params: { rampId: subject.id } }
+  // The automatic conversion of a business: its payouts.
+  if (n.kind === 'conversion.auto' && isImplemented(PAYOUTS, who.shell)) return { target: PAYOUTS, params: {} }
   if (n.txId === null) return null
   if (n.kind === 'split.completed') {
     const tx = entryOf(s.txs, n.txId)

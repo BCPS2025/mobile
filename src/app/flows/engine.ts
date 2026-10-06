@@ -9,7 +9,7 @@ import type { CommitDef, FlowCtx, FlowImpl, StepDef } from './types'
 
 export type FlowPhase = 'input' | 'sending' | 'success'
 
-type Impl<D> = Pick<FlowImpl<D>, 'steps' | 'commits' | 'openOn' | 'done'>
+type Impl<D> = Pick<FlowImpl<D>, 'steps' | 'commits' | 'openOn' | 'done' | 'barFromTwo'>
 
 const skipped = <D>(step: StepDef<D>, d: D, ctx: FlowCtx) => step.skip?.(d, ctx) === true
 
@@ -43,11 +43,11 @@ export function openIndex<D>(impl: Impl<D>, d: D, ctx: FlowCtx): number {
 /** Steps the bar counts: input, review and confirm steps on the path. */
 const counted = <D>(s: StepDef<D>) => !s.offPath && (s.kind === 'input' || s.kind === 'review' || s.kind === 'confirm')
 
-/** "Step 2 of 4", or null on flows of fewer than three steps and on steps the bar does not count. */
+/** "Step 2 of 4", or null on flows of fewer than three steps (unless the flow asks for the bar) and on steps the bar does not count. */
 export function stepBar<D>(impl: Impl<D>, d: D, ctx: FlowCtx, index: number): { n: number; total: number } | null {
   const path = pathIndices(impl, d, ctx).filter((i) => counted(impl.steps[i] as StepDef<D>))
   const at = path.indexOf(index)
-  if (at < 0 || path.length < 3) return null
+  if (at < 0 || path.length < (impl.barFromTwo ? 2 : 3)) return null
   return { n: at + 1, total: path.length }
 }
 

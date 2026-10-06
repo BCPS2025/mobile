@@ -159,6 +159,8 @@ export interface FlowImpl<D = unknown> {
   /** The draft of a new instance (filled from `ctx.params` or a template). */
   init(ctx: FlowCtx): D
   steps: StepDef<D>[]
+  /** Shows the step bar from two steps on (Cash out is "Step 1 of 2"); other flows show it from three. */
+  barFromTwo?: boolean
   /** The step id a new instance opens on (default: the first not skipped). `review` for template-filled flows. */
   openOn?(d: D, ctx: FlowCtx): string
   commits: CommitDef<D>[]

@@ -22,6 +22,7 @@ consumer:
       - { section: waiting }
     wallet:
       - { row: topup,   icon: plus,     subline: topUpHint }
+      - { row: cashOut, icon: banknote, subline: cashOutTo }
       - { row: myCode,  icon: qr-code }
     profile:
       - { row: myCode,        icon: qr-code }
@@ -31,14 +32,20 @@ consumer:
 pos:
   avatar: settings
   tiles:
-    - { tile: charge, icon: qr-code,     opens: flow }
-    - { tile: sales,  icon: bar-chart-3, opens: hub, subline: salesToday }
-    - { tile: pay,    icon: file-text,   opens: hub }
+    - { tile: charge,  icon: qr-code,     opens: flow }
+    - { tile: sales,   icon: bar-chart-3, opens: hub, subline: salesToday }
+    - { tile: pay,     icon: file-text,   opens: hub }
+    - { tile: cashOut, icon: landmark,    opens: hub, subline: autoConvert }
   hubs:
     sales:
       - { row: allPayments, icon: list }
     pay:
       - { row: paySupplier, icon: truck, subline: supplierHint }
+    cashOut:
+      - { row: cashOut,       icon: banknote, subline: cashOutTo }
+      - { row: topup,         icon: plus,     subline: topUpHint }
+      - { row: autoConvert,   icon: repeat,   subline: autoConvertOn }
+      - { row: payoutHistory, icon: history,  subline: payoutsThisWeek }
     settings:
       - { row: about,  icon: info }
       - { row: logout, icon: log-out }

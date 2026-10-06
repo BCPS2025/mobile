@@ -149,6 +149,24 @@ test.describe('the café: every live tile, hub row, view, detail and the first s
     await expect(page.locator('[data-screen="pos.pay"]')).toBeVisible()
     await page.getByTestId('nav-home').click()
 
+    // Cash out: its list, then each row and its first screen.
+    await page.locator('[data-tile="cashOut"]').click()
+    await expect(page.locator('[data-screen="pos.cashOut"]')).toBeVisible()
+    await hasBackAndHome(page)
+    for (const [row, screen] of [
+      ['cashOut', 'shared.cashout.amount'],
+      ['topup', 'shared.topup.amount'],
+      ['autoConvert', 'biz.autoconvert.onoff'],
+      ['payoutHistory', 'biz.payouts'],
+    ] as const) {
+      await page.getByTestId(`row-${row}`).click()
+      await expect(page.locator(`[data-screen="${screen}"]`)).toBeVisible()
+      await hasBackAndHome(page)
+      await page.getByTestId('nav-back').click()
+      await expect(page.locator('[data-screen="pos.cashOut"]')).toBeVisible()
+    }
+    await page.getByTestId('nav-home').click()
+
     // The bell.
     await page.getByTestId('bell').click()
     await expect(page.locator('[data-screen="shared.notifications"]')).toBeVisible()
@@ -289,6 +307,7 @@ test.describe('the crawler', () => {
         'c.split.pick',
         'c.wallet.hub',
         'shared.about',
+        'shared.cashout.amount',
         'shared.notifications',
         'shared.topup.amount',
         'shared.tx',
@@ -306,16 +325,21 @@ test.describe('the crawler', () => {
     expect([...screens.keys()].sort()).toEqual(
       [
         'auth.logout',
+        'biz.autoconvert.onoff',
         'biz.history',
+        'biz.payouts',
         'biz.received',
         'biz.send.review',
         'biz.settings',
+        'pos.cashOut',
         'pos.charge',
         'pos.home',
         'pos.pay',
         'pos.sales.hub',
         'shared.about',
+        'shared.cashout.amount',
         'shared.notifications',
+        'shared.topup.amount',
         'shared.tx',
       ].sort(),
     )

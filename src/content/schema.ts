@@ -387,6 +387,8 @@ export const SUBLINE_IDS = [
   'autoConvert',
   'supplierHint',
   'topUpHint',
+  'cashOutTo',
+  'autoConvertOn',
   'nextInvoice',
   'payoutsThisWeek',
   'revenueToday',

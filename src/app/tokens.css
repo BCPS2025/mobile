@@ -238,6 +238,43 @@ button:disabled,
   animation: bcps-lit 550ms var(--ease-standard) both;
 }
 
+/* The share slider of Auto-convert: a thin track and a square handle, in steps of ten. */
+.share-range {
+  appearance: none;
+  height: 28px;
+  width: 100%;
+  background: transparent;
+  cursor: pointer;
+}
+.share-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--color-line-300);
+}
+.share-range::-moz-range-track {
+  height: 2px;
+  background: var(--color-line-300);
+}
+.share-range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -11px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-navy-900);
+  background: var(--color-surface);
+  border-radius: 0;
+}
+.share-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-navy-900);
+  background: var(--color-surface);
+  border-radius: 0;
+}
+.share-range:focus-visible {
+  outline: 3px solid var(--color-green-600);
+  outline-offset: 4px;
+}
+
 /* Reduced motion: the operating system's setting, or Settings › Reduce motion (data-reduce-motion
    on <html>: "true" forces it, "false" turns it off even when the system asks for it). */
 @media (prefers-reduced-motion: reduce) {
