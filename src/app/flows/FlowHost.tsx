@@ -64,9 +64,9 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
   const overline = step.overline?.(d, ctx)
   const stack = screen.editing ? undefined : step.stack?.(d, ctx, api)
 
-  const def = screen.editing
-    ? { label: ui.steps.backToReview, tone: 'navy' as const, enabled: true }
-    : step.primary(d, ctx)
+  // From an Edit link the button reads "Back to review", enabled only when the step's own button is.
+  const own = step.primary(d, ctx)
+  const def = screen.editing ? { label: ui.steps.backToReview, tone: 'navy' as const, enabled: own.enabled } : own
   const primary: DockPrimary = {
     label: def.label,
     tone: navyBody && def.tone === 'navy' ? 'white' : def.tone,
@@ -77,14 +77,14 @@ export function FlowHost({ screen }: { screen: FlowScreen }) {
   const secondary = screen.editing ? null : (step.secondary?.(d, ctx, api) ?? null)
   const Body = step.Screen
   // A new dock (and its settle guard) whenever its buttons start doing something else: another
-  // step, an Edit detour, or a step whose buttons change role (the café's [New code] turns into
-  // Cancel once a fresh code shows).
+  // step, an Edit detour, or a step whose primary changes role (the café's [New code] turns into
+  // Cancel once a fresh code shows). A text link that comes and goes beside the same button (Top
+  // up while the amount is more than the balance) keeps the dock, so a tap right after a key counts.
   const dockKey = [
     screen.instanceId,
     screen.step,
     screen.editing ? 'edit' : '',
     primary.tone,
-    secondary?.kind ?? '',
     stack ? 'stack' : '',
   ].join(':')
 

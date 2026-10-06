@@ -142,6 +142,38 @@ describe('Send', () => {
     expect(f.primary().enabled).toBe(true)
   })
 
+  it('pressing a disabled Continue (Enter on the keypad) stays on the step: empty, zero or above the balance', () => {
+    const f = fixture()
+    const { api } = f.open('send')
+    api.press() // nobody picked yet
+    expect(f.step()?.id).toBe('to')
+    api.set({ query: '@marko' } as never)
+    api.press()
+    expect(f.step()?.id).toBe('amount')
+    for (const amount of ['', '0', '300']) {
+      api.set({ amount } as never)
+      expect(f.primary().enabled).toBe(false)
+      api.press()
+      expect(f.step()?.id).toBe('amount')
+    }
+    api.set({ amount: '5.00' } as never)
+    api.press()
+    expect(f.step()?.id).toBe('note')
+  })
+
+  it('from an Edit link, "Back to review" does nothing while the amount is cleared', () => {
+    const f = fixture()
+    const { api } = f.open('send', { to: '@marko', amount: '16.50', note: 'Cinema' })
+    api.goto('amount', { editing: true })
+    api.set({ amount: '' } as never)
+    api.press()
+    expect(f.step()?.id).toBe('amount')
+    expect(f.flowNow().editing).toBe(true)
+    api.set({ amount: '12.00' } as never)
+    api.press()
+    expect(f.step()?.id).toBe('review')
+  })
+
   it('the balance changing under the review is refused with the words of the error, on the step', () => {
     const f = fixture()
     const { api } = f.open('send')

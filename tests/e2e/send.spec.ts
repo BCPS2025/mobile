@@ -218,6 +218,61 @@ test.describe('send on the stage @webkit', () => {
     await expect(ana.locator('[data-screen="c.payRequest.hub"]')).toBeVisible()
   })
 
+  test('Enter on an empty or too large amount stays on the step; a cleared amount keeps "Back to review" off', async ({
+    page,
+  }) => {
+    await anaAndMarko(page)
+    await toAmount(page)
+    const ana = slot(page, 'left')
+    const amount = ana.locator('[data-screen="c.send.amount"]')
+    const enter = async () => {
+      await ana.locator('[data-keypad]').focus()
+      await page.keyboard.press('Enter')
+      await page.waitForTimeout(600) // longer than the dock's settle guard
+    }
+    await expect(ana.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    await enter()
+    await expect(amount).toBeVisible()
+    await type(page, '300') // more than the balance
+    await expect(ana.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    await enter()
+    await expect(amount).toBeVisible()
+    for (let i = 0; i < 3; i++) await ana.locator('[data-key="del"]').click()
+    await type(page, '5')
+    await enter()
+    await expect(ana.locator('[data-screen="c.send.note"]')).toBeVisible()
+    await ana.getByRole('button', { name: 'Continue' }).click()
+    await expect(ana.locator('[data-screen="c.send.review"]')).toBeVisible()
+
+    // Edit, then clear the amount: the button reads "Back to review" and stays off, Enter too.
+    await ana.getByTestId('edit-Amount').click()
+    await expect(amount).toBeVisible()
+    await ana.locator('[data-key="del"]').click()
+    await expect(ana.getByRole('button', { name: 'Back to review' })).toBeDisabled()
+    await enter()
+    await expect(amount).toBeVisible()
+    await type(page, '7')
+    await ana.getByRole('button', { name: 'Back to review' }).click()
+    await expect(ana.getByTestId('review-total')).toContainText('7.07')
+  })
+
+  test('a tap right after a key that hides the Top up link still counts', async ({ page }) => {
+    await anaAndMarko(page)
+    await toAmount(page)
+    const ana = slot(page, 'left')
+    await page.waitForTimeout(600) // the new step's dock has settled
+    await type(page, '250') // more than the balance: the Top up link shows beside Continue
+    await expect(ana.getByTestId('dock-secondary')).toBeVisible()
+    await ana.locator('[data-key="del"]').click() // 25: the link goes, Continue turns on
+    await expect(ana.getByTestId('dock-secondary')).toHaveCount(0)
+    // A plain mouse tap, about 200 ms after the key (a locator click would wait for the button).
+    const box = await ana.getByTestId('dock-primary').boundingBox()
+    if (!box) throw new Error('no Continue')
+    await page.waitForTimeout(150)
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    await expect(ana.locator('[data-screen="c.send.note"]')).toBeVisible()
+  })
+
   test('History, the payment detail with Send again, and Marko’s notification', async ({ page }) => {
     await anaAndMarko(page)
     await toAmount(page)

@@ -118,7 +118,11 @@ export function createFlowApi<D>(app: AppState, who: Who, instanceId: string): F
       const d = f.draft as D
       const ctx = ctxOf(f)
       const commit = commitOf(i, step.id)
+      // A commit always asks the ledger, so a refusal says why (a code cancelled meanwhile).
       if (commit && (commit.when?.(d, ctx) ?? true)) return runCommit(app, who, api, f, commit, d, patch)
+      // Otherwise the step's button is what Enter, the keypad and the dock all press: while it is
+      // disabled (an empty or too large amount), nothing moves, not even back to the check from an Edit.
+      if (!step.primary(d, ctx).enabled) return
       // A step opened from an Edit link goes back to the check, whatever its button usually does.
       if (f.editing) return api.goto(i.steps.find((s) => s.kind === 'review')?.id ?? step.id)
       if (step.onPrimary) return step.onPrimary(d, ctx, api)
