@@ -69,6 +69,8 @@ export interface SecondaryDef {
   label: string
   onPress: () => void
   disabled?: boolean
+  /** An outline button as wide as its label, leaving the rest to a long primary label ("Pay 53.33 BCPS"). */
+  fit?: boolean
 }
 
 export interface StepDef<D> {

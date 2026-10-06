@@ -28,7 +28,8 @@ export type FlowId =
   | 'cashOut'
   | 'autoConvert'
   | 'refund'
-export type ViewId = 'history' | 'notifications' | 'about' | 'myCode'
+  | 'invoice'
+export type ViewId = 'history' | 'notifications' | 'about' | 'myCode' | 'invoices'
 export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp' | 'payouts'
 export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'cashOut' | 'profile' | 'settings'
 
@@ -78,6 +79,7 @@ export const ROWS: Partial<Record<RowId, Target>> = {
   refundSale: flow('refund'),
   allPayments: view('history'),
   paySupplier: flow('paySupplier'),
+  invoices: view('invoices'),
   topup: flow('topUp'),
   cashOut: flow('cashOut'),
   autoConvert: flow('autoConvert'),
@@ -131,6 +133,8 @@ export const VIEWS: Record<ViewId, ViewSpec> = {
   },
   about: { screen: 'shared.about', shells: ['consumer', 'pos'], details: [] },
   myCode: { screen: 'c.mycode', shells: ['consumer'], details: [], flows: ['paymentLink'] },
+  // The invoices the café has to pay: each opens its detail, where it is paid or declined.
+  invoices: { screen: 'biz.invoices', shells: ['pos'], details: [], flows: ['invoice'] },
 }
 
 export interface DetailSpec {
@@ -417,6 +421,24 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     // The balance does not cover the refund: the error line offers Top up.
     handoffs: ['topUp'],
   },
+  // Pay an invoice (biz.invoice.*): the invoice with its fee and total; [Pay] pays it, [Decline] asks
+  // for a reason first and tells the supplier. Paying ends on the money success, declining on a
+  // neutral one.
+  invoice: {
+    shells: ['pos'],
+    startsFrom: ['home', 'hub', 'view'],
+    steps: [
+      { id: 'detail', screen: 'biz.invoice.detail', kind: 'review' },
+      { id: 'decline', screen: 'biz.invoice.decline', kind: 'confirm' },
+    ],
+    commits: ['detail', 'decline'],
+    success: 'money',
+    successScreen: 'biz.invoice.paid',
+    moves: true,
+    endsAlsoOn: [{ screen: 'biz.invoice.declined', kind: 'neutral' }],
+    followOns: [],
+    handoffs: ['topUp'],
+  },
   logout: {
     shells: ['consumer', 'pos'],
     startsFrom: ['hub'],
@@ -453,6 +475,7 @@ export const FEATURES: readonly Feature[] = [
   { id: 'salesHistory', shell: 'pos', target: view('history'), maxTaps: 2 },
   { id: 'paySupplier', shell: 'pos', target: flow('paySupplier'), maxTaps: 2 },
   { id: 'refund', shell: 'pos', target: flow('refund'), maxTaps: 2 },
+  { id: 'invoices', shell: 'pos', target: view('invoices'), maxTaps: 2 },
   { id: 'topUp', shell: 'consumer', target: flow('topUp'), maxTaps: 2 },
   { id: 'cashOut', shell: 'consumer', target: flow('cashOut'), maxTaps: 2 },
   { id: 'topUp', shell: 'pos', target: flow('topUp'), maxTaps: 2 },

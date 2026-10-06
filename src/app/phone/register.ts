@@ -1,5 +1,6 @@
 import { cancelRequestFlow, cancelSplitFlow } from '../flows/cancel'
 import { chargeFlow } from '../flows/charge'
+import { invoiceFlow } from '../flows/invoice'
 import { logoutFlow } from '../flows/logout'
 import { payItemFlow } from '../flows/payItem'
 import { paymentLinkFlow } from '../flows/paymentLink'
@@ -17,6 +18,7 @@ import { LoginScreen } from './auth/LoginScreen'
 import { WelcomeScreen } from './auth/WelcomeScreen'
 import { AboutView } from './AboutView'
 import { HistoryView } from './views/HistoryView'
+import { InvoicesView } from './views/Invoices'
 import { IdentityCard } from './views/IdentityCard'
 import { NotificationsView } from './views/NotificationsView'
 import { BalanceHeader } from './views/BalanceHeader'
@@ -46,6 +48,7 @@ registerView('about', AboutView)
 registerView('history', HistoryView)
 registerView('notifications', NotificationsView)
 registerView('myCode', { consumer: MyCodeView })
+registerView('invoices', { pos: InvoicesView })
 registerHubHeader('identity', IdentityCard)
 registerHubHeader('balance', BalanceHeader)
 registerDetail('tx', TxDetailView)
@@ -70,3 +73,4 @@ registerFlow(topUpFlow)
 registerFlow(cashOutFlow)
 registerFlow(autoConvertFlow)
 registerFlow(refundFlow)
+registerFlow(invoiceFlow)

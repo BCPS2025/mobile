@@ -66,7 +66,7 @@ describe('the registry against content/homes.yaml', () => {
     ])
     expect(registeredRows(homes.consumer, 'wallet').map((r) => r.row)).toEqual(['topup', 'cashOut', 'myCode'])
     expect(registeredRows(homes.pos, 'sales').map((r) => r.row)).toEqual(['refundSale', 'allPayments'])
-    expect(registeredRows(homes.pos, 'pay').map((r) => r.row)).toEqual(['paySupplier'])
+    expect(registeredRows(homes.pos, 'pay').map((r) => r.row)).toEqual(['paySupplier', 'invoices'])
     expect(registeredRows(homes.pos, 'cashOut').map((r) => r.row)).toEqual([
       'cashOut',
       'topup',

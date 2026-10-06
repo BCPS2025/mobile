@@ -41,6 +41,9 @@ function routeOf(app: AppState, who: { persona: PersonaId; shell: Shell }, n: No
     // Asked of this account: its check. The requester's own request: its detail (declined).
     if (n.kind === 'request.received' || n.kind === 'split.received')
       return { target: { kind: 'flow', id: 'payItem' }, params: { request: subject.id } }
+    // An invoice sent to a business: its detail, where it is paid or declined.
+    if (n.kind === 'invoice.received')
+      return { target: { kind: 'flow', id: 'invoice' }, params: { request: subject.id } }
     if (n.kind === 'request.declined')
       return { target: { kind: 'detail', id: 'request' }, params: { requestId: subject.id } }
     return null

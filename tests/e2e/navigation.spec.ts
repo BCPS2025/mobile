@@ -206,7 +206,7 @@ const screenId = async (page: Page) =>
 async function crawl(page: Page, home: string): Promise<Crawled> {
   const screens = new Map<string, number>()
   const CHILDREN =
-    '[data-testid^="row-"], button[data-testid^="tx-BC-"], [data-testid^="notification-"], [data-testid^="pay-item-"], button[data-testid^="status-"]'
+    '[data-testid^="row-"], button[data-testid^="tx-BC-"], [data-testid^="notification-"], [data-testid^="pay-item-"], button[data-testid^="status-"], button[data-testid^="invoice-"], button[data-testid^="sale-BC-"]'
 
   async function children(id: string): Promise<string[]> {
     const phone = slot(page, 'single')
@@ -327,6 +327,8 @@ test.describe('the crawler', () => {
         'auth.logout',
         'biz.autoconvert.onoff',
         'biz.history',
+        'biz.invoice.detail',
+        'biz.invoices',
         'biz.payouts',
         'biz.received',
         'biz.refund.pick',

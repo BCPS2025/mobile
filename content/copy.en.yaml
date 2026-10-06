@@ -191,6 +191,7 @@ hubs:
     refundSale: Refund a sale
     allPayments: All payments
     paySupplier: Pay supplier
+    invoices: Invoices
     topup: Top up
     cashOut: Cash out
     autoConvert: Auto-convert
@@ -212,9 +213,12 @@ hubs:
     autoConvertOn: "On · {sharePct}% · {time}"
     autoConvertOff: Off
     payoutsThisWeek: "This week ≈ €{eur}"
+    invoicesToPay: "{number} · {amount}"
+    invoicesToPayMany: "{count} invoices to pay"
 
   sections:
     toPay: TO PAY
+    pay: PAY
     payRequest: PAY & REQUEST
     waiting: WAITING
     money: MONEY
@@ -734,6 +738,36 @@ cashOut:
   noBankTitle: Cash out needs a bank account in your name.
   noBankBody: None is on file for this account.
   noBankAction: Top up
+
+# Invoices the café is asked to pay (biz.invoices, biz.invoice.*): pay one or decline it with a reason.
+invoices:
+  title: Invoices
+  detailTitle: Invoice
+  due: DUE
+  overdue: OVERDUE
+  dueToday: DUE TODAY
+  dueLine: "Due {date}"
+  dueTodayLine: Due today
+  rowTitle: "{number} · {name}"
+  none: No invoices to pay.
+  noneBody: Invoices from your suppliers appear here.
+  rowFrom: From
+  rowNumber: Number
+  rowDescription: Description
+  rowIssued: Issued
+  rowDue: Due
+  rowFee: Transaction fee 1%
+  rowTotal: Total
+  pay: "Pay {amount} BCPS"
+  decline: Decline
+  declineTitle: Why are you declining?
+  declineGroup: Reason
+  declineNote: "{name} sees your reason. No money moves."
+  keep: Keep
+  declineConfirm: Decline
+  declinedOverline: DECLINED
+  declinedTitle: Invoice declined
+  declinedBody: "{name} sees your reason. No money moved."
 
 # Refunding a sale (biz.refund.*): pick a named sale, check, refund. A refund has no fee.
 refund:

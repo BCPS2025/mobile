@@ -1,7 +1,7 @@
 import type { Content } from '@content/schema'
 import { formatHundredths, formatMinor } from '@domain/money'
 import type { AutoConvertSettings, LedgerState, PersonaId, SimTime } from '@domain/types'
-import { badges, bankOf, payoutsOf, salesToday } from '@store/selectors'
+import { badges, bankOf, invoices, payoutsOf, salesToday } from '@store/selectors'
 import { fill, ui } from '../copy'
 
 // The grey line under a tile's label or a hub row's label, filled from state: "1 to pay", "23 today ·
@@ -28,8 +28,19 @@ export function sublineOf(id: string | undefined, c: SublineCtx): string | null 
   if (STATIC.has(id)) return hints[id] ?? null
   switch (id) {
     case 'toPay': {
-      const count = badges(c.state, c.persona).toPay
+      // Requests, links and split shares for a person; invoices for a business.
+      const b = badges(c.state, c.persona)
+      const count = b.toPay + b.invoicesToPay
       return count > 0 ? fill(ui.hubs.sublines.toPay, { count }) : null
+    }
+    case 'invoicesToPay': {
+      // "PZ-0412 · 52.80" for one invoice, a count for several, nothing for none.
+      const open = invoices(c.state, c.persona, 'toPay')
+      const first = open[0]
+      if (!first) return null
+      return open.length === 1
+        ? fill(ui.hubs.sublines.invoicesToPay, { number: first.number, amount: formatMinor(first.amount) })
+        : fill(ui.hubs.sublines.invoicesToPayMany, { count: open.length })
     }
     case 'salesToday': {
       const t = salesToday(c.state, c.persona, c.now, c.tz)

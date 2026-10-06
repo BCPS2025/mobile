@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import '@app/phone/register'
 import { stepBar } from '@app/flows/engine'
+import { openNotification } from '@app/phone/notify'
+import { sublineOf } from '@app/phone/sublines'
 import { isImplemented } from '@app/phone/implemented'
 import { HUBS, homeOf, registeredRows } from '@app/phone/registry'
 import type { Tx } from '@domain/types'
-import { refundableSales, salesToRefund } from '@store/selectors'
+import { notificationsFor } from '@store/notifications'
+import { badges, invoices, refundableSales, salesToRefund } from '@store/selectors'
 import { phoneFixture } from '../support/phone'
 import { content, m } from './helpers'
 
@@ -113,5 +116,82 @@ describe('Refund a sale', () => {
     cafe.api().next()
     expect(cafe.primary().enabled).toBe(false)
     expect(cafe.primary().label).toBe('Refund 26.40 BCPS')
+  })
+})
+
+describe('Invoices to pay', () => {
+  const openInvoice = (f: Fixture) => {
+    const row = invoices(f.node.getState(), 'cafe', 'toPay')[0]
+    if (!row) throw new Error('no invoice')
+    const cafe = f.as('cafe')
+    cafe.open('invoice', { request: row.request.id })
+    return { cafe, row }
+  }
+
+  it('the Pay tile counts the invoice and the invoices row names it: PZ-0412 · 52.80', () => {
+    const f = phoneFixture({ cafe: true })
+    const c = { state: f.node.getState(), content, persona: 'cafe', now: f.node.now(), tz: 'Europe/Ljubljana' }
+    expect(badges(c.state, 'cafe')).toMatchObject({ toPay: 0, invoicesToPay: 1 })
+    expect(sublineOf('toPay', c)).toBe('1 to pay')
+    expect(sublineOf('invoicesToPay', c)).toBe('PZ-0412 · 52.80')
+  })
+
+  it('PZ-0412: fee 0.53, total 53.33; Pay 53.33 BCPS leaves the café 232.67, and no invoice to pay', () => {
+    const f = phoneFixture({ cafe: true })
+    const { cafe, row } = openInvoice(f)
+    expect(cafe.step().id).toBe('detail')
+    expect(row.number).toBe('PZ-0412')
+    expect(cafe.primary()).toEqual({ label: 'Pay 53.33 BCPS', tone: 'money', enabled: true })
+    cafe.api().press()
+    f.settle()
+    expect(cafe.phase()).toBe('success')
+    expect(f.balance('cafe')).toBe('232.67')
+    expect(cafe.tx()).toMatchObject({ amount: m('52.80'), from: 'cafe' })
+    expect(cafe.tx()?.fee).toMatchObject({ fee: m('0.53'), payer: 'sender' })
+    expect(invoices(f.node.getState(), 'cafe', 'toPay')).toHaveLength(0)
+    expect(badges(f.node.getState(), 'cafe').invoicesToPay).toBe(0)
+  })
+
+  it('Decline asks why (the reasons of the catalogue), tells the supplier and moves no money', () => {
+    const f = phoneFixture({ cafe: true })
+    const { cafe, row } = openInvoice(f)
+    const reasons = content.catalogue.declineReasons.invoice
+    expect(reasons).toEqual(['Wrong amount', 'Not ordered', 'Already paid', 'Other'])
+    expect((cafe.flow().draft as { reason: string }).reason).toBe('Wrong amount')
+    const secondary = cafe.step().secondary?.(cafe.flow().draft as never, cafe.ctx(), cafe.api() as never)
+    expect(secondary).toMatchObject({ kind: 'outline', label: 'Decline' })
+    secondary?.onPress()
+    expect(cafe.step().id).toBe('decline')
+    expect(cafe.primary()).toEqual({ label: 'Decline', tone: 'navy', enabled: true })
+    cafe.api().set({ reason: 'Not ordered' })
+    cafe.api().press()
+    expect(cafe.phase()).toBe('success')
+    expect(f.balance('cafe')).toBe('286.00')
+    const request = f.node.getState().requests[row.request.id]
+    expect(request).toMatchObject({ status: 'declined', declineReason: 'Not ordered' })
+    expect(invoices(f.node.getState(), 'cafe', 'toPay')).toHaveLength(0)
+  })
+
+  it('a balance below 53.33 says so, offers Top up and does not pay', () => {
+    const f = phoneFixture({ cafe: true })
+    expect(f.dispatch('cafe', { type: 'ramp.off', amount: m('260.00') }).ok).toBe(true)
+    f.settle()
+    const { cafe } = openInvoice(f)
+    expect(cafe.primary().enabled).toBe(false)
+  })
+
+  it('the seeded notification of the invoice opens its detail', () => {
+    const f = phoneFixture({ cafe: true })
+    const cafe = f.as('cafe')
+    const n = notificationsFor(f.node.getState(), 'cafe', content).find((x) => x.kind === 'invoice.received')
+    expect(n).toBeDefined()
+    openNotification(f.app, cafe.who, {
+      id: n?.id ?? '',
+      txId: n?.txId ?? null,
+      subject: n?.subject ?? { type: 'none' },
+      kind: 'invoice.received',
+    })
+    expect(cafe.stack()).toEqual(['home', 'flow:invoice'])
+    expect(cafe.step().screen).toBe('biz.invoice.detail')
   })
 })

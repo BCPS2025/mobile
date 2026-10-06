@@ -34,7 +34,7 @@ pos:
   tiles:
     - { tile: charge,  icon: qr-code,     opens: flow }
     - { tile: sales,   icon: bar-chart-3, opens: hub, subline: salesToday }
-    - { tile: pay,     icon: file-text,   opens: hub }
+    - { tile: pay,     icon: file-text,   opens: hub, badge: invoicesToPay, subline: toPay }
     - { tile: cashOut, icon: landmark,    opens: hub, subline: autoConvert }
   hubs:
     sales:
@@ -42,7 +42,9 @@ pos:
       - { row: refundSale, icon: undo-2 }
       - { row: allPayments, icon: list }
     pay:
+      - { section: invoicesToPay }
       - { row: paySupplier, icon: truck, subline: supplierHint }
+      - { row: invoices,    icon: file-text, subline: invoicesToPay }
     cashOut:
       - { row: cashOut,       icon: banknote, subline: cashOutTo }
       - { row: topup,         icon: plus,     subline: topUpHint }
