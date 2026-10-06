@@ -52,6 +52,8 @@ function routeOf(app: AppState, who: { persona: PersonaId; shell: Shell }, n: No
     return n.kind === 'link.received' ? { target: { kind: 'flow', id: 'payItem' }, params: { link: subject.id } } : null
   }
   if (subject.type === 'ramp') return { target: RAMP, params: { rampId: subject.id } }
+  // A share of the account's split was declined: the split's progress.
+  if (subject.type === 'split') return { target: { kind: 'detail', id: 'split' }, params: { splitId: subject.id } }
   // The automatic conversion of a business: its payouts.
   if (n.kind === 'conversion.auto' && isImplemented(PAYOUTS, who.shell)) return { target: PAYOUTS, params: {} }
   if (n.txId === null) return null

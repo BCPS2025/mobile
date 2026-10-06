@@ -130,6 +130,8 @@ test.describe('split a bill on the stage', () => {
     await marko.getByRole('button', { name: 'Decline' }).click()
     await marko.getByRole('button', { name: 'Decline', exact: true }).last().click()
     await expect(marko.locator('[data-screen="c.payItem.declined"]')).toBeVisible()
+    await expect(ana.getByTestId('banner')).toContainText('@marko declined your split')
+    await expect(ana.getByTestId('banner')).toContainText('Brunch for two')
     await marko.getByRole('button', { name: 'Done' }).click()
 
     // Ana's progress: Marko DECLINED, @marta_k waiting.
@@ -142,9 +144,13 @@ test.describe('split a bill on the stage', () => {
     await expect(detail).toContainText('You can ask again.')
     await expect(detail).not.toContainText('Change split')
 
-    // Ask again: Marko has a new request to pay.
-    await detail.getByRole('button', { name: 'Ask again' }).click()
+    // Ask again (a double tap): Marko has a new request to pay, and the second tap does not press
+    // [Cancel open requests], which takes the button's place.
+    await detail.getByRole('button', { name: 'Ask again' }).dblclick()
     await expect(detail.getByTestId('share-marko')).not.toContainText('DECLINED')
+    await page.waitForTimeout(600)
+    await expect(detail).toBeVisible()
+    await expect(ana.locator('[data-screen="c.split.cancel"]')).toHaveCount(0)
     await expect(marko.locator('[data-tile="payRequest"]')).toContainText('1 to pay')
 
     // Cancel what is open (both shares), after a question.

@@ -86,16 +86,21 @@ export function SplitDetail({ params }: ScreenProps) {
   }
   const cancelOpen = () => nav.openFlow('cancelSplit', { splitId: split.id })
 
+  // The dock settles after it appears and again when its button changes role: once a share is
+  // asked again, [Cancel open requests] takes the place of [Ask again], and the second tap of a
+  // double tap must not open it.
   const dock =
     redo.length > 0 ? (
       <Dock
+        key="ask"
+        settle
         primary={{ label: ui.splitDetail.askAgain, tone: 'navy', onPress: askAgain }}
         {...(open.length > 0
           ? { secondary: { kind: 'link' as const, label: ui.splitDetail.cancelOpenLink, onPress: cancelOpen } }
           : {})}
       />
     ) : open.length > 0 ? (
-      <Dock primary={{ label: ui.splitDetail.cancelOpenLink, tone: 'navy', onPress: cancelOpen }} />
+      <Dock key="cancel" settle primary={{ label: ui.splitDetail.cancelOpenLink, tone: 'navy', onPress: cancelOpen }} />
     ) : undefined
 
   return (

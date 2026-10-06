@@ -293,6 +293,7 @@ describe('notifications.yaml', () => {
       'link.paid',
       'split.received',
       'split.completed',
+      'split.declined',
       'refund.received',
       'topup.completed',
       'topup.pending',

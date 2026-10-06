@@ -24,6 +24,7 @@ export type NotificationKind =
   | 'link.paid'
   | 'split.received'
   | 'split.completed'
+  | 'split.declined'
   | 'refund.received'
   | 'topup.completed'
   | 'topup.pending'
@@ -263,6 +264,11 @@ export function requestNotification(
   const at = request.closedAt ?? request.createdAt
   if (event === 'declined') {
     if (request.requester !== persona) return null
+    // A declined split share opens the split's progress, where it can be asked again.
+    if (request.channel === 'split' && request.splitId !== undefined) {
+      const split: NotificationSubject = { type: 'split', id: request.splitId }
+      return build(content, 'split.declined', persona, at, `declined:${request.id}`, split, request.amount, base)
+    }
     const kind: NotificationKind = invoice ? 'invoice.declined' : 'request.declined'
     return build(content, kind, persona, at, `declined:${request.id}`, subject, request.amount, base)
   }

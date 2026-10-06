@@ -290,6 +290,24 @@ describe('splits', () => {
     })
   })
 
+  it('a share declined: the owner hears "@marko declined your split · Pizza night", opening the split', () => {
+    const s = session()
+    splitWith(s, [{ party: '@marko', amount: '5.00' }])
+    s.run({ type: 'request.decline', actor: 'marko', cmdId: id('decline'), requestId: 'R-000001' })
+    const split = Object.keys(s.node.getState().splits)[0]
+    expect(s.list('ana')[0]).toMatchObject({
+      kind: 'split.declined',
+      title: '@marko declined your split',
+      line: 'Pizza night',
+      opens: 'split',
+      subject: { type: 'split', id: split },
+      txId: null,
+      banner: true,
+      toast: true,
+    })
+    expect(s.kinds('ana')).not.toContain('request.declined')
+  })
+
   it('the owner hears the payment of a split of one person as "everyone paid ✓"', () => {
     const s = session()
     splitWith(s, [{ party: '@marko', amount: '5.00' }])
