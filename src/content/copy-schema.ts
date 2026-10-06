@@ -175,6 +175,16 @@ export const UiCopySchema = z.looseObject({
     noBankBody: S,
     noBankAction: S,
   }),
+  daySummary: z.strictObject({
+    netSales: S,
+    theDay: S,
+    firstSale: S,
+    firstSaleLine: S,
+    busiest: S,
+    busiestLine: S,
+    cashOut: S,
+    cashOutAuto: S,
+  }),
   invoices: z.strictObject({
     title: S,
     detailTitle: S,

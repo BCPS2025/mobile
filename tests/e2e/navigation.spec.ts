@@ -341,6 +341,7 @@ test.describe('the crawler', () => {
         'pos.sales',
         'shared.about',
         'shared.cashout.amount',
+        'shared.daySummary',
         'shared.notifications',
         'shared.topup.amount',
         'shared.tx',

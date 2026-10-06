@@ -18,6 +18,7 @@ import { saveTextFile } from '../../download'
 import { dayText, groupedInt, itemsText, partyLabel, txLabel } from '../../format'
 import { PartyAvatar } from '../../kit/PartyAvatar'
 import { useApp, useTransient } from '../../state/AppContext'
+import { KpiTiles } from '../chrome/KpiTiles'
 import { ListSection } from '../chrome/ListRow'
 import { PlannedBadge } from '../chrome/PlannedBadge'
 import { Segmented } from '../chrome/Segmented'
@@ -32,39 +33,6 @@ import { usePersonaPhone } from '../PhoneContext'
 
 const RANGES: readonly SalesRange[] = ['today', '7d']
 const rangeLabel: Record<SalesRange, string> = { today: ui.sales.today, '7d': ui.sales.week }
-
-function Kpi({
-  label,
-  value,
-  accent = false,
-  testId,
-}: {
-  label: string
-  value: string
-  accent?: boolean
-  testId: string
-}) {
-  return (
-    <div
-      data-testid={testId}
-      className={`border border-t-[3px] border-line-200 bg-surface px-3 py-2.5 ${accent ? 'border-t-green-600' : 'border-t-navy-900'}`}
-    >
-      <p className="font-body text-[12px] leading-4 font-medium tracking-[0.16em] text-grey-600">{label}</p>
-      <p className="mt-0.5 font-display text-[24px] leading-[30px] font-semibold tnum text-navy-900">{value}</p>
-    </div>
-  )
-}
-
-function Tiles({ dash }: { dash: SalesDashboard }) {
-  return (
-    <div className="mt-3 grid grid-cols-2 gap-2" data-testid="sales-kpis">
-      <Kpi testId="kpi-sales" label={ui.sales.kpiSales} value={groupedInt(dash.sales)} />
-      <Kpi testId="kpi-gross" label={ui.sales.kpiGross} value={formatMinor(dash.gross)} />
-      <Kpi testId="kpi-fees" label={ui.sales.kpiFees} value={formatMinor(dash.fees)} />
-      <Kpi testId="kpi-net" label={ui.sales.kpiNet} value={formatMinor(dash.net)} accent />
-    </div>
-  )
-}
 
 // ---- today
 
@@ -279,7 +247,7 @@ export function SalesSection({ persona }: { persona: PersonaId }) {
         onPick={(r) => app.actions.setSalesRange(persona, r)}
         testId="range"
       />
-      <Tiles dash={dash} />
+      <KpiTiles className="mt-3" sales={dash.sales} gross={dash.gross} fees={dash.fees} net={dash.net} />
       {dash.refunds.amount > 0 && (
         <p data-testid="sales-refunds" className="mt-2 font-body text-body-s text-grey-600 tnum">
           {fill(ui.sales.refunds, { amount: formatMinor(dash.refunds.amount) })}

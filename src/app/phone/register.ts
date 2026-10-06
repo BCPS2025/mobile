@@ -17,6 +17,7 @@ import { CodeScreen } from './auth/CodeScreen'
 import { LoginScreen } from './auth/LoginScreen'
 import { WelcomeScreen } from './auth/WelcomeScreen'
 import { AboutView } from './AboutView'
+import { DaySummaryView } from './views/DaySummary'
 import { HistoryView } from './views/HistoryView'
 import { InvoicesView } from './views/Invoices'
 import { IdentityCard } from './views/IdentityCard'
@@ -58,6 +59,7 @@ registerDetail('link', LinkDetail)
 registerDetail('split', SplitDetail)
 registerDetail('ramp', RampDetailView)
 registerDetail('payouts', PayoutsView)
+registerDetail('daySummary', DaySummaryView)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)

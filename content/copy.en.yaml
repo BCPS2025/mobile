@@ -739,6 +739,17 @@ cashOut:
   noBankBody: None is on file for this account.
   noBankAction: Top up
 
+# One day of the café's sales (shared.daySummary): opened from a daily summary row of History.
+daySummary:
+  netSales: NET SALES
+  theDay: THE DAY
+  firstSale: First sale
+  firstSaleLine: "{time} · {who}"
+  busiest: Busiest hour
+  busiestLine: "{from}–{to} · {count} payments"
+  cashOut: Cash out
+  cashOutAuto: "Cash out · Auto {sharePct}%"
+
 # Invoices the café is asked to pay (biz.invoices, biz.invoice.*): pay one or decline it with a reason.
 invoices:
   title: Invoices

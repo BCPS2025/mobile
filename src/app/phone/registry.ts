@@ -30,7 +30,7 @@ export type FlowId =
   | 'refund'
   | 'invoice'
 export type ViewId = 'history' | 'notifications' | 'about' | 'myCode' | 'invoices'
-export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp' | 'payouts'
+export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp' | 'payouts' | 'daySummary'
 export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'cashOut' | 'profile' | 'settings'
 
 export type Target =
@@ -124,7 +124,7 @@ export const VIEWS: Record<ViewId, ViewSpec> = {
   history: {
     screen: { consumer: 'c.history', pos: 'biz.history' },
     shells: ['consumer', 'pos'],
-    details: ['tx', 'request', 'link', 'split', 'ramp'],
+    details: ['tx', 'request', 'link', 'split', 'ramp', 'daySummary'],
   },
   notifications: {
     screen: 'shared.notifications',
@@ -154,6 +154,8 @@ export const DETAILS: Record<DetailId, DetailSpec> = {
   ramp: { screen: 'shared.topup.onItsWay', related: [], flows: [] },
   // What the business converted to euros, newest first (a detail of Cash out: a notification opens it too).
   payouts: { screen: 'biz.payouts', related: [], flows: [] },
+  // One day of the café's sales, from a daily summary row of History: totals, the day and Export CSV.
+  daySummary: { screen: 'shared.daySummary', related: [], flows: [] },
 }
 
 export type StepKind = 'input' | 'review' | 'confirm' | 'waitFor' | 'committed'

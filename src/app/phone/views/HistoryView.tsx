@@ -220,7 +220,11 @@ export function HistoryView() {
                       <ActivityRowView
                         row={item.row}
                         text={rowText(item.row, state, persona, tz, bank)}
-                        onOpen={() => nav.open({ kind: 'detail', id: 'tx' }, { txId: item.row.tx.id })}
+                        onOpen={() =>
+                          item.row.tx.summary && item.row.tx.seedMeta
+                            ? nav.open({ kind: 'detail', id: 'daySummary' }, { rowKey: item.row.tx.seedMeta.key })
+                            : nav.open({ kind: 'detail', id: 'tx' }, { txId: item.row.tx.id })
+                        }
                       />
                     ) : item.kind === 'status' ? (
                       <StatusRowView row={item.row} text={statusText(item.row, tz)} onOpen={openStatus(item.row)} />

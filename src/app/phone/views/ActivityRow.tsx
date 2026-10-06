@@ -1,6 +1,7 @@
 import {
   Banknote,
   ChartColumn,
+  ChevronRight,
   CreditCard,
   Landmark,
   Link as LinkIcon,
@@ -22,7 +23,7 @@ import { Tag } from '../chrome/Tag'
 // One line of History: an avatar (or an icon square for top-ups, cash-outs and summaries), the
 // name with what it was for, the time and items under it, and the signed amount. A payment that
 // has not settled yet carries a PENDING tag. A daily summary is not a payment: it has no amount
-// and no arrow, and does not open.
+// and no arrow; one for a day that is over opens that day's summary (a chevron says so).
 
 const tone = (icon: LucideIcon) => {
   const Icon = icon
@@ -59,7 +60,8 @@ export function rowText(row: Row, s: LedgerState, viewer: PersonaId, tz: string,
       sub: fill(ui.history.summaryLine, { count: tx.summary.count, net: formatMinor(deltaFor(tx, viewer)) }),
       leading: tone(ChartColumn),
       summary: true,
-      openable: false,
+      // A summary of a day (the seeded ones carry the day's first sale and busiest hour) opens it.
+      openable: tx.seedMeta?.day !== undefined,
     }
   }
   // Money to the bank (a cash-out or an automatic conversion): "Cash out" over "23:00 · to SI56 •••• 1934".
@@ -148,6 +150,9 @@ export function ActivityRowView({ row, text, onOpen }: { row: Row; text: RowText
         >
           {formatSignedMinor(row.signed)}
         </span>
+      )}
+      {text.summary && text.openable && (
+        <ChevronRight size={20} strokeWidth={1.75} aria-hidden="true" className="shrink-0 text-ink" />
       )}
     </>
   )

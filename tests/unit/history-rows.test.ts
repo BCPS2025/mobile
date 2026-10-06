@@ -61,7 +61,7 @@ describe('History rows', () => {
     expect(topUp?.text.title).toBe('Top up · card €100.00')
   })
 
-  it('the café: a sale names the payer, with the note and "Sale"; a daily summary is not a payment and does not open', () => {
+  it('the café: a sale names the payer, with the note and "Sale"; a daily summary is not a payment and opens that day', () => {
     const { node } = headless('2026-09-25')
     node.dispatch({
       type: 'pay',
@@ -82,7 +82,7 @@ describe('History rows', () => {
       title: 'Today so far',
       sub: '23 payments · net 110.27',
       summary: true,
-      openable: false,
+      openable: true,
     })
     // Saturday: 48 payments for 334.58, net of the 1% fee 331.23.
     const daily = list.find((r) => r.row.tx.seedMeta?.key === 'cafe-sat')
@@ -90,7 +90,7 @@ describe('History rows', () => {
       title: 'Daily sales',
       sub: '48 payments · net 331.23',
       summary: true,
-      openable: false,
+      openable: true,
     })
     // Money to the bank, automatic or not, is a cash-out to the café's bank account.
     const outs = list.filter((r) => r.row.tx.kind === 'off-ramp')

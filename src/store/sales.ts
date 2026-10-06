@@ -69,7 +69,8 @@ export interface SalesDashboard {
   rows: SaleRow[]
 }
 
-const saleRow = (s: LedgerState, tx: Tx): SaleRow => ({
+/** One settled sale (or daily summary row) as the list and the CSV show it. */
+export const saleRow = (s: LedgerState, tx: Tx): SaleRow => ({
   kind: tx.summary ? 'summary' : 'sale',
   tx,
   at: tx.confirmedAt ?? tx.createdAt,
