@@ -101,6 +101,7 @@ export const ConfigSchema = z.strictObject({
       typeof FeePolicyConfig
     >,
   ),
+  feeExampleSale: AmountString,
   limits: z.strictObject({
     consumerMax: AmountString,
     businessMax: AmountString,
@@ -391,6 +392,8 @@ export const SUBLINE_IDS = [
   'autoConvertOn',
   'nextInvoice',
   'payoutsThisWeek',
+  'feePayer',
+  'payoutAccount',
   'revenueToday',
   'activeSubscribers',
   'subscribersSummary',

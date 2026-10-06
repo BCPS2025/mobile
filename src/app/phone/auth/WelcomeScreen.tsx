@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { ui } from '../../copy'
 import { maskEmail } from '../../format'
 import { Emblem } from '../../kit/Emblem'
-import { useApp, useUi } from '../../state/AppContext'
+import { useApp, useTransient, useUi } from '../../state/AppContext'
 import { Dock } from '../chrome/Dock'
 import { PhoneScreen } from '../chrome/PhoneScreen'
 import { authScreen } from '../implemented'
@@ -23,6 +23,7 @@ export function WelcomeScreen() {
   const ui_ = useUi()
   const remembered = slotOf(ui_, slot).remembered
   const [busy, setBusy] = useState(false)
+  const bioOff = useTransient((t) => remembered !== null && t.biometricsOff.includes(remembered))
   const persona = remembered ? app.persona(remembered) : undefined
   const login = remembered ? app.content.personas.personas.find((p) => p.id === remembered)?.login : undefined
 
@@ -55,15 +56,20 @@ export function WelcomeScreen() {
           tone="navy"
           stack={[
             { label: ui.login.logIn, kind: 'white', onPress: logIn, disabled: busy },
-            {
-              label: ui.login.biometrics,
-              kind: 'outline',
-              icon: <ScanFace size={20} strokeWidth={1.75} aria-hidden="true" />,
-              onPress: () => remembered && setBusy(true),
-              sending: busy,
-              keepLabel: true,
-              disabled: !remembered,
-            },
+            // An account that switched Biometrics off in Settings logs in with the code only.
+            ...(bioOff
+              ? []
+              : [
+                  {
+                    label: ui.login.biometrics,
+                    kind: 'outline' as const,
+                    icon: <ScanFace size={20} strokeWidth={1.75} aria-hidden="true" />,
+                    onPress: () => remembered && setBusy(true),
+                    sending: busy,
+                    keepLabel: true,
+                    disabled: !remembered,
+                  },
+                ]),
           ]}
         />
       }

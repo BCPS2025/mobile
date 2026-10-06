@@ -27,16 +27,23 @@ export function Switch({
         <span className="block font-body text-body font-semibold text-navy-900">{label}</span>
         {hint && <span className="block font-body text-body-s text-grey-600">{hint}</span>}
       </span>
-      <span
-        aria-hidden="true"
-        className={`relative h-7 w-[52px] shrink-0 border border-navy-900 ${on ? 'bg-navy-900' : 'bg-surface'}`}
-      >
-        <span
-          className={`absolute top-[3px] size-5 transition-[left] duration-(--dur-fast) ${
-            on ? 'left-[27px] bg-white' : 'left-[3px] bg-navy-900'
-          }`}
-        />
-      </span>
+      <SwitchTrack on={on} />
     </button>
+  )
+}
+
+/** The switch itself: a bordered track and a square thumb that moves to the right when it is on. */
+export function SwitchTrack({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative h-7 w-[52px] shrink-0 border border-navy-900 ${on ? 'bg-navy-900' : 'bg-surface'}`}
+    >
+      <span
+        className={`absolute top-[3px] size-5 transition-[left] duration-(--dur-fast) ${
+          on ? 'left-[27px] bg-white' : 'left-[3px] bg-navy-900'
+        }`}
+      />
+    </span>
   )
 }

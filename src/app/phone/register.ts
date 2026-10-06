@@ -1,5 +1,6 @@
 import { cancelRequestFlow, cancelSplitFlow } from '../flows/cancel'
 import { chargeFlow } from '../flows/charge'
+import { feePayerFlow } from '../flows/feePayer'
 import { invoiceFlow } from '../flows/invoice'
 import { logoutFlow } from '../flows/logout'
 import { payItemFlow } from '../flows/payItem'
@@ -76,3 +77,4 @@ registerFlow(cashOutFlow)
 registerFlow(autoConvertFlow)
 registerFlow(refundFlow)
 registerFlow(invoiceFlow)
+registerFlow(feePayerFlow)

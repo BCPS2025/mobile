@@ -8,6 +8,7 @@ import {
   HUBS,
   LIVE_SHELLS,
   ROWS,
+  STATIC_ROWS,
   TILES,
   VIEWS,
   homeOf,
@@ -47,7 +48,8 @@ describe('the registry against content/homes.yaml', () => {
         expect(spec, `hub ${hubId}`).toBeDefined()
         expect(spec?.shell).toBe(shell)
         for (const e of entries ?? []) {
-          if ('row' in e) expect(ROWS[e.row], `${shell} ${hubId} row ${e.row}`).toBeDefined()
+          // A row opens something, or is one that opens nothing (a fact, a switch, the integrations).
+          if ('row' in e) expect(ROWS[e.row] ?? STATIC_ROWS[e.row], `${shell} ${hubId} row ${e.row}`).toBeDefined()
         }
       }
       expect(HUBS[home.avatar as keyof typeof HUBS]).toBeDefined()

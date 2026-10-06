@@ -51,5 +51,10 @@ pos:
       - { row: autoConvert,   icon: repeat,   subline: autoConvertOn }
       - { row: payoutHistory, icon: history,  subline: payoutsThisWeek }
     settings:
-      - { row: about,  icon: info }
-      - { row: logout, icon: log-out }
+      - { row: feePayer,      icon: receipt,   subline: feePayer }
+      - { row: autoConvert,   icon: repeat,    subline: autoConvertOn }
+      - { row: payoutAccount, icon: landmark,  subline: payoutAccount }
+      - { row: biometrics,    icon: scan-face }
+      - { row: integrations,  icon: plug }
+      - { row: about,         icon: info }
+      - { row: logout,        icon: log-out }

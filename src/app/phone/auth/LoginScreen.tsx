@@ -56,6 +56,7 @@ export function LoginScreen() {
   )
   const chosen = auth.screen === 'login' ? auth.chosen : null
   const chosenRow = choices.find((c) => c.persona === chosen)
+  const bioOff = useTransient((t) => chosen !== null && t.biometricsOff.includes(chosen))
   const email = chosen ? maskEmail(live.find((p) => p.id === chosen)?.login?.email ?? '') : null
   const typed = useTypedText(email, reduced)
 
@@ -95,14 +96,19 @@ export function LoginScreen() {
             tone="navy"
             stack={[
               { label: ui.login.continue, kind: 'white', onPress: next, disabled: !typed.done || bio },
-              {
-                label: ui.login.biometrics,
-                kind: 'outline',
-                icon: <ScanFace size={20} strokeWidth={1.75} aria-hidden="true" />,
-                onPress: () => setBio(true),
-                sending: bio,
-                keepLabel: true,
-              },
+              // An account that switched Biometrics off in Settings logs in with the code only.
+              ...(bioOff
+                ? []
+                : [
+                    {
+                      label: ui.login.biometrics,
+                      kind: 'outline' as const,
+                      icon: <ScanFace size={20} strokeWidth={1.75} aria-hidden="true" />,
+                      onPress: () => setBio(true),
+                      sending: bio,
+                      keepLabel: true,
+                    },
+                  ]),
             ]}
           />
         ) : (

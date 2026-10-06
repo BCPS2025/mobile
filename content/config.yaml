@@ -40,6 +40,9 @@ fees:
   on-ramp:        { kind: zero }
   off-ramp:       { kind: percent, rateBps: 150, payer: sender }                                   # cash-out and auto-convert
 
+# The sale that "Who pays the fee on sales" works its two examples on (shown only).
+feeExampleSale: "11.00"
+
 limits:                                  # hundredths as strings
   consumerMax: "999.99"                  # send, request, link, POS charge
   businessMax: "99999.99"                # business transfers, invoices, escrow

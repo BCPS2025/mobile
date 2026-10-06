@@ -28,6 +28,7 @@ import {
   QrCode,
   Receipt,
   Repeat,
+  ScanFace,
   ScanLine,
   Send,
   ShoppingBag,
@@ -43,6 +44,7 @@ import {
 
 const ICONS: Record<string, LucideIcon> = {
   'scan-line': ScanLine,
+  'scan-face': ScanFace,
   'arrow-left-right': ArrowLeftRight,
   wallet: Wallet,
   list: List,

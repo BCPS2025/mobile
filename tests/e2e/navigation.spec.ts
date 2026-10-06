@@ -129,7 +129,12 @@ test.describe('the café: every live tile, hub row, view, detail and the first s
     const history = page.locator('[data-screen="biz.history"]')
     await expect(history).toBeVisible()
     await hasBackAndHome(page)
+    // The first row is a day of sales (it opens that day); a cash-out opens the payment.
     await history.locator('button[data-testid^="tx-BC-"]').first().click()
+    await expect(page.locator('[data-screen="shared.daySummary"]')).toBeVisible()
+    await hasBackAndHome(page)
+    await page.getByTestId('nav-back').click()
+    await history.locator('button[data-testid^="tx-BC-"]').filter({ hasText: 'Cash out' }).first().click()
     await expect(page.locator('[data-screen="shared.tx"]')).toBeVisible()
     await hasBackAndHome(page)
     await page.getByTestId('nav-back').click()
@@ -326,6 +331,7 @@ test.describe('the crawler', () => {
       [
         'auth.logout',
         'biz.autoconvert.onoff',
+        'biz.feePayer',
         'biz.history',
         'biz.invoice.detail',
         'biz.invoices',

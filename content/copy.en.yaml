@@ -192,6 +192,12 @@ hubs:
     allPayments: All payments
     paySupplier: Pay supplier
     invoices: Invoices
+    feePayer: Who pays the fee on sales
+    payoutAccount: Payout account
+    biometrics: Biometrics
+    webApi: Web API ✓
+    paymentLinks: Payment links ✓
+    ecommercePlugins: E-commerce plugins
     topup: Top up
     cashOut: Cash out
     autoConvert: Auto-convert
@@ -215,10 +221,14 @@ hubs:
     payoutsThisWeek: "This week ≈ €{eur}"
     invoicesToPay: "{number} · {amount}"
     invoicesToPayMany: "{count} invoices to pay"
+    feePayerYou: You pay
+    feePayerCustomer: Customer pays
 
   sections:
     toPay: TO PAY
     pay: PAY
+    salesPayouts: SALES & PAYOUTS
+    integrations: INTEGRATIONS
     payRequest: PAY & REQUEST
     waiting: WAITING
     money: MONEY
@@ -738,6 +748,21 @@ cashOut:
   noBankTitle: Cash out needs a bank account in your name.
   noBankBody: None is on file for this account.
   noBankAction: Top up
+
+# Who pays the fee on a merchant's sales (biz.feePayer): saved for the codes and links made afterwards.
+feePayer:
+  title: Settings
+  question: Who pays the fee on sales?
+  group: Who pays the fee
+  you: You pay
+  customer: Customer pays
+  example: "On an {sale} sale: customer pays {customerPays} · you receive {merchantReceives}"
+  note: The fee is 1% of each sale.
+  save: Save
+  savedOverline: SAVED
+  savedTitle: Saved
+  savedYou: You pay the fee on sales.
+  savedCustomer: Customers pay the fee on sales.
 
 # One day of the café's sales (shared.daySummary): opened from a daily summary row of History.
 daySummary:

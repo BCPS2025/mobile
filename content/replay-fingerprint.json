@@ -1,9 +1,9 @@
 {
   "stateVersion": 2,
-  "reason": "A top-up or cash-out now records the command that made it, which only labels it; no command, event order or balance changes, so logs of earlier commands replay to the same ledger.",
+  "reason": "A display-only example sale amount was added to config.yaml for the fee payer screen; no command, event or balance changes, so logs of earlier commands replay to the same ledger.",
   "inputs": {
     "content/catalogue.yaml#products,plans,templates": "ad3949d7bbfd9ac2e8c25f5980d9c851b1c856287877f1c6efd70fe50dfdf318",
-    "content/config.yaml": "f03a82ceacba8e573b25a43be8dcdbcb9f8323fc57f61f145b85eb99f0698036",
+    "content/config.yaml": "1ee0b3bf05f6c55baef3737a52a9c4676535bdfe55a5ad1cb8983fe978e86492",
     "content/personas.yaml": "e3dce2089d806fb19b8c9e7b7a86b8bf40dec15313521cb015fa79ba540b8c6e",
     "content/seed.yaml": "8cb009aaecc63cb55bde1b77633d3431a65f6503d2e97afbe3b93c4f0988f457",
     "content/signup.yaml": "absent",

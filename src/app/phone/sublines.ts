@@ -63,6 +63,14 @@ export function sublineOf(id: string | undefined, c: SublineCtx): string | null 
         ? fill(ui.hubs.sublines.autoConvertOn, { sharePct: a.sharePct, time: a.atLocal })
         : ui.hubs.sublines.autoConvertOff
     }
+    case 'feePayer': {
+      // Who pays the fee on this business's sales, as the Settings list says it.
+      const payer = c.state.merchant[c.persona]?.feePayer
+      if (!payer) return null
+      return payer === 'recipient' ? ui.hubs.sublines.feePayerYou : ui.hubs.sublines.feePayerCustomer
+    }
+    case 'payoutAccount':
+      return bankOf(c.content, c.persona) ?? null
     case 'payoutsThisWeek': {
       const week = payoutsOf(c.state, c.persona, c.now, c.tz).week
       return fill(ui.hubs.sublines.payoutsThisWeek, { eur: formatHundredths(week.eur) })

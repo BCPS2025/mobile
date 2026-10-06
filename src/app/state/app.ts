@@ -105,6 +105,8 @@ export interface Transient {
   history: Partial<Record<PersonaId, { filter: ActivityFilter; query: string }>>
   /** Which tab of Sales a business last had open (Today or 7 days), kept while the page stays open. */
   salesRange: Partial<Record<PersonaId, SalesRange>>
+  /** Accounts that switched Biometrics off in Settings: their Welcome and Log in offer only the code. */
+  biometricsOff: readonly PersonaId[]
 }
 
 const WELCOME: AuthScreenState = { screen: 'welcome' }
@@ -121,6 +123,7 @@ const freshTransient = (): Transient => ({
   shownQr: [],
   history: {},
   salesRange: {},
+  biometricsOff: [],
 })
 
 /** Toasts on screen at once. */
@@ -171,6 +174,8 @@ export interface AppActions {
   setHistory(persona: PersonaId, view: { filter: ActivityFilter; query: string }): void
   /** The tab of a business's Sales. */
   setSalesRange(persona: PersonaId, range: SalesRange): void
+  /** Biometrics for logging an account in (on unless the account switched it off). */
+  setBiometrics(persona: PersonaId, on: boolean): void
 }
 
 export interface AppState {
@@ -412,6 +417,12 @@ export function createAppState(deps: AppDeps): AppState {
     },
     setHistory(persona, view) {
       transient.update((t) => ({ ...t, history: { ...t.history, [persona]: view } }))
+    },
+    setBiometrics(persona, on) {
+      transient.update((t) => {
+        const off = t.biometricsOff.filter((p) => p !== persona)
+        return { ...t, biometricsOff: on ? off : [...off, persona] }
+      })
     },
     setSalesRange(persona, range) {
       transient.update((t) => ({ ...t, salesRange: { ...t.salesRange, [persona]: range } }))

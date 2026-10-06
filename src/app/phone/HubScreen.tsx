@@ -1,20 +1,22 @@
+import { Code, Link, ShoppingBag } from 'lucide-react'
 import { useLedger, useLedgerNode } from '@store/useLedger'
 import { ui } from '../copy'
-import { useApp } from '../state/AppContext'
-import { ListRow, ListSection } from './chrome/ListRow'
+import { useApp, useTransient } from '../state/AppContext'
+import { ListRow, ListSection, StaticRow, SwitchRow } from './chrome/ListRow'
 import { PhoneScreen } from './chrome/PhoneScreen'
+import { PlannedBadge } from './chrome/PlannedBadge'
 import { iconFor } from './icons'
 import { hubHeader, isImplemented } from './implemented'
 import { usePhoneNav } from './nav'
 import { usePersonaPhone } from './PhoneContext'
-import { HUBS, type HubEntry, type HubId, type HubRow, ROWS, homeOf } from './registry'
+import { HUBS, type HubEntry, type HubId, type HubRow, ROWS, STATIC_ROWS, homeOf } from './registry'
 import { sublineOf } from './sublines'
 import { ToPaySection, WaitingSection } from './views/PayLists'
 import { InvoicesToPaySection } from './views/Invoices'
 import { SalesSection } from './views/SalesDashboard'
 
 // One list of rows behind a Home tile or the avatar (Pay & request, Wallet, Sales, Profile …).
-// Only rows whose feature is built are shown. A hub may also hold sections filled from state (TO PAY
+// Only rows whose feature is built are shown (a row that opens nothing, like a fact or a switch, always is). A hub may also hold sections filled from state (TO PAY
 // and WAITING on Pay & request); the rows between them sit under a heading of their own. Consumer
 // hubs have the light header; business hubs the navy one with the business name in small caps.
 
@@ -29,6 +31,7 @@ export function HubScreen({ id }: { id: string }) {
   const nav = usePhoneNav()
   const node = useLedgerNode()
   const state = useLedger((s) => s)
+  const biometricsOff = useTransient((t) => t.biometricsOff)
   const spec = HUBS[id as HubId]
   const home = homeOf(app.content.homes, shell, persona)
   const account = app.persona(persona)
@@ -43,7 +46,7 @@ export function HubScreen({ id }: { id: string }) {
       continue
     }
     const target = ROWS[e.row]
-    if (!target || !isImplemented(target, shell)) continue
+    if (!STATIC_ROWS[e.row] && (!target || !isImplemented(target, shell))) continue
     const last = blocks[blocks.length - 1]
     if (last?.kind === 'rows') last.rows.push(e)
     else blocks.push({ kind: 'rows', rows: [e] })
@@ -78,19 +81,48 @@ export function HubScreen({ id }: { id: string }) {
             <section key={b.rows.map((r) => r.row).join()} data-testid="hub-rows">
               {rowsHeading && <ListSection>{rowsHeading}</ListSection>}
               <ul className={rowsHeading ? '' : 'pt-1'}>
-                {b.rows.map((r) => (
-                  <li key={r.row}>
-                    <ListRow
-                      testId={`row-${r.row}`}
-                      icon={iconFor(r.icon)}
-                      label={rowLabels[r.row] ?? r.row}
-                      sub={
-                        sublineOf(r.subline, { state, content: app.content, persona, now: node.now(), tz }) ?? undefined
-                      }
-                      onPress={() => nav.open(ROWS[r.row] as NonNullable<(typeof ROWS)[typeof r.row]>)}
-                    />
-                  </li>
-                ))}
+                {b.rows.map((r) => {
+                  const group = spec.rowHeadings?.[r.row]
+                  const label = rowLabels[r.row] ?? r.row
+                  const sub =
+                    sublineOf(r.subline, { state, content: app.content, persona, now: node.now(), tz }) ?? undefined
+                  const kind = STATIC_ROWS[r.row]
+                  return (
+                    <li key={r.row}>
+                      {group && <ListSection>{headings[group]}</ListSection>}
+                      {kind === 'switch' ? (
+                        <SwitchRow
+                          testId={`${r.row}-switch`}
+                          icon={iconFor(r.icon)}
+                          label={label}
+                          on={!biometricsOff.includes(persona)}
+                          onChange={(on) => app.actions.setBiometrics(persona, on)}
+                        />
+                      ) : kind === 'info' ? (
+                        <StaticRow testId={`info-${r.row}`} icon={iconFor(r.icon)} label={label} sub={sub} />
+                      ) : kind === 'integrations' ? (
+                        <div data-testid="integrations">
+                          <StaticRow testId="integration-webApi" icon={Code} label={rowLabels.webApi} />
+                          <StaticRow testId="integration-paymentLinks" icon={Link} label={rowLabels.paymentLinks} />
+                          <StaticRow
+                            testId="integration-ecommercePlugins"
+                            icon={ShoppingBag}
+                            label={rowLabels.ecommercePlugins}
+                            right={<PlannedBadge />}
+                          />
+                        </div>
+                      ) : (
+                        <ListRow
+                          testId={`row-${r.row}`}
+                          icon={iconFor(r.icon)}
+                          label={label}
+                          sub={sub}
+                          onPress={() => nav.open(ROWS[r.row] as NonNullable<(typeof ROWS)[typeof r.row]>)}
+                        />
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </section>
           ),

@@ -7,7 +7,7 @@ import { isImplemented } from '@app/phone/implemented'
 import { HUBS, homeOf, registeredRows } from '@app/phone/registry'
 import type { Tx } from '@domain/types'
 import { notificationsFor } from '@store/notifications'
-import { badges, invoices, refundableSales, salesToRefund } from '@store/selectors'
+import { badges, feePayerExamples, invoices, refundableSales, salesToRefund } from '@store/selectors'
 import { phoneFixture } from '../support/phone'
 import { content, m } from './helpers'
 
@@ -193,5 +193,55 @@ describe('Invoices to pay', () => {
     })
     expect(cafe.stack()).toEqual(['home', 'flow:invoice'])
     expect(cafe.step().screen).toBe('biz.invoice.detail')
+  })
+})
+
+describe('Settings of the café', () => {
+  const ctxOf = (f: Fixture) => ({
+    state: f.node.getState(),
+    content,
+    persona: 'cafe',
+    now: f.node.now(),
+    tz: 'Europe/Ljubljana',
+  })
+
+  it('lists who pays the fee, auto-convert, the payout account, Biometrics and the integrations', () => {
+    const rows = (home.hubs.settings ?? []).map((e) => ('row' in e ? e.row : e.section))
+    expect(rows).toEqual(['feePayer', 'autoConvert', 'payoutAccount', 'biometrics', 'integrations', 'about', 'logout'])
+    const f = phoneFixture({ cafe: true })
+    expect(sublineOf('feePayer', ctxOf(f))).toBe('You pay')
+    expect(sublineOf('autoConvertOn', ctxOf(f))).toBe('On · 50% · 23:00')
+    expect(sublineOf('payoutAccount', ctxOf(f))).toBe('SI56 •••• •••• 1934')
+  })
+
+  it('Who pays the fee: the two examples of an 11.00 sale, and Save keeps the choice for what is made next', () => {
+    const f = phoneFixture({ cafe: true })
+    const cafe = f.as('cafe')
+    const sale = m(content.config.feeExampleSale)
+    expect(sale).toBe(m('11.00'))
+    const examples = feePayerExamples(f.node.getState(), sale)
+    expect([examples.recipient.customerPays, examples.recipient.merchantReceives]).toEqual([m('11.00'), m('10.89')])
+    expect([examples.sender.customerPays, examples.sender.merchantReceives]).toEqual([m('11.11'), m('11.00')])
+    cafe.open('feePayer')
+    expect(cafe.step().id).toBe('choose')
+    expect((cafe.flow().draft as { feePayer: string }).feePayer).toBe('recipient')
+    expect(cafe.primary()).toEqual({ label: 'Save', tone: 'navy', enabled: true })
+    cafe.api().set({ feePayer: 'sender' })
+    cafe.api().press()
+    expect(cafe.phase()).toBe('success')
+    expect(f.node.getState().merchant.cafe?.feePayer).toBe('sender')
+    expect(sublineOf('feePayer', ctxOf(f))).toBe('Customer pays')
+  })
+
+  it('Biometrics: on until an account switches it off; Reset puts it back', () => {
+    const f = phoneFixture({ cafe: true })
+    expect(f.app.transient.get().biometricsOff).toEqual([])
+    f.app.actions.setBiometrics('cafe', false)
+    expect(f.app.transient.get().biometricsOff).toEqual(['cafe'])
+    f.app.actions.setBiometrics('cafe', true)
+    expect(f.app.transient.get().biometricsOff).toEqual([])
+    f.app.actions.setBiometrics('cafe', false)
+    f.app.actions.reset('stage', false)
+    expect(f.app.transient.get().biometricsOff).toEqual([])
   })
 })

@@ -29,6 +29,7 @@ export type FlowId =
   | 'autoConvert'
   | 'refund'
   | 'invoice'
+  | 'feePayer'
 export type ViewId = 'history' | 'notifications' | 'about' | 'myCode' | 'invoices'
 export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp' | 'payouts' | 'daySummary'
 export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'cashOut' | 'profile' | 'settings'
@@ -83,10 +84,22 @@ export const ROWS: Partial<Record<RowId, Target>> = {
   topup: flow('topUp'),
   cashOut: flow('cashOut'),
   autoConvert: flow('autoConvert'),
+  feePayer: flow('feePayer'),
   payoutHistory: detail('payouts'),
   notifications: view('notifications'),
   about: view('about'),
   logout: flow('logout'),
+}
+
+/**
+ * Rows of a list that open nothing: one shows a fact (Payout account), one holds a switch
+ * (Biometrics), one is the INTEGRATIONS block (Web API, Payment links, E-commerce plugins).
+ */
+export type StaticRowKind = 'info' | 'switch' | 'integrations'
+export const STATIC_ROWS: Partial<Record<RowId, StaticRowKind>> = {
+  payoutAccount: 'info',
+  biometrics: 'switch',
+  integrations: 'integrations',
 }
 
 /** The bell in every Home header. */
@@ -100,6 +113,8 @@ export interface HubSpec {
   header?: 'identity' | 'balance'
   /** The rows sit under a small-caps heading of this name (copy `hubs.sections`). */
   heading?: 'money'
+  /** A heading (copy `hubs.sections`) above the row named, for a list whose rows fall in groups (Settings). */
+  rowHeadings?: Partial<Record<RowId, 'salesPayouts' | 'integrations'>>
 }
 export const HUBS: Record<HubId, HubSpec> = {
   payRequest: { screen: 'c.payRequest.hub', shell: 'consumer' },
@@ -108,7 +123,11 @@ export const HUBS: Record<HubId, HubSpec> = {
   sales: { screen: 'pos.sales', shell: 'pos' },
   pay: { screen: 'pos.pay', shell: 'pos' },
   cashOut: { screen: 'pos.cashOut', shell: 'pos', header: 'balance', heading: 'money' },
-  settings: { screen: 'biz.settings', shell: 'pos' },
+  settings: {
+    screen: 'biz.settings',
+    shell: 'pos',
+    rowHeadings: { feePayer: 'salesPayouts', integrations: 'integrations' },
+  },
 }
 
 export interface ViewSpec {
@@ -441,6 +460,18 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     followOns: [],
     handoffs: ['topUp'],
   },
+  // Who pays the fee on sales (biz.feePayer): one choice, saved for the codes and links made from then on.
+  feePayer: {
+    shells: ['pos'],
+    startsFrom: ['hub'],
+    steps: [{ id: 'choose', screen: 'biz.feePayer', kind: 'input' }],
+    commits: ['choose'],
+    success: 'neutral',
+    successScreen: 'biz.feePayer.saved',
+    moves: false,
+    followOns: [],
+    handoffs: [],
+  },
   logout: {
     shells: ['consumer', 'pos'],
     startsFrom: ['hub'],
@@ -478,6 +509,7 @@ export const FEATURES: readonly Feature[] = [
   { id: 'paySupplier', shell: 'pos', target: flow('paySupplier'), maxTaps: 2 },
   { id: 'refund', shell: 'pos', target: flow('refund'), maxTaps: 2 },
   { id: 'invoices', shell: 'pos', target: view('invoices'), maxTaps: 2 },
+  { id: 'feePayer', shell: 'pos', target: flow('feePayer'), maxTaps: 2 },
   { id: 'topUp', shell: 'consumer', target: flow('topUp'), maxTaps: 2 },
   { id: 'cashOut', shell: 'consumer', target: flow('cashOut'), maxTaps: 2 },
   { id: 'topUp', shell: 'pos', target: flow('topUp'), maxTaps: 2 },
