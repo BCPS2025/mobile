@@ -6,7 +6,7 @@ import type { IsoDate } from '@sim/tz'
 import { attachEffects } from '@store/effects'
 import { type Nav, type NavStore, createNavStore } from '@store/nav'
 import type { NotificationSubject } from '@store/notifications'
-import { type ActivityFilter, type ShownQr, noteShownQr } from '@store/selectors'
+import { type ActivityFilter, type SalesRange, type ShownQr, noteShownQr } from '@store/selectors'
 import type { StorageLike } from '@store/persistence'
 import { type Runtime, createRuntime } from '@store/runtime'
 import {
@@ -103,6 +103,8 @@ export interface Transient {
   shownQr: readonly ShownQr[]
   /** What History was last set to for each account: the chip and the search (kept while the page stays open). */
   history: Partial<Record<PersonaId, { filter: ActivityFilter; query: string }>>
+  /** Which tab of Sales a business last had open (Today or 7 days), kept while the page stays open. */
+  salesRange: Partial<Record<PersonaId, SalesRange>>
 }
 
 const WELCOME: AuthScreenState = { screen: 'welcome' }
@@ -118,6 +120,7 @@ const freshTransient = (): Transient => ({
   overlay: null,
   shownQr: [],
   history: {},
+  salesRange: {},
 })
 
 /** Toasts on screen at once. */
@@ -166,6 +169,8 @@ export interface AppActions {
   showQr(persona: PersonaId, kind: ShownQr['kind'], linkId?: string): void
   /** The chip and the search of an account's History. */
   setHistory(persona: PersonaId, view: { filter: ActivityFilter; query: string }): void
+  /** The tab of a business's Sales. */
+  setSalesRange(persona: PersonaId, range: SalesRange): void
 }
 
 export interface AppState {
@@ -407,6 +412,9 @@ export function createAppState(deps: AppDeps): AppState {
     },
     setHistory(persona, view) {
       transient.update((t) => ({ ...t, history: { ...t.history, [persona]: view } }))
+    },
+    setSalesRange(persona, range) {
+      transient.update((t) => ({ ...t, salesRange: { ...t.salesRange, [persona]: range } }))
     },
     showQr(persona, kind, linkId) {
       const entry: ShownQr = { persona, kind, at: runtime.node.now(), ...(linkId !== undefined ? { linkId } : {}) }

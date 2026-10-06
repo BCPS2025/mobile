@@ -10,6 +10,7 @@ import { usePersonaPhone } from './PhoneContext'
 import { HUBS, type HubEntry, type HubId, type HubRow, ROWS, homeOf } from './registry'
 import { sublineOf } from './sublines'
 import { ToPaySection, WaitingSection } from './views/PayLists'
+import { SalesSection } from './views/SalesDashboard'
 
 // One list of rows behind a Home tile or the avatar (Pay & request, Wallet, Sales, Profile …).
 // Only rows whose feature is built are shown. A hub may also hold sections filled from state (TO PAY
@@ -67,6 +68,8 @@ export function HubScreen({ id }: { id: string }) {
               <ToPaySection key="toPay" persona={persona} />
             ) : b.section === 'waiting' ? (
               <WaitingSection key="waiting" persona={persona} />
+            ) : b.section === 'todayKpis' ? (
+              <SalesSection key="sales" persona={persona} />
             ) : null
           ) : (
             <section key={b.rows.map((r) => r.row).join()} data-testid="hub-rows">

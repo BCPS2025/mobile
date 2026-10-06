@@ -156,7 +156,7 @@ test.describe('the café sale on the stage @webkit', () => {
     const phone = cafe(page)
     await phone.getByTestId('nav-home').click()
     await phone.locator('[data-tile="sales"]').click()
-    await expect(phone.locator('[data-screen="pos.sales.hub"]')).toBeVisible()
+    await expect(phone.locator('[data-screen="pos.sales"]')).toBeVisible()
     await expect(phone.getByTestId('row-allPayments')).toContainText('All payments')
     await phone.getByTestId('row-allPayments').click()
     const history = phone.locator('[data-screen="biz.history"]')

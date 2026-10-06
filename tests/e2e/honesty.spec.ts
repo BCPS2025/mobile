@@ -1,7 +1,8 @@
 // The honesty scan (decision D16) over the whole app: every live screen, state and piece of stage
 // chrome is read the way a visitor reads it (text, placeholder, aria-label, title, alt and the
 // document title) and must pass the banned-terms rules; no control offers a dropped feature
-// (decision D34) and the word PLANNED stands only on "Tap to pay". A meta-test proves the scan
+// (decision D34) and the word PLANNED stands only where a feature is planned ("Tap to pay", the
+// café's accounting integration and e-commerce plugins). A meta-test proves the scan
 // itself: attributes and titles are read, masked emails pass and readable ones fail.
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
@@ -68,18 +69,22 @@ test.describe('the dropped-feature scan meta-test', () => {
   })
 })
 
+/** The screens that may say PLANNED: the code's "Tap to pay", the café's Sales and Settings. */
+const PLANNED_ON = ['pos.code', 'pos.sales', 'biz.settings']
+
 /** Everything read on the pages of one test, fed to check-banned at its end. */
 function collector(page: Page) {
   const seen: string[] = []
   return {
     seen,
-    /** The visible copy passes, no dropped feature is offered, and PLANNED is only on "Tap to pay". */
+    /** The visible copy passes, no dropped feature is offered, and PLANNED is only on a planned feature. */
     async check(where: string): Promise<void> {
       await expectCleanVisibleCopy(page)
       await expectNoForbiddenControls(page)
       const text = await visibleTextOf(page)
       expect(text, `${where}: coming soon`).not.toMatch(/coming soon/i)
-      for (const screen of await plannedScreens(page)) expect(screen, `${where}: PLANNED`).toBe('pos.code')
+      for (const screen of await plannedScreens(page))
+        expect(PLANNED_ON, `${where}: PLANNED on ${screen}`).toContain(screen)
       seen.push(`--- ${where}\n${text}`)
     },
   }

@@ -188,6 +188,7 @@ hubs:
     paymentLink: Payment link
     splitBill: Split a bill
     myCode: My code
+    refundSale: Refund a sale
     allPayments: All payments
     paySupplier: Pay supplier
     topup: Top up
@@ -748,6 +749,30 @@ payouts:
   rowManual: "{amount} BCPS · Cash out"
   rowEur: "≈ €{eur}"
   included: "Conversion to EUR: 1.5% is included."
+
+# The café's sales (pos.sales): today, or the last seven days.
+sales:
+  rangeLabel: Period
+  today: Today
+  week: 7 days
+  kpiSales: SALES
+  kpiGross: GROSS
+  kpiFees: FEES
+  kpiNet: NET
+  refunds: "Refunds −{amount}"
+  listHeading: SALES
+  refunded: REFUNDED ✓
+  chartLabel: Sales per day
+  closed: Closed
+  barLine: "{day} · {count} payments · {gross} BCPS"
+  barClosed: "{day} · Closed"
+  tableDay: Day
+  tableSales: Sales
+  tableGross: Gross
+  conversions: CONVERSIONS TO EUR
+  conversionLine: "{amount} BCPS"
+  exportCsv: Export CSV
+  accounting: Accounting integration
 
 # Auto-convert settings (biz.autoconvert.*): saved and shown; nothing converts by itself.
 autoConvert:

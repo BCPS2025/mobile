@@ -38,6 +38,7 @@ pos:
     - { tile: cashOut, icon: landmark,    opens: hub, subline: autoConvert }
   hubs:
     sales:
+      - { section: todayKpis }
       - { row: allPayments, icon: list }
     pay:
       - { row: paySupplier, icon: truck, subline: supplierHint }

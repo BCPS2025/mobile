@@ -123,7 +123,7 @@ test.describe('the café: every live tile, hub row, view, detail and the first s
 
     // Sales › All payments › a payment, and back out.
     await page.locator('[data-tile="sales"]').click()
-    await expect(page.locator('[data-screen="pos.sales.hub"]')).toBeVisible()
+    await expect(page.locator('[data-screen="pos.sales"]')).toBeVisible()
     await hasBackAndHome(page)
     await page.getByTestId('row-allPayments').click()
     const history = page.locator('[data-screen="biz.history"]')
@@ -135,7 +135,7 @@ test.describe('the café: every live tile, hub row, view, detail and the first s
     await page.getByTestId('nav-back').click()
     await expect(history).toBeVisible()
     await page.getByTestId('nav-back').click()
-    await expect(page.locator('[data-screen="pos.sales.hub"]')).toBeVisible()
+    await expect(page.locator('[data-screen="pos.sales"]')).toBeVisible()
     await page.getByTestId('nav-home').click()
 
     // Pay › Pay supplier (opens on its review) and back.
@@ -335,7 +335,7 @@ test.describe('the crawler', () => {
         'pos.charge',
         'pos.home',
         'pos.pay',
-        'pos.sales.hub',
+        'pos.sales',
         'shared.about',
         'shared.cashout.amount',
         'shared.notifications',

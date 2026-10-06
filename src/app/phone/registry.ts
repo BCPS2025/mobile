@@ -101,7 +101,7 @@ export const HUBS: Record<HubId, HubSpec> = {
   payRequest: { screen: 'c.payRequest.hub', shell: 'consumer' },
   wallet: { screen: 'c.wallet.hub', shell: 'consumer', header: 'balance', heading: 'money' },
   profile: { screen: 'c.profile', shell: 'consumer', header: 'identity' },
-  sales: { screen: 'pos.sales.hub', shell: 'pos' },
+  sales: { screen: 'pos.sales', shell: 'pos' },
   pay: { screen: 'pos.pay', shell: 'pos' },
   cashOut: { screen: 'pos.cashOut', shell: 'pos', header: 'balance', heading: 'money' },
   settings: { screen: 'biz.settings', shell: 'pos' },

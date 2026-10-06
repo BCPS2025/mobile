@@ -47,3 +47,12 @@ export function StatusChip({
     </p>
   )
 }
+
+/** A soft green tag without a border: "REFUNDED ✓" on a sale that was refunded. */
+export function DoneTag({ children }: { children: ReactNode }) {
+  return (
+    <span className="shrink-0 bg-green-50 px-[7px] py-[3px] font-body text-[11px] leading-[14px] font-semibold tracking-[0.08em] text-green-700">
+      {children}
+    </span>
+  )
+}
