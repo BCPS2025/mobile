@@ -227,3 +227,40 @@ test.describe('when a bank transfer arrives', () => {
     await expect(ana.locator('[data-screen="shared.notifications"]')).toBeVisible()
   })
 })
+
+test.describe('the error line of a request the balance cannot cover', () => {
+  test('250.00 asked of Ana is 5.00 BCPS short: the line offers Top up with €5, replacing the check', async ({
+    page,
+  }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    const ok = await page.evaluate(
+      () =>
+        (window as unknown as { __bcps: { dispatch(c: unknown): { ok: boolean } } }).__bcps.dispatch({
+          type: 'request.create',
+          actor: 'marko',
+          cmdId: '00000000e2e00001:review',
+          channel: 'username',
+          payer: '@ana',
+          amount: 25000,
+          note: 'Concert',
+        }).ok,
+    )
+    expect(ok).toBe(true)
+    await ana.locator('[data-tile="payRequest"]').click()
+    await ana
+      .getByTestId(/^pay-item-/)
+      .filter({ hasText: 'Concert' })
+      .click()
+    const check = ana.locator('[data-screen="c.payItem.review"]')
+    await expect(check.getByTestId('error-line')).toContainText('You have 247.50 BCPS. Top up 5.00 BCPS to pay.')
+    await expect(ana.getByRole('button', { name: /^Pay / })).toBeDisabled()
+    await check.getByTestId('error-top-up').click()
+    await expect(ana.locator('[data-screen="shared.topup.amount"]')).toBeVisible()
+    await expect(ana.getByTestId('amount-value')).toHaveText('€5')
+    await expect(ana.getByTestId('top-up-get')).toHaveText('You get 5.50 BCPS')
+    // Back leaves Top up for the list the check came from.
+    await ana.getByTestId('nav-back').click()
+    await expect(ana.locator('[data-screen="c.payRequest.hub"]')).toBeVisible()
+  })
+})

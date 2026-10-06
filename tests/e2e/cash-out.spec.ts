@@ -7,6 +7,9 @@ import {
   expectBalance,
   expectCleanVisibleCopy,
   expectNoSeriousViolations,
+  openApp,
+  pay,
+  SALE,
   slot,
   stageBoth,
   typeAmount,
@@ -288,5 +291,62 @@ test.describe('the café’s Cash out list, payouts and auto-convert', () => {
     await expect(done).toContainText('from €100.00 · local payment method')
     await cafe.getByRole('button', { name: 'Done' }).click()
     await expectBalance(page, 'cafe', '396.00')
+  })
+
+  test('after a sale and the bakery order the next run is 144.00 BCPS → ≈ €128.95', async ({ page }) => {
+    await stageBoth(page)
+    const cafe = slot(page, 'right')
+    await pay(page, SALE)
+    await pay(page, { actor: 'cafe', to: '@pekarnazrno', amount: 880, debit: 889, note: 'Croissant delivery' })
+    await expectBalance(page, 'cafe', '288.00')
+    await cafe.locator('[data-tile="cashOut"]').click()
+    await cafe.getByTestId('row-autoConvert').click()
+    for (let i = 0; i < 3; i++) await cafe.getByRole('button', { name: 'Continue' }).click()
+    await expect(cafe.getByTestId('auto-convert-next')).toHaveText('Next: tonight 23:00 · ≈ 144.00 BCPS → ≈ €128.95')
+  })
+})
+
+test.describe('on a 320 px phone', () => {
+  test('nothing scrolls the page sideways, and every money screen fits its dock', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 })
+    await openApp(page, '#/phone/ana')
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+    const phone = slot(page, 'single')
+    await phone.locator('[data-tile="wallet"]').click()
+    expect(await wide()).toBe(false)
+    await phone.getByTestId('row-topup').click()
+    expect(await wide()).toBe(false)
+    await typeAmount(phone, '5')
+    await phone.locator('[data-key="00"]').click()
+    await phone.getByRole('button', { name: 'Continue' }).click()
+    expect(await wide()).toBe(false)
+    await phone.getByTestId('method-bank-transfer').click()
+    await phone.getByRole('button', { name: 'Continue' }).click()
+    expect(await wide()).toBe(false)
+    await expect(phone.getByRole('button', { name: 'Top up €500.00' })).toBeInViewport()
+    await phone.getByRole('button', { name: 'Top up €500.00' }).click()
+    await expect(phone.locator('[data-screen="shared.topup.onItsWay"]')).toBeVisible()
+    expect(await wide()).toBe(false)
+    await phone.getByRole('button', { name: 'Done' }).click()
+    await phone.locator('[data-tile="wallet"]').click()
+    await phone.getByTestId('row-cashOut').click()
+    await typeAmount(phone, '1.09')
+    await expect(phone.getByRole('button', { name: 'Continue' })).toBeInViewport()
+    expect(await wide()).toBe(false)
+    await phone.getByTestId('nav-home').click()
+    await page.getByTestId('pill').click()
+    await page.getByTestId('account-cafe').click()
+    await phone.locator('[data-tile="cashOut"]').click()
+    expect(await wide()).toBe(false)
+    await phone.getByTestId('row-payoutHistory').click()
+    expect(await wide()).toBe(false)
+    await phone.getByTestId('nav-back').click()
+    await phone.getByTestId('row-autoConvert').click()
+    for (const next of ['schedule', 'share', 'review']) {
+      await phone.getByRole('button', { name: 'Continue' }).click()
+      await expect(phone.locator(`[data-screen="biz.autoconvert.${next}"]`)).toBeVisible()
+      expect(await wide(), next).toBe(false)
+    }
+    await expect(phone.getByRole('button', { name: 'Save' })).toBeInViewport()
   })
 })
