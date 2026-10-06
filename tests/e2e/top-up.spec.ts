@@ -146,3 +146,84 @@ test.describe('Top up by bank transfer', () => {
     await expect(ana.locator('[data-screen="c.history"]')).toBeVisible()
   })
 })
+
+const advance = (page: import('@playwright/test').Page, ms: number) =>
+  page.evaluate((n) => (window as unknown as { __bcps: { advance(ms: number): unknown } }).__bcps.advance(n), ms)
+
+async function bankTransfer(ana: import('@playwright/test').Locator) {
+  await ana.locator('[data-tile="wallet"]').click()
+  await ana.getByTestId('row-topup').click()
+  await keys(ana, ['5', '0'])
+  await ana.getByRole('button', { name: 'Continue' }).click()
+  await ana.getByTestId('method-bank-transfer').click()
+  await ana.getByRole('button', { name: 'Continue' }).click()
+  await ana.getByRole('button', { name: 'Top up €50.00' }).click()
+  await expect(ana.locator('[data-screen="shared.topup.onItsWay"]')).toBeVisible()
+}
+
+test.describe('when a bank transfer arrives', () => {
+  test('at 14:15 the same screen reads TOPPED UP and the balance follows', async ({ page }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    await bankTransfer(ana)
+    await advance(page, 2 * 3_600_000 + 1000)
+    const done = ana.locator('[data-screen="shared.topup.done"]')
+    await expect(done).toBeVisible()
+    await expect(done).toContainText('TOPPED UP')
+    await expect(done).toContainText('+55.00')
+    await expect(done).toContainText('from €50.00 · bank transfer')
+    await ana.getByRole('button', { name: 'Done' }).click()
+    await expectBalance(page, 'ana', '302.50')
+    // History has the arrived top-up, no longer PENDING, and the bell holds the arrival.
+    await ana.locator('[data-tile="history"]').click()
+    await expect(ana.getByTestId(/^ramp-/)).toHaveCount(0)
+    await ana.getByTestId('chip-topupsCashouts').click()
+    await expect(ana.getByTestId('history-list').locator('li')).toHaveCount(3)
+  })
+
+  test('asked for after the banks close on Friday: expected Mon 10:00', async ({ page }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    // Fri 12:15 → 16:30.
+    await advance(page, 4 * 3_600_000 + 15 * 60_000)
+    await bankTransfer(ana)
+    await expect(ana.getByTestId('top-up-timeline')).toContainText('Expected Mon 10:00')
+    await expect(ana.getByTestId('top-up-timeline')).toContainText('Requested')
+    await expect(ana.getByTestId('top-up-timeline')).toContainText('Fri 25 Sep · 16:30')
+  })
+
+  test('away from the screen: a banner says "Top-up arrived", the bell holds it and it opens the payment', async ({
+    page,
+  }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    await bankTransfer(ana)
+    await ana.getByRole('button', { name: 'Done' }).click()
+    // The Lunch request and the transfer on its way.
+    await expect(ana.getByTestId('bell-count')).toHaveText('2')
+    await advance(page, 2 * 3_600_000 + 1000)
+    const banner = ana.getByTestId('banner')
+    await expect(banner).toContainText('Top-up arrived · +55.00 BCPS')
+    await expect(banner).toContainText('Bank transfer · €50.00')
+    await expectBalance(page, 'ana', '302.50')
+    await expect(ana.getByTestId('bell-count')).toHaveText('3')
+    await banner.click()
+    await expect(ana.locator('[data-screen="shared.tx"]')).toContainText('No top-up fee')
+  })
+
+  test('the notification of a transfer on its way opens its timeline', async ({ page }) => {
+    await anaAndMarko(page)
+    const ana = slot(page, 'left')
+    await bankTransfer(ana)
+    await ana.getByRole('button', { name: 'Done' }).click()
+    await ana.getByTestId('bell').click()
+    await ana
+      .getByTestId(/^notification-/)
+      .filter({ hasText: 'Top-up on its way · €50' })
+      .click()
+    await expect(ana.locator('[data-screen="shared.topup.onItsWay"]')).toBeVisible()
+    await expect(ana.getByTestId('top-up-timeline')).toContainText('Expected Fri 14:15')
+    await ana.getByRole('button', { name: 'Done' }).click()
+    await expect(ana.locator('[data-screen="shared.notifications"]')).toBeVisible()
+  })
+})
