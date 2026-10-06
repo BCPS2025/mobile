@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { stageKeyOf } from '@store/sessions'
+import { ui } from '../copy'
 import { useApp } from '../state/AppContext'
 import { useReducedMotion } from '../state/motion'
 
@@ -71,8 +72,11 @@ export function TokenTravel() {
       }, ms)
       timers.add(id)
     }
-    const nameOf = (id: string, party?: string): string | null => {
+    const nameOf = (id: string, party?: string, kind?: string): string | null => {
       if (id === 'sys:offstage') return party ?? null
+      // Money in from a top-up and out to a bank has no phone: the edge marker names where it comes from or goes to.
+      if (id === 'sys:issuance')
+        return kind === 'on-ramp' ? ui.stage.edgeTopUp : kind === 'off-ramp' ? ui.stage.edgeBank : null
       return app.persona(id)?.displayName ?? null
     }
     const off = app.bus.on('money-moved', (e) => {
@@ -94,7 +98,7 @@ export function TokenTravel() {
       }
       const here = ra ?? rb
       const key = fromKey ?? toKey
-      const other = ra ? nameOf(e.to, e.party) : nameOf(e.from, e.party)
+      const other = ra ? nameOf(e.to, e.party, e.kind) : nameOf(e.from, e.party, e.kind)
       if (!here || !key) return
       if (other === null) {
         if (rb) later(() => light(b), LIGHT_AT_MS)

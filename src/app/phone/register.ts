@@ -5,6 +5,7 @@ import { payItemFlow } from '../flows/payItem'
 import { paymentLinkFlow } from '../flows/paymentLink'
 import { requestFlow } from '../flows/request'
 import { splitFlow } from '../flows/split'
+import { topUpFlow } from '../flows/topUp'
 import { paySupplierFlow } from '../flows/paySupplier'
 import { scanFlow } from '../flows/scan'
 import { sendFlow } from '../flows/send'
@@ -15,6 +16,8 @@ import { AboutView } from './AboutView'
 import { HistoryView } from './views/HistoryView'
 import { IdentityCard } from './views/IdentityCard'
 import { NotificationsView } from './views/NotificationsView'
+import { BalanceHeader } from './views/BalanceHeader'
+import { RampDetailView } from './views/RampDetail'
 import { LinkDetail } from './views/LinkDetail'
 import { MyCodeView } from './views/MyCode'
 import { ReceivedDetail } from './views/ReceivedDetail'
@@ -40,11 +43,13 @@ registerView('history', HistoryView)
 registerView('notifications', NotificationsView)
 registerView('myCode', { consumer: MyCodeView })
 registerHubHeader('identity', IdentityCard)
+registerHubHeader('balance', BalanceHeader)
 registerDetail('tx', TxDetailView)
 registerDetail('received', ReceivedDetail)
 registerDetail('request', RequestDetail)
 registerDetail('link', LinkDetail)
 registerDetail('split', SplitDetail)
+registerDetail('ramp', RampDetailView)
 registerFlow(logoutFlow)
 registerFlow(scanFlow)
 registerFlow(sendFlow)
@@ -56,3 +61,4 @@ registerFlow(paymentLinkFlow)
 registerFlow(cancelRequestFlow)
 registerFlow(splitFlow)
 registerFlow(cancelSplitFlow)
+registerFlow(topUpFlow)

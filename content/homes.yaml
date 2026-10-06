@@ -21,7 +21,8 @@ consumer:
       - { row: splitBill,   icon: split,           subline: splitHint }
       - { section: waiting }
     wallet:
-      - { row: myCode, icon: qr-code }
+      - { row: topup,   icon: plus,     subline: topUpHint }
+      - { row: myCode,  icon: qr-code }
     profile:
       - { row: myCode,        icon: qr-code }
       - { row: notifications, icon: bell }

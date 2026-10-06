@@ -188,6 +188,7 @@ hubs:
     myCode: My code
     allPayments: All payments
     paySupplier: Pay supplier
+    topup: Top up
     notifications: Notifications
     about: About BCPS
     logout: Log out
@@ -199,11 +200,13 @@ hubs:
     toPay: "{count} to pay"
     supplierHint: By @name, code or invoice
     salesToday: "{count} today · {gross}"
+    topUpHint: No top-up fee
 
   sections:
     toPay: TO PAY
     payRequest: PAY & REQUEST
     waiting: WAITING
+    money: MONEY
 
 home:
   profile: Profile
@@ -665,6 +668,41 @@ myCode:
   copied: Copied
   share: Share payment link
 
+# Top up (shared.topup.*): euros in, BCPS out, no fee.
+topUp:
+  title: Top up
+  link: Top up
+  amountTitle: How much?
+  youGet: "You get {amount} BCPS"
+  noFee: No top-up fee
+  methodTitle: How do you want to top up?
+  methodGroup: Top-up method
+  methodCard: "Card •• {last4}"
+  methodBank: "Bank transfer from {bank}"
+  methodLocal: Local payment method
+  instant: Instant
+  bankHint: When your bank sends it
+  reviewTitle: Check and top up
+  rowAmount: Amount
+  rowMethod: Method
+  rowFee: Fee
+  rowGet: You get
+  button: "Top up €{eur}"
+  doneOverline: TOPPED UP
+  from: "from €{eur} · {method}"
+  fromBank: "from €{eur} · bank transfer"
+  fromLocal: "from €{eur} · local payment method"
+  ready: Ready to spend
+  waitOverline: ON ITS WAY
+  stepRequested: Requested
+  stepSent: Your bank sends it
+  stepSentHint: When your bank sends it
+  stepExpected: "Expected {when}"
+  stepArrived: In your BCPS balance
+  stepArrivedHint: Seconds after it arrives
+  rowFrom: From
+  rowReference: Reference
+
 profile:
   identity: "ID card · {country} · verified"
   who: "{name} · {handle}"
@@ -688,6 +726,8 @@ stage:
   toastOpen: "Open {name}"
   counter: "Merchant payments {count} · fees {fees} BCPS ≈ €{eur} vs cards typically ≈ €{cardLow}–{cardHigh} plus additional charges"
   travelEdge: "{name}"
+  edgeTopUp: Top up
+  edgeBank: Bank
   handover: "Now on this phone"
 
 accountMenu:

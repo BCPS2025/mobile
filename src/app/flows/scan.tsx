@@ -25,6 +25,7 @@ import { MoneySuccess } from './MoneySuccess'
 import { AmountStep, parseAmount } from './steps/AmountStep'
 import { ReviewStep } from './steps/ReviewStep'
 import { partyLines } from './steps/PickPartyStep'
+import { TopUpAction, topUpLink } from './topUpOffer'
 import type { FlowApi, FlowCtx, FlowImpl, StepProps } from './types'
 
 // Scan (c.scan, c.scan.nearby, c.scan.counterAmount, c.payCode.review): there is no camera. The
@@ -359,6 +360,8 @@ function ReviewBody({ d, ctx, api, sending }: StepProps<Draft>) {
       : short !== null
         ? errorText({ code: 'insufficient-funds', have, short })
         : null
+  // A balance that falls short offers Top up; a code that is no longer open does not.
+  const offer = !sending && short !== null && (!code || code === 'open')
   const fee = { fee: formatMinor(quote.fee), eur: eur(quote.fee, ctx.rate) }
   const amount = parseAmount(d.amount)
   return (
@@ -395,7 +398,14 @@ function ReviewBody({ d, ctx, api, sending }: StepProps<Draft>) {
       total={quote.senderDebit}
       balanceAfter={asMinor(have - quote.senderDebit)}
     >
-      {problem && <ErrorLine className="mt-3">{problem}</ErrorLine>}
+      {problem && (
+        <ErrorLine
+          className="mt-3"
+          {...(offer && short !== null ? { action: <TopUpAction ctx={ctx} short={short} api={api} /> } : {})}
+        >
+          {problem}
+        </ErrorLine>
+      )}
     </ReviewStep>
   )
 }
@@ -452,6 +462,12 @@ export const scanFlow: FlowImpl<Draft> = {
         const quote = merchant ? counterQuote(ctx, merchant.id, parseAmount(d.amount)) : null
         const short = quote ? quote.senderDebit > available(ctx.state, ctx.persona) : false
         return { label: ui.common.continue, tone: 'navy', enabled: quote !== null && !short }
+      },
+      secondary: (d, ctx, api) => {
+        const merchant = d.counter ? selectParty(ctx.state, d.counter) : undefined
+        const quote = merchant ? counterQuote(ctx, merchant.id, parseAmount(d.amount)) : null
+        const have = available(ctx.state, ctx.persona)
+        return topUpLink(ctx, quote && quote.senderDebit > have ? asMinor(quote.senderDebit - have) : null, api)
       },
       onPrimary: (_d, _ctx, api) => api.goto('review'),
       back: (d) => ({ step: d.fromList ? 'nearby' : 'scan' }),

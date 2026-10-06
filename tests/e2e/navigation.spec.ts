@@ -290,6 +290,7 @@ test.describe('the crawler', () => {
         'c.wallet.hub',
         'shared.about',
         'shared.notifications',
+        'shared.topup.amount',
         'shared.tx',
       ].sort(),
     )

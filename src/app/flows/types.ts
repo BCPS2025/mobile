@@ -38,6 +38,8 @@ export interface FlowApi<D> {
   leave(): void
   /** Leaves the flow and Home follows (Done). */
   done(): void
+  /** Replaces this flow with another, keeping the stack below it (the error line's Top up). */
+  handoff(id: FlowId, params?: Params): void
   /** Runs the step's primary action (the commit, or on to the next step). */
   press(): void
   /** Shows an error line on this step. */

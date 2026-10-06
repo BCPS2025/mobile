@@ -12,6 +12,8 @@ import { keypadInput } from '../../kit/Keypad'
 // The value is a plain decimal string ("16.5"), parsed with parseMinor by the flow.
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'] as const
+/** Whole euros: "00" in place of the decimal point (Top up). */
+export const EURO_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'del'] as const
 
 export interface AmountStepProps {
   title: string
@@ -55,7 +57,10 @@ export function AmountKeys({
   locked = false,
   onNavy = false,
   compact = false,
+  keys = KEYS,
 }: {
+  /** The keys, in rows of three (default: digits, the decimal point and delete). */
+  keys?: readonly string[]
   onPress: (key: string) => void
   locked?: boolean
   onNavy?: boolean
@@ -64,7 +69,7 @@ export function AmountKeys({
 }) {
   return (
     <div className={`grid grid-cols-3 gap-x-1 gap-y-1 pb-2 ${locked ? 'opacity-40' : ''}`}>
-      {KEYS.map((k) => (
+      {keys.map((k) => (
         <button
           key={k}
           type="button"

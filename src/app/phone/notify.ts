@@ -17,6 +17,7 @@ import type { NotificationSubject } from '@store/notifications'
 
 const TX: Target = { kind: 'detail', id: 'tx' }
 const RECEIVED: Target = { kind: 'detail', id: 'received' }
+const RAMP: Target = { kind: 'detail', id: 'ramp' }
 
 export interface NotificationRef {
   id: string
@@ -46,6 +47,7 @@ function routeOf(app: AppState, who: { persona: PersonaId; shell: Shell }, n: No
   if (subject.type === 'link') {
     return n.kind === 'link.received' ? { target: { kind: 'flow', id: 'payItem' }, params: { link: subject.id } } : null
   }
+  if (subject.type === 'ramp') return { target: RAMP, params: { rampId: subject.id } }
   if (n.txId === null) return null
   if (n.kind === 'split.completed') {
     const tx = entryOf(s.txs, n.txId)

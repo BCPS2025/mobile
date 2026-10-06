@@ -225,7 +225,10 @@ export function HistoryView() {
                     ) : item.kind === 'status' ? (
                       <StatusRowView row={item.row} text={statusText(item.row, tz)} onOpen={openStatus(item.row)} />
                     ) : (
-                      <RampRowView row={item.row} />
+                      <RampRowView
+                        row={item.row}
+                        onOpen={() => nav.open({ kind: 'detail', id: 'ramp' }, { rampId: item.row.ramp.id })}
+                      />
                     )}
                   </li>
                 ))}

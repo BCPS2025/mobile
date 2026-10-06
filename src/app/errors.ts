@@ -2,6 +2,7 @@ import { asMinor, formatMinor } from '@domain/money'
 import type { DomainError } from '@domain/types'
 import type { StoreRefusal } from '@store/runtime'
 import { fill, ui } from './copy'
+import { groupedInt } from './format'
 
 // The words for a refused command (feature copy `errors.*`): what the error line above the dock
 // says. A repeated command (`duplicate`) is silent.
@@ -22,9 +23,6 @@ export interface RefusalOptions {
   /** When the sale was refunded ("Fri 14:15"), for `already-refunded`. */
   time?: string
 }
-
-/** Whole numbers with commas: 10000 → "10,000". */
-const grouped = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
 /** The error line for a refusal, or null when nothing should be said. */
 export function errorText(err: Refusal, opts: RefusalOptions = {}): string | null {
@@ -50,7 +48,7 @@ export function errorText(err: Refusal, opts: RefusalOptions = {}): string | nul
     case 'invalid-amount': {
       // The top-up limit is in whole euros; the cash-out minimum and the split total come with the
       // amount that was exceeded or missed.
-      if (d.maxEur !== undefined) return fill(e.maxTopUp, { max: grouped(d.maxEur) })
+      if (d.maxEur !== undefined) return fill(e.maxTopUp, { max: groupedInt(d.maxEur) })
       if (d.min !== undefined) return fill(e.minCashOut, { min: formatMinor(d.min) })
       if (d.max === undefined) return fill(e.invalidAmount, { min: formatMinor(asMinor(0)) })
       return about === 'shares'

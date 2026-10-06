@@ -11,6 +11,7 @@ import { SuccessScreen } from '../phone/chrome/SuccessScreen'
 import { MoneySuccess } from './MoneySuccess'
 import { ConfirmStep } from './steps/ConfirmStep'
 import { partyLines } from './steps/PickPartyStep'
+import { TopUpAction } from './topUpOffer'
 import type { FlowCtx, FlowImpl, StepProps } from './types'
 
 // Pay what someone asked (c.payItem.*): a request from a person, a payment link they sent, or a
@@ -43,7 +44,7 @@ function figures(d: Draft, ctx: FlowCtx) {
   return { request, link, from, amount, note, quote, have, short, at, declinable: request !== undefined }
 }
 
-function ReviewBody({ d, ctx, sending }: StepProps<Draft>) {
+function ReviewBody({ d, ctx, api, sending }: StepProps<Draft>) {
   const { request, from, amount, note, quote, have: haveNow, short, at } = figures(d, ctx)
   if (!from || amount === undefined || !quote) return null
   const rate = ctx.rate
@@ -92,7 +93,7 @@ function ReviewBody({ d, ctx, sending }: StepProps<Draft>) {
       />
       <p className="mt-3 font-body text-body-s text-grey-600">{fill(asked, { name: first, when })}</p>
       {missing !== null && (
-        <ErrorLine className="mt-3">
+        <ErrorLine className="mt-3" action={<TopUpAction ctx={ctx} short={missing} api={api} />}>
           {errorText({ code: 'insufficient-funds', have: haveNow, short: missing })}
         </ErrorLine>
       )}

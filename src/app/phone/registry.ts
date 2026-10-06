@@ -24,8 +24,9 @@ export type FlowId =
   | 'split'
   | 'cancelRequest'
   | 'cancelSplit'
+  | 'topUp'
 export type ViewId = 'history' | 'notifications' | 'about' | 'myCode'
-export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split'
+export type DetailId = 'tx' | 'received' | 'request' | 'link' | 'split' | 'ramp'
 export type HubId = 'payRequest' | 'wallet' | 'sales' | 'pay' | 'profile' | 'settings'
 
 export type Target =
@@ -71,6 +72,7 @@ export const ROWS: Partial<Record<RowId, Target>> = {
   myCode: view('myCode'),
   allPayments: view('history'),
   paySupplier: flow('paySupplier'),
+  topup: flow('topUp'),
   notifications: view('notifications'),
   about: view('about'),
   logout: flow('logout'),
@@ -83,12 +85,14 @@ export interface HubSpec {
   /** data-screen of the hub. */
   screen: string
   shell: Shell
-  /** A block above the rows (Profile's identity card); the component is registered by name. */
-  header?: 'identity'
+  /** A block above the rows (Profile's identity card, the balance of a money list); the component is registered by name. */
+  header?: 'identity' | 'balance'
+  /** The rows sit under a small-caps heading of this name (copy `hubs.sections`). */
+  heading?: 'money'
 }
 export const HUBS: Record<HubId, HubSpec> = {
   payRequest: { screen: 'c.payRequest.hub', shell: 'consumer' },
-  wallet: { screen: 'c.wallet.hub', shell: 'consumer' },
+  wallet: { screen: 'c.wallet.hub', shell: 'consumer', header: 'balance', heading: 'money' },
   profile: { screen: 'c.profile', shell: 'consumer', header: 'identity' },
   sales: { screen: 'pos.sales.hub', shell: 'pos' },
   pay: { screen: 'pos.pay', shell: 'pos' },
@@ -108,12 +112,12 @@ export const VIEWS: Record<ViewId, ViewSpec> = {
   history: {
     screen: { consumer: 'c.history', pos: 'biz.history' },
     shells: ['consumer', 'pos'],
-    details: ['tx', 'request', 'link', 'split'],
+    details: ['tx', 'request', 'link', 'split', 'ramp'],
   },
   notifications: {
     screen: 'shared.notifications',
     shells: ['consumer', 'pos'],
-    details: ['tx', 'received', 'request', 'link', 'split'],
+    details: ['tx', 'received', 'request', 'link', 'split', 'ramp'],
   },
   about: { screen: 'shared.about', shells: ['consumer', 'pos'], details: [] },
   myCode: { screen: 'c.mycode', shells: ['consumer'], details: [], flows: ['paymentLink'] },
@@ -132,6 +136,8 @@ export const DETAILS: Record<DetailId, DetailSpec> = {
   request: { screen: 'c.request.detail', related: ['tx'], flows: ['cancelRequest'] },
   link: { screen: 'c.link.detail', related: ['tx'], flows: ['paymentLink'] },
   split: { screen: 'c.split.detail', related: ['tx'], flows: ['cancelSplit'] },
+  // A bank-transfer top-up on its way (or arrived): its timeline. It shares the screen of the flow's ending.
+  ramp: { screen: 'shared.topup.onItsWay', related: [], flows: [] },
 }
 
 export type StepKind = 'input' | 'review' | 'confirm' | 'waitFor' | 'committed'
@@ -183,8 +189,9 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     successScreen: 'c.payCode.success',
     moves: true,
     followOns: [],
-    // A personal code opens Send for that person, a payment link opens its check.
-    handoffs: ['send', 'payItem'],
+    // A personal code opens Send for that person, a payment link opens its check; an amount the
+    // balance cannot cover offers Top up.
+    handoffs: ['send', 'payItem', 'topUp'],
   },
   send: {
     shells: ['consumer'],
@@ -200,7 +207,8 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     successScreen: 'c.send.success',
     moves: true,
     followOns: [],
-    handoffs: [],
+    // Not enough balance: the error line offers Top up, which replaces this flow.
+    handoffs: ['topUp'],
   },
   charge: {
     shells: ['pos'],
@@ -232,7 +240,7 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     successScreen: 'biz.send.done',
     moves: true,
     followOns: [],
-    handoffs: [],
+    handoffs: ['topUp'],
   },
   // Pay what someone asked: a request, a payment link sent to you, a share of a split. Declining
   // (requests and shares) ends on a neutral screen.
@@ -249,7 +257,7 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     moves: true,
     endsAlsoOn: [{ screen: 'c.payItem.declined', kind: 'neutral' }],
     followOns: [],
-    handoffs: [],
+    handoffs: ['topUp'],
   },
   request: {
     shells: ['consumer'],
@@ -328,6 +336,23 @@ export const FLOWS: Record<FlowId, FlowSpec> = {
     followOns: [],
     handoffs: [],
   },
+  // Top up (shared.topup.*): whole euros, a method on file, Check and top up. A card or a local
+  // method settles like a payment; a bank transfer ends on its timeline (shared.topup.onItsWay).
+  topUp: {
+    shells: ['consumer', 'pos'],
+    startsFrom: ['hub'],
+    steps: [
+      { id: 'amount', screen: 'shared.topup.amount', kind: 'input' },
+      { id: 'method', screen: 'shared.topup.method', kind: 'input' },
+      { id: 'review', screen: 'shared.topup.review', kind: 'review' },
+    ],
+    commits: ['review'],
+    success: 'money',
+    successScreen: 'shared.topup.done',
+    moves: true,
+    followOns: [],
+    handoffs: [],
+  },
   logout: {
     shells: ['consumer', 'pos'],
     startsFrom: ['hub'],
@@ -363,6 +388,7 @@ export const FEATURES: readonly Feature[] = [
   { id: 'charge', shell: 'pos', target: flow('charge'), maxTaps: 1 },
   { id: 'salesHistory', shell: 'pos', target: view('history'), maxTaps: 2 },
   { id: 'paySupplier', shell: 'pos', target: flow('paySupplier'), maxTaps: 2 },
+  { id: 'topUp', shell: 'consumer', target: flow('topUp'), maxTaps: 2 },
   { id: 'notifications', shell: 'pos', target: view('notifications'), maxTaps: 1 },
   { id: 'about', shell: 'pos', target: view('about'), maxTaps: 2 },
   { id: 'logout', shell: 'pos', target: flow('logout'), maxTaps: 2 },

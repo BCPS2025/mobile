@@ -1,7 +1,6 @@
-import { fill, ui } from '../copy'
+import { ui } from '../copy'
 import { useLedger, useLedgerNode } from '@store/useLedger'
-import { formatMinor } from '@domain/money'
-import { badges, salesToday, selectAvailable } from '@store/selectors'
+import { badges, selectAvailable } from '@store/selectors'
 import { useApp, useUnread } from '../state/AppContext'
 import { BalanceBand } from './chrome/BalanceBand'
 import { BannerSlot } from './chrome/Banner'
@@ -13,6 +12,7 @@ import { isImplemented } from './implemented'
 import { usePhoneNav } from './nav'
 import { usePersonaPhone } from './PhoneContext'
 import { BELL, HOME_SCREENS, type HubId, homeOf, registeredRows, registeredTiles, type Target } from './registry'
+import { sublineOf } from './sublines'
 
 // Home: the header, the navy balance band and up to four tiles (2 × 2). A tile whose feature is
 // not live yet is absent (never disabled): it must be in content/homes.yaml, in the registry and
@@ -21,7 +21,7 @@ import { BELL, HOME_SCREENS, type HubId, homeOf, registeredRows, registeredTiles
 
 export function HomeScreen() {
   const app = useApp()
-  const { persona, shell } = usePersonaPhone()
+  const { persona, shell, tz } = usePersonaPhone()
   const nav = usePhoneNav()
   const node = useLedgerNode()
   const balance = useLedger(selectAvailable(persona))
@@ -37,17 +37,8 @@ export function HomeScreen() {
       : isImplemented(target, shell)
 
   /** The live line under a tile's label. */
-  const lineOf = (subline: string | undefined): string | null => {
-    if (subline === 'toPay') {
-      const count = badges(state, persona).toPay
-      return count > 0 ? fill(ui.hubs.sublines.toPay, { count }) : null
-    }
-    if (subline === 'salesToday') {
-      const t = salesToday(state, persona, node.now(), app.content.config.t0.tz)
-      return fill(ui.hubs.sublines.salesToday, { count: t.count, gross: formatMinor(t.gross) })
-    }
-    return null
-  }
+  const lineOf = (subline: string | undefined): string | null =>
+    sublineOf(subline, { state, content: app.content, persona, now: node.now(), tz })
 
   /** The count on a tile's corner. */
   const badgeOf = (badge: string | undefined): number | undefined => {

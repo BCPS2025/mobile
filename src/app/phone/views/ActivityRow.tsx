@@ -240,12 +240,17 @@ export function StatusRowView({
   )
 }
 
-/** A bank transfer asked for and not yet arrived: "Top up" over "Bank transfer · on its way", PENDING, +55.00. */
-export function RampRowView({ row }: { row: ActivityRampRow }) {
+/**
+ * A bank transfer asked for and not yet arrived: "Top up" over "Bank transfer · on its way", PENDING,
+ * +55.00. It opens the timeline of the transfer.
+ */
+export function RampRowView({ row, onOpen }: { row: ActivityRampRow; onOpen: () => void }) {
   const method = row.ramp.method ?? 'bank-transfer'
   return (
-    <div
-      className="flex min-h-14 w-full items-center gap-3 border-b border-line-100 py-1"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex min-h-14 w-full items-center gap-3 border-b border-line-100 py-1 text-left active:bg-line-100"
       data-testid={`ramp-${row.ramp.id}`}
     >
       {tone(method === 'card' ? CreditCard : Landmark)}
@@ -257,7 +262,7 @@ export function RampRowView({ row }: { row: ActivityRampRow }) {
       <span className="shrink-0 font-body text-body font-semibold text-green-700 tnum">
         {formatSignedMinor(row.signed)}
       </span>
-    </div>
+    </button>
   )
 }
 

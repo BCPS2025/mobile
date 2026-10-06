@@ -174,8 +174,19 @@ test.describe('send on the stage @webkit', () => {
     await expect(ana.getByTestId('error-line')).toContainText('You have 247.50 BCPS. Top up')
     await expect(ana.getByTestId('error-line')).toContainText('BCPS to pay.')
     await expect(ana.getByRole('button', { name: 'Continue' })).toBeDisabled()
-    // No Top up link yet.
-    await expect(ana.getByRole('button', { name: 'Top up' })).toHaveCount(0)
+    // The dock offers Top up with the shortfall in whole euros: 300.00 + 3.00 fee − 247.50 = 55.50 BCPS ≈ €50.45, so €51.
+    await expect(ana.getByRole('button', { name: 'Top up' })).toHaveCount(1)
+    await ana.getByRole('button', { name: 'Top up' }).click()
+    await expect(ana.locator('[data-screen="shared.topup.amount"]')).toBeVisible()
+    await expect(ana.getByTestId('amount-value')).toHaveText('€51')
+    await expect(ana.getByTestId('top-up-get')).toHaveText('You get 56.10 BCPS')
+    // It replaced the Send flow and kept the screens below it: Back lands on Pay & request.
+    await ana.getByTestId('nav-back').click()
+    await expect(ana.locator('[data-screen="c.payRequest.hub"]')).toBeVisible()
+    await ana.getByTestId('row-send').click()
+    await ana.getByTestId('party-search').fill('@marko')
+    await ana.getByRole('button', { name: 'Continue' }).click()
+    await type(page, '300')
     // The keypad stops at the account's limit: 999.99.
     for (let i = 0; i < 3; i++) await ana.locator('[data-key="del"]').click()
     await type(page, '9999')

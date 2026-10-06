@@ -16,6 +16,7 @@ import { AmountStep, parseAmount } from './steps/AmountStep'
 import { NoteStep } from './steps/NoteStep'
 import { PickPartyStep, partyLines } from './steps/PickPartyStep'
 import { ReviewStep } from './steps/ReviewStep'
+import { TopUpAction, topUpLink } from './topUpOffer'
 import type { FlowCtx, FlowImpl, StepProps } from './types'
 
 // The flows that pay a person or a business by @username: who, how much, an optional note, then
@@ -114,7 +115,7 @@ export function createPayFlow(cfg: PayFlowConfig): FlowImpl<PayDraft> {
   }
 
   function ReviewBody({ d, ctx, api, sending }: StepProps<PayDraft>) {
-    const { to, amount, quote, have: haveNow } = figures(d, ctx)
+    const { to, amount, quote, have: haveNow, short } = figures(d, ctx)
     if (!to || !quote) return null
     // While the payment sends, the balance already holds it: show the review as it was.
     const have = sending ? asMinor(haveNow + quote.senderDebit) : haveNow
@@ -150,7 +151,13 @@ export function createPayFlow(cfg: PayFlowConfig): FlowImpl<PayDraft> {
         feeLine={fill(ui.fee.transactionYou, { fee: formatMinor(quote.fee), eur: eur(quote.fee, ctx.rate) })}
         total={quote.senderDebit}
         balanceAfter={asMinor(have - quote.senderDebit)}
-      />
+      >
+        {short !== null && !sending && (
+          <ErrorLine className="mt-3" action={<TopUpAction ctx={ctx} short={short} api={api} />}>
+            {errorText({ code: 'insufficient-funds', have: haveNow, short })}
+          </ErrorLine>
+        )}
+      </ReviewStep>
     )
   }
 
@@ -183,6 +190,8 @@ export function createPayFlow(cfg: PayFlowConfig): FlowImpl<PayDraft> {
           const { amount, quote, short } = figures(d, ctx)
           return { label: ui.common.continue, tone: 'navy', enabled: amount > 0 && quote !== null && short === null }
         },
+        // Not enough balance: the dock offers Top up with the shortfall in whole euros.
+        secondary: (d, ctx, api) => topUpLink(ctx, figures(d, ctx).short, api),
       },
       {
         id: 'note',

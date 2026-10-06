@@ -27,6 +27,9 @@ export function counterpartyLabel(id: AccountId, party?: string): string {
   return p.kind === 'person' ? p.handle : p.displayName
 }
 
+/** A whole number with commas: 10000 → "10,000". */
+export const groupedInt = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
 export const eur = (m: Minor, rate: Rate): string => formatHundredths(approxEur(m, rate))
 export const approx = (m: Minor, rate: Rate): string => fill(ui.common.approxEur, { eur: eur(m, rate) })
 
@@ -123,10 +126,10 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export const dateChipText = (t: SimTime): string => dateTimeText(t, false)
 
 /** "Fri 25 Sep · 12:15:32": a date and time with seconds (receipts). */
-export function dateTimeText(t: SimTime, seconds = true): string {
-  const { date } = zonedParts(t, LJUBLJANA)
+export function dateTimeText(t: SimTime, seconds = true, tz: string = LJUBLJANA): string {
+  const { date } = zonedParts(t, tz)
   const [, month = '1', day = '1'] = date.split('-')
-  return `${formatWeekday(t, LJUBLJANA)} ${Number(day)} ${MONTHS[Number(month) - 1] ?? ''} · ${formatTime(t, LJUBLJANA, seconds)}`
+  return `${formatWeekday(t, tz)} ${Number(day)} ${MONTHS[Number(month) - 1] ?? ''} · ${formatTime(t, tz, seconds)}`
 }
 
 /** "Tue 22 Sep": a day heading. */

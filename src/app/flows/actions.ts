@@ -1,7 +1,7 @@
 import { newFlowInstanceId, cmdIdFor } from '@store/cmdIds'
 import { errorText } from '../errors'
 import { flowImpl } from '../phone/implemented'
-import { normalise, topFlow, updateFlow } from '../phone/stack'
+import { normalise, replaceFlow, topFlow, updateFlow } from '../phone/stack'
 import type { FlowScreen, Params, Shell, SlotKey } from '../phone/types'
 import type { AppState } from '../state/app'
 import type { PersonaId } from '@domain/types'
@@ -103,6 +103,11 @@ export function createFlowApi<D>(app: AppState, who: Who, instanceId: string): F
     leave,
     done() {
       if (current()) app.nav.set(who.persona, [{ kind: 'home' }])
+    },
+    handoff(id, params) {
+      if (!current()) return
+      const target = flowImpl(id) as FlowImpl<never> | undefined
+      if (target) app.nav.set(who.persona, replaceFlow(stackOf(), newFlowScreen(app, who, target, params)))
     },
     press() {
       const f = current()

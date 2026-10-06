@@ -64,7 +64,7 @@ describe('the registry against content/homes.yaml', () => {
       'paymentLink',
       'splitBill',
     ])
-    expect(registeredRows(homes.consumer, 'wallet').map((r) => r.row)).toEqual(['myCode'])
+    expect(registeredRows(homes.consumer, 'wallet').map((r) => r.row)).toEqual(['topup', 'myCode'])
     expect(registeredRows(homes.pos, 'sales').map((r) => r.row)).toEqual(['allPayments'])
     expect(registeredRows(homes.pos, 'pay').map((r) => r.row)).toEqual(['paySupplier'])
   })
@@ -132,7 +132,7 @@ describe('screens and flows', () => {
       for (const from of f.startsFrom) expect(depth[from], `${id} from ${from}`).toBeLessThanOrEqual(MAX_BEFORE_FLOW)
     }
     // A hand-off replaces the flow (never stacks one on another), and a follow-on starts from Home.
-    expect(FLOWS.scan.handoffs).toEqual(['send', 'payItem'])
+    expect(FLOWS.scan.handoffs).toEqual(['send', 'payItem', 'topUp'])
     expect(FLOWS.charge.followOns).toEqual(['charge'])
   })
 
@@ -148,7 +148,7 @@ describe('screens and flows', () => {
   it('persisted screens are Home and the hubs, nothing else', () => {
     expect(isPersistedScreenId('home')).toBe(true)
     expect(isPersistedScreenId('hub:payRequest')).toBe(true)
-    expect(isPersistedScreenId('hub:cashOut')).toBe(false)
+    expect(isPersistedScreenId('hub:unknown')).toBe(false)
     expect(isPersistedScreenId('view:history')).toBe(false)
     expect(isPersistedScreenId('hub:constructor')).toBe(false)
   })
