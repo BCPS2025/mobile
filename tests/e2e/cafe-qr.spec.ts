@@ -174,7 +174,8 @@ test.describe('the café sale on the stage @webkit', () => {
     await expect(detail).toContainText('paid by Café Lipa')
     await expect(detail).toContainText('Final · no chargebacks')
     await expect(detail).toContainText('Cards typically ≈ €0.15–0.30 · 1.5–3% plus additional charges')
-    await expect(detail.getByRole('button', { name: 'Refund' })).toHaveCount(0)
+    // A named sale can be refunded from its detail.
+    await expect(detail.getByRole('button', { name: 'Refund' })).toHaveCount(1)
   })
 
   test('Espresso 2.20 alone: fee 0.02 and no card comparison', async ({ page }) => {
