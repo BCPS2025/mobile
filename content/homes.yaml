@@ -1,0 +1,60 @@
+# Home screens: a balance band plus centred tiles (2 × 2) per shell, and the list behind each
+# tile. Only what is live is listed: a tile or row whose feature is not live yet is absent (never
+# disabled), and a shell is added when its first tile is live. `complete: true` (the last
+# milestone) requires every shell, exactly the four D28 tiles in order and every hub row.
+# `opens` is flow (a task directly), hub (one list of rows) or view. `avatar` names the list the
+# header avatar opens. Rows: `row`, `icon`, optional `subline`, `badge`, `planned`; `section`
+# entries are lists filled from state. Labels live in copy.en.yaml (tiles.*, hubs.*).
+consumer:
+  avatar: profile
+  tiles:
+    - { tile: scan,       icon: scan-line,        opens: flow }
+    - { tile: payRequest, icon: arrow-left-right, opens: hub, badge: toPay, subline: toPay }
+    - { tile: wallet,     icon: wallet,           opens: hub }
+    - { tile: history,    icon: list,             opens: view }
+  hubs:
+    payRequest:
+      - { section: toPay }
+      - { row: send,        icon: arrow-up-right,  subline: sendHint }
+      - { row: request,     icon: arrow-down-left, subline: requestHint }
+      - { row: paymentLink, icon: link,            subline: linkHint }
+      - { row: splitBill,   icon: split,           subline: splitHint }
+      - { section: waiting }
+    wallet:
+      - { row: topup,   icon: plus,     subline: topUpHint }
+      - { row: cashOut, icon: banknote, subline: cashOutTo }
+      - { row: myCode,  icon: qr-code }
+    profile:
+      - { row: myCode,        icon: qr-code }
+      - { row: notifications, icon: bell }
+      - { row: about,         icon: info }
+      - { row: logout,        icon: log-out }
+pos:
+  avatar: settings
+  tiles:
+    - { tile: charge,  icon: qr-code,     opens: flow }
+    - { tile: sales,   icon: bar-chart-3, opens: hub, subline: salesToday }
+    - { tile: pay,     icon: file-text,   opens: hub, badge: invoicesToPay, subline: toPay }
+    - { tile: cashOut, icon: landmark,    opens: hub, subline: autoConvert }
+  hubs:
+    sales:
+      - { section: todayKpis }
+      - { row: refundSale, icon: undo-2 }
+      - { row: allPayments, icon: list }
+    pay:
+      - { section: invoicesToPay }
+      - { row: paySupplier, icon: truck, subline: supplierHint }
+      - { row: invoices,    icon: file-text, subline: invoicesToPay }
+    cashOut:
+      - { row: cashOut,       icon: banknote, subline: cashOutTo }
+      - { row: topup,         icon: plus,     subline: topUpHint }
+      - { row: autoConvert,   icon: repeat,   subline: autoConvertOn }
+      - { row: payoutHistory, icon: history,  subline: payoutsThisWeek }
+    settings:
+      - { row: feePayer,      icon: receipt,   subline: feePayer }
+      - { row: autoConvert,   icon: repeat,    subline: autoConvertOn }
+      - { row: payoutAccount, icon: landmark,  subline: payoutAccount }
+      - { row: biometrics,    icon: scan-face }
+      - { row: integrations,  icon: plug }
+      - { row: about,         icon: info }
+      - { row: logout,        icon: log-out }

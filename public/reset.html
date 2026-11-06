@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#0D1B2A" />
+    <!-- Classic inline script only (no JS modules); allowed by its hash. Update the hash if the script changes (tests/unit/reset-page.test.ts checks it). -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'sha256-xuKdL61C5crKSjaP8y0gSx3gfYd1Kfy+H31jPa6sq68='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"
+    />
+    <title>BCPS · Reset</title>
+    <style>
+      body { margin: 0; padding: 48px 16px; font: 16px/1.5 system-ui, sans-serif; color: #0D1B2A; background: #F8F9FA; text-align: center; }
+      a { color: #007A4D; }
+    </style>
+  </head>
+  <body>
+    <p>Resetting BCPS on this device…</p>
+    <p><a href="./">Open BCPS</a></p>
+    <script>
+      (function () {
+        // Everything under this page's folder belongs to the app.
+        var base = new URL('./', location.href).href;
+        var done = false;
+        function finish() {
+          if (done) return;
+          done = true;
+          location.replace(base);
+        }
+        var tasks = [];
+        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+          tasks.push(
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(
+                regs
+                  .filter(function (r) { return r.scope.indexOf(base) === 0; })
+                  .map(function (r) { return r.unregister(); })
+              );
+            })
+          );
+        }
+        if (window.caches && caches.keys) {
+          tasks.push(
+            caches.keys().then(function (keys) {
+              return Promise.all(
+                keys
+                  .filter(function (k) { return k.indexOf(base) !== -1; })
+                  .map(function (k) { return caches.delete(k); })
+              );
+            })
+          );
+        }
+        Promise.all(tasks).then(finish, finish);
+        setTimeout(finish, 4000);
+      })();
+    </script>
+  </body>
+</html>

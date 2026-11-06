@@ -1,0 +1,1036 @@
+# Every public UI string. Fields in {braces} are filled in by the app.
+# Keep clock times out of copy; the app formats times from its own clock.
+
+app:
+  title: BCPS
+
+boot:
+  framed: This page can't be displayed inside another site.
+
+tape:
+  row: "{time} {from} → {to} · {amount} BCPS · {status} · fee {fee} · {ref}"
+  empty: No payments yet today
+  status:
+    pending: sending
+    confirmed: settled
+
+fee:
+  chip: Fee 1% · {fee} BCPS (≈ €{eur})
+  chipShort: Fee 1% · {fee} (≈ €{eur}) · {payer}
+  chipNone: No fee
+  chipConversion: Conversion 1.5% · {fee}
+  chipCards: Cards 1.5–3% +
+  payerYou: you
+  transaction: Transaction fee 1% · {fee} BCPS (≈ €{eur})
+  paidBy: Transaction fee 1% · paid by {name}
+  paidByYou: Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by you · total {total}
+  lineYou: "{fee} BCPS (≈ €{eur}) · paid by you · total {total}"
+  lineOther: "{fee} BCPS (≈ €{eur}) · paid by {name}"
+  transactionYou: "Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by you"
+  transactionBy: "Transaction fee 1% · {fee} BCPS (≈ €{eur}) · paid by {name}"
+  feeInfo: "A 1% fee on every payment, always shown before you pay. Conversion to EUR: 1.5%."
+  cardInfo: Card-network merchant fees are commonly quoted at 1.5–3% or higher, depending on the contract, plus additional charges.
+  infoLabel: More about this fee
+  cardInfoLabel: More about card fees
+
+# Merchant payment-detail lines (shared.tx, the business view of a sale).
+txDetail:
+  net: Net {net} · Transaction fee 1% · {fee} BCPS (≈ €{eur})
+  cards: Cards typically ≈ €{cardLow}–{cardHigh} · 1.5–3% plus additional charges
+  payout: Card payout would typically arrive {first}–{last} (1–3 business days) · typical
+  final: Final · no chargebacks
+
+errors:
+  insufficientFunds: You have {have} BCPS. Top up {short} BCPS to pay.
+  unknownRecipient: No BCPS user '{handle}'. Check the spelling.
+  selfPayment: You can't pay yourself.
+  selfRequest: You can't request from yourself.
+  payByInvoice: Businesses pay by invoice
+  invalidAmount: "Enter an amount above {min}."
+  maxAmount: The maximum is {max} BCPS.
+  maxTopUp: The maximum top-up is €{max}.
+  minCashOut: The minimum is {min} BCPS.
+  sharesOver: The shares add up to more than {total}.
+  invalidState: This was already {status}.
+  notAllowed: Only {name} can do this.
+  quoteChanged: The amount changed. Check it and try again.
+  expired: This code has expired
+  cancelled: This code was cancelled
+  paid: This code was already paid.
+  requestCancelled: This request was cancelled.
+  linkPaid: This link has already been paid.
+  ownLink: This is your own link.
+  alreadyRefunded: Refunded ✓ · {time}
+  refundShort: You have {have} BCPS. The refund needs {amount} BCPS.
+  sessionFull: Your session is getting long. Reset to start again.
+  generic: Something went wrong. Try again.
+
+# How a payment method is named in a notification line.
+methodLabels:
+  card: "Card •• {last4}"
+  bank-transfer: Bank transfer
+  local-method: Local payment method
+
+seedRows:
+  topUp: Top up · {method} €{eur}
+  methods:
+    bank-transfer: bank transfer
+    card: card
+    local-method: local payment method
+  carriedOver: Balance carried over
+  dailySales: Daily sales · {count} payments
+  todaySoFar: Today so far · {count} payments
+  autoConverted: "Auto-converted {sharePct}% to EUR · {amount} BCPS · Conversion to EUR: 1.5% · {fee} BCPS · ≈ €{eur} to bank"
+  cashOut: "Cash out · {amount} BCPS · Conversion to EUR: 1.5% · {fee} BCPS · ≈ €{eur} to bank"
+
+# ---- Interface
+
+common:
+  bcps: BCPS
+  deleteKey: Delete
+  approxEur: ≈ €{eur}
+  planned: PLANNED
+  verified: Verified
+  verifiedLabel: Verified business or person
+  close: Close
+  done: Done
+  cancel: Cancel
+  skip: Skip
+  edit: Edit
+  undo: Undo
+  back: Back
+  next: Next
+  continue: Continue
+  toStart: Start
+  about: About BCPS
+  sending: Sending…
+  balance: BALANCE
+  incoming: Incoming {amount} BCPS
+  rate: €1 ≈ {rate} BCPS
+  rateChip: €1 ≈ {rate} BCPS · BCPS is not pegged
+  rateInfo: Euro amounts use BCPS's current rate, €1 ≈ {rate} BCPS. BCPS is not pegged to the euro.
+  rateInfoLabel: About the BCPS rate
+  phoneLabel: "{name}'s phone, {role}"
+  roleCustomer: customer
+  roleBusiness: business
+
+pillars:
+  - title: Settles in seconds
+    body: Pay by @username, QR code or link
+  - title: Low-cost
+    body: ≈ 1% per payment, against 1.5–3% on card networks
+  - title: One network
+    body: Customers, merchants and suppliers
+  - title: Always open
+    body: Pay and get paid on Sundays too
+
+start:
+  overline: BLOCKCHAIN PAYMENT SYSTEM
+  headline: Pay and get paid in seconds.
+  lede: Card-simple. Pay by @username, QR code or link.
+  open: Open BCPS
+  updateReady: A new version is ready.
+  updateApply: Reload
+
+about:
+  title: About BCPS
+  intro: BCPS is a payment network for people and businesses. Pay and get paid in seconds by @username, QR code or link.
+  feesTitle: What it costs
+  fees:
+    - Every payment inside the network costs 1%, shown before you pay.
+    - Converting BCPS to euros costs 1.5%.
+    - Top up without a fee.
+  privacyTitle: Your data
+  privacy: Other people only see your name and @username.
+  safety: BCPS will never ask you to send money or crypto.
+  build: Build {sha}
+
+notFound:
+  title: This page doesn't exist.
+  body: The link may be incomplete.
+  home: Go to BCPS
+
+tx:
+  to: To {name}
+  from: From {name}
+  withNote: "{label} · {note}"
+  items: "{qty} × {name}"
+
+# ---- Phone runtime and chrome
+
+nav:
+  back: Back
+  home: Home
+  step: "Step {n} of {total}"
+
+tiles:
+  scan: Scan
+  payRequest: Pay & request
+  wallet: Wallet
+  history: History
+  charge: Charge
+  sales: Sales
+  pay: Pay
+  cashOut: Cash out
+
+hubs:
+  titles:
+    payRequest: Pay & request
+    wallet: Wallet
+    sales: Sales
+    pay: Pay
+    cashOut: Cash out
+    profile: Profile
+    settings: Settings
+  rows:
+    send: Send money
+    request: Request money
+    paymentLink: Payment link
+    splitBill: Split a bill
+    myCode: My code
+    refundSale: Refund a sale
+    allPayments: All payments
+    paySupplier: Pay supplier
+    invoices: Invoices
+    feePayer: Who pays the fee on sales
+    payoutAccount: Payout account
+    biometrics: Biometrics
+    webApi: Web API ✓
+    paymentLinks: Payment links ✓
+    ecommercePlugins: E-commerce plugins
+    topup: Top up
+    cashOut: Cash out
+    autoConvert: Auto-convert
+    payoutHistory: Payout history
+    notifications: Notifications
+    about: About BCPS
+    logout: Log out
+  sublines:
+    sendHint: To a person or business
+    requestHint: Ask someone to pay you
+    linkHint: One person can pay this link
+    splitHint: Share a total between friends
+    toPay: "{count} to pay"
+    supplierHint: By @name, code or invoice
+    salesToday: "{count} today · {gross}"
+    topUpHint: No top-up fee
+    cashOutTo: "To {bank}"
+    autoConvert: "Auto {sharePct}% · {time}"
+    autoConvertOn: "On · {sharePct}% · {time}"
+    autoConvertOff: Off
+    payoutsThisWeek: "This week ≈ €{eur}"
+    invoicesToPay: "{number} · {amount}"
+    invoicesToPayMany: "{count} invoices to pay"
+    feePayerYou: You pay
+    feePayerCustomer: Customer pays
+
+  sections:
+    toPay: TO PAY
+    pay: PAY
+    salesPayouts: SALES & PAYOUTS
+    integrations: INTEGRATIONS
+    payRequest: PAY & REQUEST
+    waiting: WAITING
+    money: MONEY
+
+home:
+  profile: Profile
+  settings: Settings
+  bell: Notifications
+  bellUnread: "Notifications, {count} unread"
+  business: BUSINESS
+  tileBadge: "{count} waiting"
+
+steps:
+  available: "Available {amount} BCPS"
+  max: Max
+  keypad: Amount keypad
+  balanceAfter: "Balance after {amount} BCPS"
+  arrives: Arrives in seconds.
+  noteVisibility: "Only you and {name} see the note."
+  noteField: Note
+  backToReview: Back to review
+  total: Total
+  fee: Fee
+  sending: Sending…
+
+party:
+  placeholder: Name or @username
+  searchLabel: Find a person or business
+  recent: RECENT
+  business: Business
+  businessIn: "Business · {place}"
+
+# ---- Accounts
+
+login:
+  logIn: Log in
+  biometrics: Log in with biometrics
+  chooseAccount: Choose your account
+  tapAccount: Tap an account above
+  otherPhone: On the other phone
+  emailLabel: EMAIL
+  personal: PERSONAL
+  business: BUSINESS
+  continue: Continue
+  sentTo: "Sent to {email}"
+  mailChip: "From Mail · {code}"
+  codeTitle: Enter the code
+  resendPrompt: "Didn't get it?"
+  resendAction: Send again
+  codeBox: "Digit {n} of {total}"
+  verify: Verify and log in
+  codeLabel: Code
+  emailFilled: "Email filled: {email}"
+  codeFilled: Code filled
+  welcomePerson: "{name} · {email}"
+  welcomeBusiness: "Business account · {name}"
+
+logout:
+  title: Log out?
+  body: To come back, choose your account and enter the code from Mail, or use biometrics.
+  cancel: Cancel
+  confirm: Log out
+
+# ---- People screens
+
+scan:
+  title: Scan
+  viewfinder: Scanning area
+  locked: "Locked · {name} ✓"
+  lockedLine: "{table} · {amount} BCPS"
+  noCode: No payment code in view
+  hold: Hold the code inside the frame.
+  cantScan: "Can't scan?"
+  payByUsername: Pay by @username
+  reviewTitle: "Pay {name}?"
+  rowTo: To
+  rowItems: Items
+  pay: "Pay {amount} BCPS"
+  lockedCounter: Counter code · You enter the amount
+  lockedPerson: "Personal code · {handle}"
+  lockedLink: "Payment link · {amount} BCPS"
+  nearby: "{count} codes nearby"
+  nearbyTitle: Codes nearby
+  rowCounter: "{name} · Counter"
+  rowCounterHint: You enter the amount
+  rowTable: "{name} · {table}"
+  counterTitle: "Pay {name}"
+  counterTag: "Counter code · {name} ✓"
+
+send:
+  title: Send
+  toTitle: Who are you sending to?
+  amountTitle: How much?
+  noteTitle: Add a note?
+  reviewTitle: Check and send
+  rowTo: To
+  rowAmount: Amount
+  rowNote: Note
+  noNote: No note
+  send: "Send {amount} BCPS"
+
+# How long ago something happened, in a row or a sentence.
+when:
+  today: "today {time}"
+  yesterday: "yesterday {time}"
+  day: "{day} {time}"
+  todayAt: "today at {time}"
+  yesterdayAt: "yesterday at {time}"
+  dayAt: "{day} at {time}"
+  detailToday: "Today · {time}"
+  detailYesterday: "Yesterday · {time}"
+  detailDay: "{day} · {time}"
+  dotToday: "today · {time}"
+  dotYesterday: "yesterday · {time}"
+  dotDay: "{day} · {time}"
+  agoToday: today
+  agoYesterday: yesterday
+  agoDays: "{n} days ago"
+
+# The lists on Pay & request: what you are asked to pay, and what you are waiting for.
+lists:
+  request: "Request · {when}"
+  requestOf: "{handle} · {note}"
+  linkFrom: "Payment link from {name}"
+  linkTitle: Payment link
+  shareFrom: "Your split share · {name}"
+  asked: "Asked {when}"
+  sentLink: "Payment link · {when}"
+  splitProgress: "Split · {paid} of {count} paid"
+  paid: PAID
+  declined: DECLINED
+  cancelled: CANCELLED
+  closed: CLOSED
+
+# Paying what someone asked (a request, a payment link, a split share) or declining it.
+payItem:
+  reviewTitle: "Pay {name}?"
+  rowFrom: From
+  rowFor: For
+  rowAmount: Amount
+  rowFee: Transaction fee
+  rowTotal: Total
+  noNote: No note
+  pay: "Pay {amount}"
+  decline: Decline
+  askedRequest: "{name} asked {when}."
+  askedLink: "{name} sent you this link {when}."
+  askedShare: "{name} asked for your share {when}."
+  declineTitle: "Decline {name}'s request?"
+  rowRequest: Request
+  declineBody: "{first} will see that you declined. No money moves."
+  keep: Keep
+  declineConfirm: Decline
+  declinedOverline: DECLINED
+  declinedTitle: Request declined
+  declinedBody: "{first} will see that you declined. No money moved."
+
+# Request money (c.request.*) and the detail of a request you made.
+request:
+  title: Request money
+  fromTitle: Who do you ask?
+  amountTitle: How much?
+  noteTitle: Add a note?
+  reviewTitle: Check and send
+  rowFrom: From
+  rowAmount: Amount
+  rowNote: Note
+  noNote: No note
+  feeNote: "{name} pays the 1% fee ({fee} BCPS). You receive the full amount."
+  send: Send request
+  againTitle: Send another request?
+  againBody: "You already asked {handle} for {amount} BCPS · {note}."
+  againBodyPlain: "You already asked {handle} for {amount} BCPS."
+  sendAnother: Send another
+  cancel: Cancel
+  sentOverline: SENT
+  sentTitle: Request sent
+  sentBody: "{amount} BCPS from {handle} · {note}"
+  sentBodyPlain: "{amount} BCPS from {handle}"
+
+requestDetail:
+  title: Request
+  waiting: Waiting
+  paidBy: "Paid by {handle} ✓"
+  declinedBy: "Declined by {handle} · no money moved"
+  cancelled: Cancelled · no money moved
+  askedOf: Asked of
+  asked: Asked
+  paid: Paid
+  declined: Declined
+  cancelledAt: Cancelled
+  from: From
+  reason: Reason
+  payment: Payment
+  reference: Reference
+  cancel: Cancel request
+  cancelTitle: "Cancel your request to {handle}?"
+  cancelBody: "{first} will see that you cancelled it. No money moves."
+  keep: Keep
+  cancelOverline: CANCELLED
+  cancelledTitle: Request cancelled
+  cancelledBody: "{first} will see that you cancelled it. No money moved."
+
+# Payment link (c.link.*) and the detail of a link you made.
+link:
+  title: Payment link
+  amountTitle: How much?
+  amountHint: The payer sees this amount
+  noteTitle: What is it for?
+  noteVisibility: Everyone who opens the link sees this note.
+  reviewTitle: Check your link
+  rowAmount: Amount
+  rowNote: Note
+  noNote: No note
+  rowWho: Who can pay
+  who: One person · single use
+  rowFee: Transaction fee
+  feeBy: Paid by the payer
+  create: Create link
+  readyOverline: LINK READY
+  qrLabel: "bcps link · {amount} BCPS · {note}"
+  qrLabelPlain: "bcps link · {amount} BCPS"
+  copy: Copy link
+  copied: Link copied
+  showQr: Show QR
+  reference: Reference {id}
+  sendInBcps: Send in BCPS
+  toTitle: Who gets the link?
+  sendLink: Send link
+  peopleOnly: Payment links go to people.
+  qrHint: Scan this code to pay the link.
+  sentOverline: SENT
+  sentTitle: Link sent
+  sentBody: "To {handle}"
+
+linkDetail:
+  title: Payment link
+  waiting: Waiting
+  paidBy: "Paid by {handle} ✓"
+  paid: Paid
+  from: From
+  sentTo: Sent to
+  sent: Sent
+  reference: Reference
+  singleOpen: "Single use: one person can pay this link."
+  singleClosed: "Single use: the link closed after {first} paid."
+  shareAgain: Share again
+  send: Send in BCPS
+
+# Split a bill (c.split.*).
+split:
+  title: Split a bill
+  pickTitle: Which payment?
+  recent: RECENT PAYMENTS
+  enterAmount: Enter an amount
+  none: No payments to split yet.
+  amountTitle: How much is the bill?
+  noteTitle: What is it for?
+  noteVisibility: Only the people you split with see the note.
+  peopleTitle: Who shares it?
+  peopleSelected: "{n} person selected · you are included."
+  peopleSelectedMany: "{n} people selected · you are included."
+  tooMany: "You can split with up to {max} people."
+  sharesTitle: How do you split it?
+  equal: Equal
+  custom: Custom
+  you: You
+  total: Total
+  reviewTitle: Check and send
+  rowPayment: Payment
+  rowAmount: Amount
+  rowSplit: Split
+  splitEqual: "Equal · {n} people"
+  splitCustom: "Custom · {n} people"
+  pays: "{name} pays"
+  youPaid: You paid
+  yourShare: Your share
+  feeOne: "{name} pays the 1% fee ({fee} BCPS). You receive the full amount."
+  feeMany: Each person pays the 1% fee on their share. You receive the full amount.
+  sendOne: Send 1 request
+  sendMany: "Send {n} requests"
+  sentOverline: SENT
+  sentTitle: Split sent
+  sentBodyOne: "{amount} BCPS from {handle} · {note}"
+  sentBodyMany: "{n} people asked · {note}"
+
+# The progress of a split bill and cancelling what is still open.
+splitDetail:
+  title: Split a bill
+  collected: COLLECTED
+  of: "of {total} BCPS · {note}"
+  progress: "{paid} of {count} paid"
+  progressDone: "{paid} of {count} paid ✓"
+  people: PEOPLE
+  waiting: "Waiting · asked {when}"
+  paidAt: "Paid {when}"
+  declinedAt: "Declined {when}"
+  cancelledAt: "Cancelled {when}"
+  hintAsk: You can ask again.
+  askAgain: Ask again
+  cancelOpenLink: Cancel open requests
+  cancelTitle: Cancel the open requests?
+  cancelBody: The people who have not paid will see that you cancelled. No money moves.
+  cancelOpen: Open requests
+  cancelLeft: Still to collect
+  cancelConfirm: Cancel requests
+  cancelledTitle: Open requests cancelled
+  cancelledBody: What was already paid stays paid. No money moved.
+
+# ---- Café screens
+
+charge:
+  title: Charge
+  table: Table 4
+  items: ITEMS
+  custom: Custom amount
+  hint: "{table} · tap an item again to add one more"
+  fromItems: Amount set from items
+  clear: Clear
+  charge: "Charge {amount} BCPS"
+  codeTitle: Payment code
+  codeLabel: Payment code
+  valid: "Valid for {time}"
+  tapToPay: Tap to pay
+  expired: This code expired. No money moved.
+  newCode: New code
+  cancel: Cancel
+  cancelTitle: Cancel this charge?
+  cancelBody: The code stops working. No money moves.
+  rowAmount: Amount
+  rowItems: Items
+  keep: Keep
+  cancelCharge: Cancel charge
+  paid: PAID
+  received: RECEIVED
+  quantity: "× {qty}"
+  from: "from {handle} · {name}"
+  fromName: "from {name}"
+  spendable: Spendable now
+  fee: Transaction fee
+  feeValue: "1% · {fee} BCPS (≈ €{eur})"
+  feeShort: Fee
+  feeShortValue: "{fee} BCPS"
+  reference: Reference
+  sale: Sale
+  fromNotification: "From notification · {time}"
+  newSale: New sale
+
+paySupplier:
+  title: Pay supplier
+  toTitle: Who are you paying?
+  amountTitle: How much?
+  noteTitle: Add a note?
+  reviewTitle: Check and pay
+  pay: "Pay {amount} BCPS"
+
+receipt:
+  paid: PAID
+  sent: SENT
+  to: "to {name}"
+  reference: Reference
+  fee: Fee
+  feeLine: "{fee} BCPS · paid by {name}"
+  feeLineYou: "{fee} BCPS · paid by you"
+  time: Time
+
+history:
+  title: History
+  pending: PENDING
+  sale: Sale
+  dailySales: Daily sales
+  todaySoFar: Today so far
+  summaryLine: "{count} payments · net {net}"
+  cashOut: Cash out
+  cashOutLine: "{time} · to {bank}"
+  topUp: Top up
+  onItsWay: "{method} · on its way"
+  searchLabel: Search
+  filtersLabel: Filter
+  requestIn: "Asked you · {when}"
+  requestOut: "You asked · {when}"
+  linkIn: "Payment link for you · {when}"
+  linkOut: "Your payment link · {when}"
+  splitShareOut: "Split share · {when}"
+  refundLine: "Refund · {when}"
+  topUpLine: "{time} · {method}"
+  methods:
+    card: Card
+    bank-transfer: Bank transfer
+    local-method: Local payment method
+  waiting: WAITING
+  searchPeople: Search people, shops, notes
+  searchBusiness: Search sales, customers, references
+  filters:
+    all: All
+    in: Money in
+    out: Money out
+    shops: Shops
+    people: People
+    topupsCashouts: Top-ups & cash-outs
+    requests: Requests
+    sales: Sales
+    refunds: Refunds
+    suppliers: Supplier payments
+    payouts: Payouts
+    topups: Top-ups
+
+detail:
+  title: Payment
+  from: From
+  to: To
+  items: Items
+  note: Note
+  fee: Transaction fee
+  rate: Rate
+  status: Status
+  reference: Reference
+  sent: Sent
+  settled: Settled
+  settling: Settling…
+  outsideHours: Outside banking hours · settled anyway
+  verified: ✓ Verified
+  verifiedPerson: Verified identity
+  verifiedBusiness: Verified business
+  party: "{name} · {handle}"
+  toLine: "to {name} · ≈ €{eur}"
+  fromLine: "from {name} · ≈ €{eur}"
+  feeValue: "{fee} BCPS (≈ €{eur})"
+  paidBy: "paid by {name}"
+  paidByYou: paid by you
+  method: Method
+  paidEur: "from €{eur}"
+  privacyPurchase: "Refunds are merchant-initiated. Only you and {name} see these details."
+  privacyPerson: "Only you and {name} see these details."
+  sendAgain: Send again
+  splitThis: Split this bill
+  refund: Refund
+  refunded: "Refunded ✓ · {time}"
+  missing: This payment isn't available.
+
+# The page a payment link, a request or a payment code opens (#/pay), outside the phones.
+payPage:
+  overlineLink: PAYMENT LINK
+  overlineRequest: PAYMENT REQUEST
+  overlineCode: PAYMENT CODE
+  title: "Pay {name}"
+  noteLine: "{note} · {eur}"
+  who: Who's paying?
+  single: "Single use: one person can pay this link."
+  rowFrom: From
+  rowFor: For
+  rowAmount: Amount
+  rowFee: Transaction fee
+  rowTotal: Total
+  noNote: No note
+  pay: "Pay {amount}"
+  change: Choose someone else
+  back: Back to BCPS
+
+# My code (c.mycode): the QR others scan to pay you.
+myCode:
+  hint: Anyone who scans this code can send you money.
+  qrLabel: "Payment code of {handle}"
+  copy: "Copy {handle}"
+  copied: Copied
+  share: Share payment link
+
+# Top up (shared.topup.*): euros in, BCPS out, no fee.
+topUp:
+  title: Top up
+  link: Top up
+  amountTitle: How much?
+  youGet: "You get {amount} BCPS"
+  noFee: No top-up fee
+  methodTitle: How do you want to top up?
+  methodGroup: Top-up method
+  methodCard: "Card •• {last4}"
+  methodBank: "Bank transfer from {bank}"
+  methodLocal: Local payment method
+  instant: Instant
+  bankHint: When your bank sends it
+  reviewTitle: Check and top up
+  rowAmount: Amount
+  rowMethod: Method
+  rowFee: Fee
+  rowGet: You get
+  button: "Top up €{eur}"
+  doneOverline: TOPPED UP
+  from: "from €{eur} · {method}"
+  fromBank: "from €{eur} · bank transfer"
+  fromLocal: "from €{eur} · local payment method"
+  ready: Ready to spend
+  waitOverline: ON ITS WAY
+  stepRequested: Requested
+  stepSent: Your bank sends it
+  stepSentHint: When your bank sends it
+  stepExpected: "Expected {when}"
+  stepArrived: In your BCPS balance
+  stepArrivedHint: Seconds after it arrives
+  rowFrom: From
+  rowReference: Reference
+
+# Cash out (shared.cashout.*): BCPS in, euros to the bank on file.
+cashOut:
+  title: Cash out
+  amountTitle: How much?
+  reviewTitle: Check and cash out
+  rowAmount: Amount
+  rowConversion: "Conversion to EUR: 1.5%"
+  rowTo: To
+  rowReceive: You receive
+  arrives: Arrives when your bank processes it.
+  button: "Cash out {amount}"
+  doneOverline: CASHED OUT
+  receive: "You receive ≈ €{eur}"
+  to: "To {bank}"
+  rowReference: Reference
+  noBankTitle: Cash out needs a bank account in your name.
+  noBankBody: None is on file for this account.
+  noBankAction: Top up
+
+# Who pays the fee on a merchant's sales (biz.feePayer): saved for the codes and links made afterwards.
+feePayer:
+  title: Settings
+  question: Who pays the fee on sales?
+  group: Who pays the fee
+  you: You pay
+  customer: Customer pays
+  example: "On an {sale} sale: customer pays {customerPays} · you receive {merchantReceives}"
+  note: The fee is 1% of each sale.
+  save: Save
+  savedOverline: SAVED
+  savedTitle: Saved
+  savedYou: You pay the fee on sales.
+  savedCustomer: Customers pay the fee on sales.
+
+# One day of the café's sales (shared.daySummary): opened from a daily summary row of History.
+daySummary:
+  netSales: NET SALES
+  theDay: THE DAY
+  firstSale: First sale
+  firstSaleLine: "{time} · {who}"
+  busiest: Busiest hour
+  busiestLine: "{from}–{to} · {count} payments"
+  cashOut: Cash out
+  cashOutAuto: "Cash out · Auto {sharePct}%"
+
+# Invoices the café is asked to pay (biz.invoices, biz.invoice.*): pay one or decline it with a reason.
+invoices:
+  title: Invoices
+  detailTitle: Invoice
+  due: DUE
+  overdue: OVERDUE
+  dueToday: DUE TODAY
+  dueLine: "Due {date}"
+  dueTodayLine: Due today
+  rowTitle: "{number} · {name}"
+  none: No invoices to pay.
+  noneBody: Invoices from your suppliers appear here.
+  rowFrom: From
+  rowNumber: Number
+  rowDescription: Description
+  rowIssued: Issued
+  rowDue: Due
+  rowFee: Transaction fee 1%
+  rowTotal: Total
+  pay: "Pay {amount} BCPS"
+  decline: Decline
+  declineTitle: Why are you declining?
+  declineGroup: Reason
+  declineNote: "{name} sees your reason. No money moves."
+  keep: Keep
+  declineConfirm: Decline
+  declinedOverline: DECLINED
+  declinedTitle: Invoice declined
+  declinedBody: "{name} sees your reason. No money moved."
+
+# Refunding a sale (biz.refund.*): pick a named sale, check, refund. A refund has no fee.
+refund:
+  title: Refund
+  pickTitle: Which sale?
+  searchLabel: Search sales
+  searchPlaceholder: Customer, amount or reference
+  none: No sales to refund.
+  reviewTitle: "Refund {amount} BCPS to {name}?"
+  rowSale: Sale
+  rowReference: Reference
+  rowRefund: Refund
+  refundValue: "{amount} BCPS"
+  note: "No fee. The original {fee} fee isn't returned."
+  button: "Refund {amount} BCPS"
+  doneOverline: REFUNDED
+  doneTo: "to {handle} · {name}"
+  doneToName: "to {name}"
+  doneBody: Refunded ✓ is now shown on the sale.
+  rowFee: Fee
+  noFee: No fee
+
+# What an account converted to euros (biz.payouts).
+payouts:
+  title: Payout history
+  week: THIS WEEK
+  weekEur: "≈ €{eur}"
+  summary: "{count} payouts · to {bank}"
+  summaryOne: "{count} payout · to {bank}"
+  total: "{amount} BCPS converted · conversion {fee} BCPS"
+  heading: PAYOUTS
+  rowDay: "{day} · {time}"
+  rowAuto: "{amount} BCPS · Auto {sharePct}%"
+  rowManual: "{amount} BCPS · Cash out"
+  rowEur: "≈ €{eur}"
+  included: "Conversion to EUR: 1.5% is included."
+
+# The café's sales (pos.sales): today, or the last seven days.
+sales:
+  rangeLabel: Period
+  today: Today
+  week: 7 days
+  kpiSales: SALES
+  kpiGross: GROSS
+  kpiFees: FEES
+  kpiNet: NET
+  refunds: "Refunds −{amount}"
+  listHeading: SALES
+  refunded: REFUNDED ✓
+  chartLabel: Sales per day
+  closed: Closed
+  barLine: "{day} · {count} payments · {gross} BCPS"
+  barClosed: "{day} · Closed"
+  tableDay: Day
+  tableSales: Sales
+  tableGross: Gross
+  conversions: CONVERSIONS TO EUR
+  conversionLine: "{amount} BCPS"
+  exportCsv: Export CSV
+  accounting: Accounting integration
+
+# Auto-convert settings (biz.autoconvert.*): saved and shown; nothing converts by itself.
+autoConvert:
+  title: Auto-convert
+  days: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+  onTitle: Convert sales to euros automatically?
+  toggle: Auto-convert
+  toggleHint: Cash out part of your balance on a schedule
+  conversionNote: "Conversion to EUR: 1.5%. Your bank receives the euros."
+  scheduleTitle: When?
+  scheduleGroup: How often
+  daily: Every day
+  weekdays: Weekdays
+  weekly: Weekly
+  time: TIME
+  timeGroup: Time of day
+  shareTitle: How much of the balance?
+  shareValue: "{pct}%"
+  shareLabel: Share of the balance
+  salesOnly: Only on days with sales
+  salesOnlyHint: Skip days when the café is closed
+  reviewTitle: Check and save
+  rowSchedule: Schedule
+  rowShare: Share
+  rowSalesOnly: Only on days with sales
+  rowConversion: "Conversion to EUR: 1.5%"
+  rowTo: To
+  rowState: Auto-convert
+  included: Included
+  on: "On"
+  off: "Off"
+  scheduleDaily: "Every day · {time}"
+  scheduleWeekdays: "Weekdays · {time}"
+  scheduleWeekly: "Every {day} · {time}"
+  shareLine: "{pct}% of the balance"
+  next: "Next: {when} · ≈ {amount} BCPS → ≈ €{eur}"
+  whenTonight: "tonight {time}"
+  whenTomorrow: "tomorrow {time}"
+  whenDay: "{day} {time}"
+  offNote: Nothing converts to euros on its own.
+  save: Save
+  savedOverline: SAVED
+  savedTitle: Saved
+  stripDaily: "Auto-convert {sharePct}% · every day {time}"
+  stripWeekdays: "Auto-convert {sharePct}% · weekdays {time}"
+  stripWeekly: "Auto-convert {sharePct}% · every {day} {time}"
+  stripOff: Auto-convert is off
+
+profile:
+  identity: "ID card · {country} · verified"
+  who: "{name} · {handle}"
+  countries:
+    SI: Slovenia
+    KR: South Korea
+
+# ---- Stage, phone mode and presenter chrome
+
+stage:
+  noOne: No one logged in
+  swap: Swap phones
+  reset: Reset
+  fullscreen: Full screen
+  settings: Settings
+  zoom: "Zoom {name}"
+  zoomOut: Show both phones
+  dateChip: Virtual time
+  accountMenu: "{name}, switch account"
+  toastFor: "On {name}'s phone"
+  toastOpen: "Open {name}"
+  counter: "Merchant payments {count} · fees {fees} BCPS ≈ €{eur} vs cards typically ≈ €{cardLow}–{cardHigh} plus additional charges"
+  travelEdge: "{name}"
+  edgeTopUp: Top up
+  edgeBank: Bank
+  handover: "Now on this phone"
+
+accountMenu:
+  title: Switch account
+  merchants: MERCHANTS
+  customers: END CUSTOMERS
+  onThisPhone: On this phone
+  onOtherPhone: On the other phone
+  showWelcome: Show Welcome on this phone
+  unread: "{count} unread"
+  close: Close menu
+
+phoneMode:
+  pill: "Account menu, {name}"
+  toast: "On {name}'s phone: {what}"
+  switch: Switch
+  upright: Turn your phone upright
+  timeLabel: Virtual time
+  reset: Reset
+  settings: Settings
+
+reset:
+  title: Reset everything?
+  body: All accounts return to their starting balances and history.
+  option: Log Ana and Café Lipa in again
+  confirm: Reset
+  cancel: Cancel
+  done: Everything reset
+  undo: Undo
+  fresh: Fresh start · all accounts at starting balances
+
+settings:
+  title: Settings
+  done: Done
+  reduceMotion: Reduce motion
+  sound: Sound
+  largeText: Large text on navy
+  tape: Payment tape
+  undoReset: Undo reset
+  about: About BCPS
+  build: "Build {sha}"
+
+keys:
+  title: Keyboard shortcuts
+  fullscreen: Full screen
+  zoom: Zoom one phone
+  escape: Close or show both phones
+  help: Show this list
+  close: Close
+
+otherTab:
+  title: BCPS is open in another tab.
+  useHere: Use here
+
+notices:
+  recalculated: Your saved session was recalculated with this version.
+  restoreFailed: Couldn't restore your last session. Started fresh.
+  storageUnavailable: This browser isn't saving changes.
+  writeFailed: The latest changes couldn't be saved. BCPS keeps working in this tab.
+  dismiss: Dismiss
+
+empty:
+  search:
+    title: Nothing found.
+    body: Try another name, shop or note.
+  filters:
+    all: { title: No payments yet., body: Payments you make and receive appear here. }
+    in: { title: No money in yet., body: Payments you receive appear here. }
+    out: { title: No money out yet., body: Payments you make appear here. }
+    shops: { title: No shop payments yet., body: Payments to shops appear here. }
+    people: { title: No payments with people yet., body: Payments to and from people appear here. }
+    topupsCashouts: { title: No top-ups or cash-outs yet., body: Money you add or take out appears here. }
+    requests: { title: No requests yet., body: Requests you send or receive appear here. }
+    sales: { title: No sales yet., body: Payments from customers appear here. }
+    refunds: { title: No refunds yet., body: Sales you refund appear here. }
+    suppliers: { title: No supplier payments yet., body: Payments to suppliers appear here. }
+    payouts: { title: No payouts yet., body: Money you cash out appears here. }
+    topups: { title: No top-ups yet., body: Money you add appears here. }
+  notifications:
+    title: You're all caught up.
+    body: New payments and requests appear here.
+
+notifications:
+  title: Notifications
+  markAll: Mark all as read
+  today: TODAY
+  yesterday: YESTERDAY
+  earlier: EARLIER
+  unread: Unread
+  justNow: Just now
+
+groups:
+  today: TODAY
+  yesterday: YESTERDAY
+  thisWeek: THIS WEEK
+  earlier: EARLIER
