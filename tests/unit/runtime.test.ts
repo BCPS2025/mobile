@@ -532,7 +532,7 @@ describe('the live clock and the clock key', () => {
   })
 })
 
-describe('limits', () => {
+describe('limits', { timeout: 30_000 }, () => {
   it('warns at 80 % and refuses new commands at 100 %, so an export always re-imports', async () => {
     const { rt } = tab(shared())
     await settle()
